@@ -1,0 +1,12 @@
+#!/bin/bash
+[ $# -lt 2 ]&&(echo "must have more that 1 args";exit 1);
+dirmv=$1
+shift 1
+while true; do
+	for fname in *; do
+		[ -e "$1/$fname" ]&& mv "$fname" "$dirmv"
+	done
+	shift 1
+	[ $# -eq 0 ]&& exit 0
+done
+

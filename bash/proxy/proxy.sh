@@ -41,8 +41,9 @@ close(){
 }
 do_help(){
 	echo 'call ::
-	proxy open "IP"
-	proxy close "IP"
+	proxy open "IP" "IP" ...
+	proxy close "IP" "IP" ...
+	proxy close all
 	proxy show'
 }
 

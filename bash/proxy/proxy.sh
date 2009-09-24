@@ -25,7 +25,7 @@ open(){
 		iptables -t nat -A PREROUTING --src $1 --dst $MY_IP -p tcp --dport $PORT -j DNAT --to-destination $PROXY_IP || return 1
 		iptables -t nat -A POSTROUTING --src $1 --dst $PROXY_IP -p tcp --dport $PORT -j SNAT --to-source $MY_IP || return 1
 		shift 
-		[[ -z $1 ]] && break
+		[[ $# -eq 0 ]] && break
 	done
 	return 0
 }
@@ -35,7 +35,7 @@ close(){
 		iptables -t nat -D PREROUTING --src $1 --dst $MY_IP -p tcp --dport $PORT -j DNAT --to-destination $PROXY_IP || return 1
 		iptables -t nat -D POSTROUTING --src $1 --dst $PROXY_IP -p tcp --dport $PORT -j SNAT --to-source $MY_IP || return 1
 		shift
-		[[ -z $1 ]] && break
+		[[ $# -eq 0 ]] && break
 	done
 	return 0
 }

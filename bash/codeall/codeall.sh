@@ -19,7 +19,7 @@ fromdir="$1"
 todir="$2"
 (
     cd "$fromdir"
-    for fname in **/*.wav;do
+    for fname in **/*$FROMSUFF;do
 	subdirname=$(dirname "$fname")
 	pointdirname="${todir}/${subdirname}"
 	mkdir -p "$pointdirname"

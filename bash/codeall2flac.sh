@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 if [ $# -ne 2 ];then
     echo "it must be just 2 args"
     exit 1
@@ -14,7 +14,7 @@ fi
 RECODECOMD=flac
 FROMSUFF=.wav
 TOSUFF=.flac
-RECODEOPTS="--best --replay-gain"
+recodeopts="--best --replay-gain"
 fromdir="$1"
 todir="$2"
 (
@@ -35,8 +35,8 @@ todir="$2"
 	    done
 	    export pointname="${counter}_${pointname}"
 	fi
-	
-	${RECODECOMD} ${RECODEOPTS} "$fname" -o "${pointdirname}/$pointname"
+	echo ":::::::coding $fname >> ${pointdirname}/${pointname}"
+	${RECODECOMD} --best --replay-gain "$fname" -o "${pointdirname}/$pointname"
     done
     )
 

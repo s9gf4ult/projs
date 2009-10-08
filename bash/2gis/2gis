@@ -1,0 +1,5 @@
+#!/bin/bash
+WINEPREFIX=${HOME}/.wine
+cd "${WINEPREFIX}/drive_c/Program Files/2gis/3.0"
+wine grym.exe &
+

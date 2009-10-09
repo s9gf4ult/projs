@@ -1,0 +1,3 @@
+#!/bin/bash
+cd /opt/SAPClients/SAPGUI7.10rev9/bin/
+./guilogon

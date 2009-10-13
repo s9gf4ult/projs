@@ -1,14 +1,22 @@
 #!/bin/bash
+if [ $# -ne 1 ];then
+	echo "i must have one parameter and it must be dev name"
+	exit 1
+fi
 dev=$1
+if [ ! -b /dev/${dev} ];then
+	echo "dev name is incorrect"
+	exit 1
+fi
 echo ":::::creating file system"
 umount /dev/${dev}1
-if ! mkdosfs -F 32 /dev/${dev}1;then
+if ! mkdosfs -F 32 -f 1 /dev/${dev}1;then
 	echo "::::::ошибко"
 	exit 1
 fi
 echo ":::::mounting"
-mountpoint /media/${dev}1&&umount /media/${dev}1
-[ -e /media/${dev}1 ]&&rm -rf /media/${dev}1
+mountpoint /media/${dev}1 && umount /media/${dev}1
+[ -e /media/${dev}1 ] && rm -rf /media/${dev}1
 mkdir /media/${dev}1
 if ! mount /dev/${dev}1 /media/${dev}1;then
 	echo "::::::не смонтировалося"

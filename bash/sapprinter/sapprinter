@@ -1,3 +1,25 @@
 #!/bin/bash
 
+former=$1
+shift
+printer=$1
+shift 
+in_file=$1
+shift
 
+if [ ${former} = "psnup" ];then
+	if [ ${printer} = "kprinter" ];then
+		cat ${in_file} | pdf2ps | psnup -1 -f | kprinter $@
+	elif [ ${printer} = "lp" ];then
+		cat ${in_file} | pdf2ps | psnup -1 -f | lp $@
+	fi
+elif [ ${former} = "pdftk" ];then
+	out_file="/var/tmp/out.pdf"
+	pdftk ${in_file} cat 1-endE output ${out_file}
+	if [ ${printer} = "kprinter" ];then
+		kprinter $@ ${out_file}
+	elif [ ${printer} = "lp" ];then
+		lp $@ ${out_file}
+	fi
+	rm ${out_file}
+fi

@@ -11,7 +11,7 @@ if [ ${former} = "psnup" ];then
 		cat ${in_file} | pdf2ps | psnup -1 -f | ${printer} $@
 elif [ ${former} = "pdftk" ];then
 	out_file="/var/tmp/out.pdf"
-	pdftk ${in_file} cat 1-endE output ${out_file}
+	pdftk ${in_file} cat 1-endN output ${out_file}
 	${printer} $@ ${out_file}
 	rm ${out_file}
 fi

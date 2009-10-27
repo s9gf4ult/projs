@@ -4,13 +4,13 @@ LOGFILE="/var/tmp/sapprinter.log"
 
 log() {
 	if [ ${LOGGING} = "yes" ];then
-		echo $1 >> ${LOGFILE}
+		echo $@ >> ${LOGFILE}
 	fi
 }
 
-log "=================================
-sappriter was called at $(date -R)
-sapprinter $@"
+log "================================="
+log "sappriter was called at $(date -R)\n"
+log "sapprinter ${@}"
 
 former=$1
 log "former=${former}"
@@ -31,7 +31,7 @@ if [ ${former} = "psnup" ];then
 elif [ ${former} = "pdftk" ];then
 	log "pdftk is page former"
 	out_file="/var/tmp/out.pdf"
-	log "${out_file}"
+	log "out_file=${out_file}"
 	pdftk ${in_file} cat 1-endN output ${out_file}
 	log "pdftk ${in_file} cat 1-endN output ${out_file}"
 	${printer} $@ ${out_file}
@@ -40,8 +40,9 @@ elif [ ${former} = "pdftk" ];then
 elif [ $LOGGING = "yes" ];then
 	log "no action"
 fi
-log "End.
-======================================
+log "End."
+log "======================================"
+log ""
 
 
 "

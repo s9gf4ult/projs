@@ -35,10 +35,28 @@ if [ ${former} = "pdftk" ];then
 	out_file=/var/tmp/outfile.pdf
 	log "out_file=${out_file}"
 	logexec cp /proc/self/fd/0 ${in_file}
-	logexec pdftk ${in_file} cat 1-endN output ${out_file}
+	logexec pdftk ${in_file} cat 1-endL output ${out_file}
 	logexec ${printer} $@ ${out_file}
 	logexec rm ${in_file}
 	logexec rm ${out_file}
+elif [ ${former} = "psnup" ];then
+	log "psnup is a page former"
+	file1=/var/tmp/file1.ps
+	log "file1=${file1}"
+	file2=/var/tmp/file2.ps
+	log "file2=${file2}"
+	logexec cp /proc/self/fd/0 ${file1}
+	logexec pdf2ps ${file1} ${file2}
+	logexec rm ${file1}
+	logexec psnup -1 -f ${file2} ${file1}
+	logexec rm ${file2}
+	logexec ${printer} $@ ${file1}
+	#logexec rm ${file1}
+elif [ ${former} = "copy" ];then
+	log "we just copy file to ${printer}"
+	logexec cp /proc/seldf/fd/0 ${printer}
+else
+	log "former=${former} that is not correct value"
 fi
 
 

@@ -22,11 +22,9 @@ log "$0 ${@}"
 
 former=$1
 log "former=${former}"
-if [ ${former} != "evince" ];then
-	shift
-	printer=$1
-	log "printer=${printer}"
-fi
+shift
+printer=$1
+log "printer=${printer}"
 shift
 log "prameters for ${printer}:$@"
 
@@ -62,11 +60,11 @@ elif [ ${former} = "copy" ];then
 	[ -f ${printer} ] && file1="$(dirname ${printer})/$(basename ${printer} .pdf)${additor}.pdf"
 	log "we just copy our pipe to file ${file1}"
 	logexec cp /proc/self/fd/0 ${file1}
-elif [ ${former} = "evince" ];then
-	log "we just give our file to evince"
+elif [ ${former} = "open" ];then
+	log "we just give our file to ${printer}"
 	file1="/var/tmp/sap_print${additor}.pdf"
 	logexec cp /proc/self/fd/0 ${file1}
-	logexec evince ${file1}
+	logexec ${printer} ${file1}
 	logexec rm ${file1}
 else
 	log "former=${former} that is not correct value"

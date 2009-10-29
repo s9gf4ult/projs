@@ -57,6 +57,7 @@ elif [ ${former} = "psnup" ];then
 	logexec rm ${file1}
 elif [ ${former} = "copy" ];then
 	file1=${printer}
+	pathchk ${file1} || exit 1
 	[ -f ${printer} ] && file1="$(dirname ${printer})/$(basename ${printer} .pdf)${additor}.pdf"
 	log "we just copy our pipe to file ${file1}"
 	logexec cp /proc/self/fd/0 ${file1}

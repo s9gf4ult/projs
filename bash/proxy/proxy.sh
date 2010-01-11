@@ -63,7 +63,7 @@ elif [ $1 = "close" ];then
 		close $@ || die "Close was not passed"
 	fi
 elif [ $1 = "show" ];then
-	iptables -t nat -L PREROUTING | grep -e "^DNAT\ *tcp\ *--\ *[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\ *$MY_IP\ *tcp\ *dpt:$PORT\ *to:$PROXY_IP" | sed -e "s/^DNAT\ *tcp\ *--\ *\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\).*/\1/"
+	iptables -t nat -L PREROUTING | grep -e "^DNAT\ *tcp\ *--\ *[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\(\/[0-9]\{1,2\}\)\{0,1\}\ *$MY_IP\ *tcp\ *dpt:$PORT\ *to:$PROXY_IP" | sed -e "s/^DNAT\ *tcp\ *--\ *\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\(\/[0-9]\{1,2\}\)\{0,1\}\).*/\1/"
 else
 	echo 'param1 is not equal to "close" or "open"'
 	exit 1

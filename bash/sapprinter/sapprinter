@@ -31,22 +31,34 @@ log "prameters for ${printer}:$@"
 additor=$(date +%S%N)
 log "additor=${additor}"
 
-if [ ${former} = "pdftk" ];then
+case ${former} in
+("jpdftweak")
+	log "jpdftweak is a former"
+	in_file=/tmp/infile${additor}.pdf
+	out_file=/tmp/outfile${additor}.pdf
+	logexec cat /proc/self/fd/0 > ${in_file}
+	logexec jpdftweak -rot kl -i "${in_file}" -o "${out_file}"
+	logexec cat "${out_file}" | ${printer} $@
+	logexec rm ${in_file}
+	logexec rm ${out_file} ;;
+
+("pdftk")
 	log "pdftk is a former"
-	in_file=/var/tmp/infile${additor}.pdf
+	in_file=/tmp/infile${additor}.pdf
 	log "in_file=${in_file}"
-	out_file=/var/tmp/outfile${additor}.pdf
+	out_file=/tmp/outfile${additor}.pdf
 	log "out_file=${out_file}"
 	logexec cp /proc/self/fd/0 ${in_file}
 	logexec pdftk ${in_file} cat 1-endR output ${out_file}
 	logexec ${printer} $@ ${out_file}
 	logexec rm ${in_file}
-	logexec rm ${out_file}
-elif [ ${former} = "psnup" ];then
+	logexec rm ${out_file} ;;
+
+("psnup")
 	log "psnup is a page former"
-	file1=/var/tmp/file1${additor}.ps
+	file1=/tmp/file1${additor}.ps
 	log "file1=${file1}"
-	file2=/var/tmp/file2${additor}.ps
+	file2=/tmp/file2${additor}.ps
 	log "file2=${file2}"
 	logexec cp /proc/self/fd/0 ${file1}
 	logexec pdf2ps ${file1} ${file2}
@@ -54,22 +66,25 @@ elif [ ${former} = "psnup" ];then
 	logexec psnup -1 -f ${file2} ${file1}
 	logexec rm ${file2}
 	logexec ${printer} $@ ${file1}
-	logexec rm ${file1}
-elif [ ${former} = "copy" ];then
+	logexec rm ${file1} ;;
+
+("copy")
 	file1=${printer}
 	pathchk ${file1} || exit 1
 	[ -f ${printer} ] && file1="$(dirname ${printer})/$(basename ${printer} .pdf)${additor}.pdf"
 	log "we just copy our pipe to file ${file1}"
-	logexec cp /proc/self/fd/0 ${file1}
-elif [ ${former} = "open" ];then
+	logexec cp /proc/self/fd/0 ${file1} ;;
+
+("open")
 	log "we just give our file to ${printer}"
-	file1="/var/tmp/sap_print${additor}.pdf"
+	file1="/tmp/sap_print${additor}.pdf"
 	logexec cp /proc/self/fd/0 ${file1}
 	logexec ${printer} ${file1}
-	logexec rm ${file1}
-else
-	log "former=${former} that is not correct value"
-fi
+	logexec rm ${file1} ;;
+
+(*)
+	log "former=${former} that is not correct value";;
+esac
 
 
 log "End."

@@ -3,7 +3,7 @@
 using namespace std;
 
 #define T double
-typedef string* ((*stringizer)(T*));
+typedef string ((*stringizer)(T*));
 class Matrix {
 private:
   vector<T> data;
@@ -13,7 +13,7 @@ public:
   Matrix(unsigned int x,unsigned int y, T* empty);
   bool set(unsigned int x,unsigned int y,T* param);
   bool get(unsigned int x,unsigned int y, T* param);
-  string *show(stringizer functrans);
+  string show(stringizer functrans);
 };
   
   

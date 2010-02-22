@@ -1,5 +1,7 @@
 #include "matrix.hpp"
 
+using namespace std;
+
 Matrix::Matrix(unsigned int x,unsigned int y, T* empty)
 {
   x_size=x;
@@ -31,18 +33,18 @@ bool Matrix::get(unsigned int x,unsigned int y, T* param)
   //  return false;
 }
 
-string* Matrix::show(stringizer functrans)
+string Matrix::show(stringizer functrans)
 {
   if ((x_size * y_size) != 0) {
     string resultString;
     for (unsigned int yy=0; yy < y_size; yy++)
       for (unsigned int xx=0; xx < x_size; xx++) {
-        std::string *localres = functrans(&data[xx + (yy * x_size)]);
-        resultString.append(*localres);
+        string localres = functrans(&data[xx + (yy * x_size)]);
+        resultString.append(localres);
         if ((x_size - 1) == xx)
           resultString += "\n";
       }
-    return &resultString;
+    return resultString;
   }
   return NULL;
 }

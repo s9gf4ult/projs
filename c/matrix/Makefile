@@ -1,7 +1,7 @@
 all:main
 
 matrix.o:matrix.cpp
-	g++ matrix.cpp -c -o matrix.o
+	g++ -DDEBUG matrix.cpp -c -o matrix.o
 
 main.o:main.cpp
 	g++ main.cpp -c -o main.o

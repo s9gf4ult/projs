@@ -27,6 +27,17 @@ Matrix::Matrix(unsigned int size)
   }
 }
 
+Matrix::Matrix(unsigned int x, unsigned int y, T *array)
+{
+  x_size=x;
+  y_size=y;
+  if (x * y) {
+    data.resize((x * y), 0);
+    for (unsigned int ii = 0; ii < (x * y); ii++)
+      data[ii] = array[ii];
+  }
+}
+
 void Matrix::set(unsigned int x,unsigned int y,T param)
 {
   if ((x < x_size) && (y < y_size)) {
@@ -76,7 +87,7 @@ Matrix Matrix::mulate(Matrix mulator)
 #endif
   if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0)
     if (x_size == mulator.getxsize()) {
-      Matrix resultant(mulator.getxsize(), y_size, 0);
+      Matrix resultant(mulator.getxsize(), y_size,(T) 0);
       for (unsigned int y_passer = 0; y_passer < y_size; y_passer++)
         for (unsigned int x_passer = 0; x_passer < mulator.getxsize(); x_passer++) {
           T summator = 0;
@@ -98,7 +109,7 @@ Matrix Matrix::mulate(T mulator)
   cout << "mulate by T" << endl;
 #endif
   if (x_size * y_size) {
-    Matrix result(x_size, y_size, 0);
+    Matrix result(x_size, y_size,(T) 0);
     for (unsigned int ypas = 0; ypas < y_size; ypas++)
       for (unsigned int xpas = 0; xpas < x_size; xpas++) {
         T setter = data[xpas * (ypas * x_size)] * (mulator);
@@ -131,7 +142,7 @@ void Matrix::resize(unsigned int newx, unsigned int newy , T *nullelem)
 Matrix Matrix::map(mapper mapperfunc)
 {
   if (x_size * y_size) {
-    Matrix result(x_size, y_size, 0);
+    Matrix result(x_size, y_size,(T) 0);
     for (unsigned int xx = 0; xx < x_size; xx++)
       for (unsigned int yy = 0; yy < y_size; yy++) {
         T rc = data[xx + (yy * x_size)];

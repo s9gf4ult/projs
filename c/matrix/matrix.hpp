@@ -13,7 +13,7 @@ public:
   typedef T ((*mapper)(T));
   Matrix(unsigned int x,unsigned int y, T empty);
   Matrix(unsigned int);
-  Matrix(unsigned int, unsigned int, vector<T>);
+  Matrix(unsigned int, unsigned int, T *);
   void set(unsigned int x,unsigned int y,T param);
   T get(unsigned int x,unsigned int y);
   unsigned int getxsize();

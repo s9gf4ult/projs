@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <math.h>
 
+T mula(T param)
+{
+  return param * sin(param);
+}
+
 string doubleshow(T argnum)
 {
   char *prev = (char *)calloc(1,256);
@@ -13,22 +18,8 @@ string doubleshow(T argnum)
   return returned;
 }
 
-T mula(T param)
-{
-  return param * sin(param);
-}
-
-
 
 int main(int argc, char **argv) {
-  // Matrix themat((unsigned int)2,(unsigned int)2,(T) 0);
-  // Matrix the2mat(2,2, 1);
-  // Matrix ones(2);
-  // cout << themat.mulate(the2mat).show(&doubleshow) << endl;
-  // cout << the2mat.mulate(19).show(&doubleshow) << endl;
-  // cout << ones.show(&doubleshow) << endl;
-  // cout << the2mat.mulate(ones).show(&doubleshow) << endl;
-  // cout << the2mat.map(&mula).show(&doubleshow) << endl;
   T arr[] = {1, 2, 33,
              23, 44, 55,
              55, 32, 99};
@@ -37,6 +28,11 @@ int main(int argc, char **argv) {
               4, 4, 4};
   Matrix newone(3,3,arr);
   Matrix newtwo(3,3,arr2);
+  T ara[] = {2, 3,
+             3, 2};
+  T rar[] = {-2, 14,
+             1,  -1};
+  cout << Matrix::Matrix(2,2,ara).mulate(Matrix::Matrix(2,2,rar)).show(&doubleshow) << endl;
   cout << newone.mulate(newtwo).show(&doubleshow) << endl;
                 
   return 0;

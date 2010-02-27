@@ -186,7 +186,6 @@ public:
         }
       }
       return result;
-      
     } else {
 #ifdef DEBUG
       cerr << "Matrix::operator+ (T) incorrect size of matrix" << endl;
@@ -194,9 +193,6 @@ public:
       return NULL;
     }
   }
-  
-
-    
   
 };
   

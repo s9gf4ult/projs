@@ -4,15 +4,17 @@
 #include <stdio.h>
 #include <math.h>
 
-T mula(T param)
+#define TT double
+
+TT mula(TT param)
 {
   return param * sin(param);
 }
 
-string doubleshow(T argnum)
+string TTshow(TT argnum)
 {
   char *prev = (char *)calloc(1,256);
-  snprintf(prev, 256, "%2.5f  ", argnum);
+  snprintf(prev, 256, "%4.5f  ", argnum);
   string returned(prev);
   free(prev);
   return returned;
@@ -20,11 +22,15 @@ string doubleshow(T argnum)
 
 
 int main(int argc, char **argv) {
-  T ara[] = {2, 3,
+  TT ara[] = {2, 3,
              3, 2};
-  T rar[] = {-2, 14,
-             1,  -1};
-  cout << Matrix::Matrix(2,2,ara).mulate(Matrix::Matrix(2,2,rar)).show(&doubleshow) << endl;
+  TT rar[] = {-2, 14,
+              1,  -1};
+  TT rjrj [] = {2, 33,
+                0, -10};
+  typedef Matrix<TT> DMat;
+  //  cout << DMat::Matrix(2,2,ara).mulate(DMat::Matrix(2,2,rar)).mulate(DMat::Matrix(2,2,rjrj)).show(&TTshow) << endl;
+  cout <<  ((DMat::Matrix(2,2,ara) * 2 * DMat::Matrix(2,2,rjrj) * 0.1) + 10).show(&TTshow) <<endl;
                 
   return 0;
 }

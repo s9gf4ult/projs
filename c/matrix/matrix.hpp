@@ -120,7 +120,7 @@ public:
       Matrix result(x_size, y_size,(T) 0);
       for (unsigned int ypas = 0; ypas < y_size; ypas++)
         for (unsigned int xpas = 0; xpas < x_size; xpas++) {
-          T setter = data[xpas * (ypas * x_size)] * (mulator);
+          T setter = data[xpas + (ypas * x_size)] * (mulator);
           result.set(xpas, ypas, setter);
         }
       return result;
@@ -164,6 +164,40 @@ public:
       return NULL;
     }
   }
+
+  Matrix operator* (Matrix mulator)
+  {
+    return mulate(mulator);
+  }
+
+  Matrix operator* (T mulator)
+  {
+    return mulate(mulator);
+  }
+
+  Matrix operator+ (T adder)
+  {
+    if (x_size*y_size) {
+      Matrix result(x_size, y_size,(T) 0);
+      for (unsigned int ypas = 0; ypas < y_size; ypas++) {
+        for (unsigned int xpas = 0; xpas < x_size; xpas++) {
+          T setter = data[xpas + (ypas * x_size)] + adder;
+          result.set(xpas, ypas, setter);
+        }
+      }
+      return result;
+      
+    } else {
+#ifdef DEBUG
+      cerr << "Matrix::operator+ (T) incorrect size of matrix" << endl;
+#endif
+      return NULL;
+    }
+  }
+  
+
+    
+  
 };
   
   

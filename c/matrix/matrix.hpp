@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <limits>
 #include <typeinfo>
+#include <iostream>
 using namespace std;
 
 template<class T> class Matrix {
@@ -218,8 +219,7 @@ public:
     if (x_size * y_size) {
       for (unsigned int ypas = 0; ypas < y_size; ypas++) {
         for (unsigned int xpas = 0; xpas < x_size; xpas++) {
-          set(xpas,ypas, ((T) rand()) / limits :: min_exponent );
-          
+          set(xpas,ypas, ((T) rand()) );
         }
       }
     }

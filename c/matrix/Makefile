@@ -1,12 +1,11 @@
-all:main
+release:main.cpp matrix.hpp
+	g++ -O3 -lm main.cpp -o release
 
+debug:main.cpp matrix.hpp
+	g++ -O0 -DDEBUG -lm main.cpp -o debug
 
-main.o:main.cpp matrix.hpp
-	g++ main.cpp -O0  -ggdb -c -o main.o
-
-main:main.o
-	g++ main.o matrix.o -O0 -ggdb -o main
-
-clean:
-	rm *.o
-	rm main
+distr:Makefile main.cpp matrix.hpp README
+	mkdir testmat
+	cp Makefile main.cpp matrix.hpp README testmat
+	tar -cjf testmat.tar.bz2 testmat
+	rm -rf testmat

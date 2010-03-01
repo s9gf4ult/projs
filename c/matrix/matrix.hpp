@@ -1,5 +1,8 @@
 #include <vector>
 #include <string>
+#include <cstdlib>
+#include <limits>
+#include <typeinfo>
 using namespace std;
 
 template<class T> class Matrix {
@@ -77,7 +80,7 @@ public:
       string resultString;
       for (unsigned int yy=0; yy < y_size; yy++)
         for (unsigned int xx=0; xx < x_size; xx++) {
-          string localres = functrans(data[xx + (yy * x_size)]);
+          string localres = functrans(get(xx,yy));
           resultString.append(localres);
           if ((x_size - 1) == xx)
             resultString += "\n";
@@ -101,7 +104,7 @@ public:
             T summator = 0;
             for (unsigned int middle_passer = 0; middle_passer < x_size; middle_passer++) {
               T getter = mulator.get(x_passer, middle_passer);
-              summator += (getter * data[middle_passer + (y_passer * x_size)]);
+              summator += (getter * get(middle_passer, y_passer));
             }
             resultant.set(x_passer, y_passer, summator);
           }
@@ -120,8 +123,7 @@ public:
       Matrix result(x_size, y_size,(T) 0);
       for (unsigned int ypas = 0; ypas < y_size; ypas++)
         for (unsigned int xpas = 0; xpas < x_size; xpas++) {
-          T setter = data[xpas + (ypas * x_size)] * (mulator);
-          result.set(xpas, ypas, setter);
+          result.set(xpas, ypas, get(xpas, ypas) * mulator);
         }
       return result;
     } else {
@@ -153,8 +155,7 @@ public:
       Matrix result(x_size, y_size,(T) 0);
       for (unsigned int xx = 0; xx < x_size; xx++)
         for (unsigned int yy = 0; yy < y_size; yy++) {
-          T rc = data[xx + (yy * x_size)];
-          result.set(xx,yy,mapperfunc(rc));
+          result.set(xx,yy,mapperfunc(get(xx,yy)));
         }
       return result;
     } else {
@@ -181,7 +182,7 @@ public:
       Matrix result(x_size, y_size,(T) 0);
       for (unsigned int ypas = 0; ypas < y_size; ypas++) {
         for (unsigned int xpas = 0; xpas < x_size; xpas++) {
-          T setter = data[xpas + (ypas * x_size)] + adder;
+          T setter = get(xpas, ypas) + adder;
           result.set(xpas, ypas, setter);
         }
       }
@@ -192,6 +193,37 @@ public:
 #endif
       return NULL;
     }
+  }
+
+  Matrix operator+ (Matrix adder)
+  {
+    if ((x_size == adder.getxsize()) && (y_size == adder.getysize()) && (x_size * y_size)) {
+      Matrix result(x_size, y_size, (T) 0);
+      for (unsigned int ypas = 0; ypas < y_size; ypas++) {
+        for (unsigned int xpas = 0; xpas < x_size; xpas++) {
+          result.set(xpas, ypas, get(xpas, ypas) + adder.get(xpas, ypas));
+        }
+      }
+      return result;
+    } else {
+#ifdef DEBUG
+      cerr << "Matrix::operator+ (Matrix) incorrect matrix's size or size of operator" << endl;
+#endif
+      return NULL;
+    }
+  }
+
+  void randomize()
+  {
+    if (x_size * y_size) {
+      for (unsigned int ypas = 0; ypas < y_size; ypas++) {
+        for (unsigned int xpas = 0; xpas < x_size; xpas++) {
+          set(xpas,ypas, ((T) rand()) / limits :: min_exponent );
+          
+        }
+      }
+    }
+    return;
   }
   
 };

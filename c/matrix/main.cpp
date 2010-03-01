@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#define TT double
+#define TT long double
 
 TT mula(TT param)
 {
@@ -14,7 +14,7 @@ TT mula(TT param)
 string TTshow(TT argnum)
 {
   char *prev = (char *)calloc(1,256);
-  snprintf(prev, 256, "%4.5f  ", argnum);
+  snprintf(prev, 256, "%2.5f  ", argnum);
   string returned(prev);
   free(prev);
   return returned;
@@ -31,6 +31,11 @@ int main(int argc, char **argv) {
   typedef Matrix<TT> DMat;
   //  cout << DMat::Matrix(2,2,ara).mulate(DMat::Matrix(2,2,rar)).mulate(DMat::Matrix(2,2,rjrj)).show(&TTshow) << endl;
   cout <<  ((DMat::Matrix(2,2,ara) * 2 * DMat::Matrix(2,2,rjrj) * 0.1) + 10).show(&TTshow) <<endl;
+  DMat rr(2,2,(TT)0);
+  rr.randomize();
+  cout << rr.show(&TTshow) << endl;
+  cout << sizeof(long double) <<endl ;
+
                 
   return 0;
 }

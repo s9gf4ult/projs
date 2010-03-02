@@ -4,6 +4,8 @@
 #include <limits>
 #include <typeinfo>
 #include <iostream>
+#include <sys/types.h>
+#include <unistd.h>
 using namespace std;
 
 template<class T> class Matrix {
@@ -92,13 +94,14 @@ public:
   }
 
 
-  Matrix mulate(Matrix mulator)
+  Matrix mulate(Matrix mulator, unsigned int threads)
   {
 #ifdef DEBUG
     cout << "mulate by Matrix" << endl;
 #endif
     if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0)
       if (x_size == mulator.getxsize()) {
+        unsigned int maxthreads = max(threads, y_size);
         Matrix resultant(mulator.getxsize(), y_size,(T) 0);
         for (unsigned int y_passer = 0; y_passer < y_size; y_passer++)
           for (unsigned int x_passer = 0; x_passer < mulator.getxsize(); x_passer++) {
@@ -169,7 +172,7 @@ public:
 
   Matrix operator* (Matrix mulator)
   {
-    return mulate(mulator);
+    return mulate(mulator,1);
   }
 
   Matrix operator* (T mulator)

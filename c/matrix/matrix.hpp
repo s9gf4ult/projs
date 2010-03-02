@@ -101,7 +101,7 @@ public:
 #endif
     if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0)
       if (x_size == mulator.getxsize()) {
-        unsigned int maxthreads = max(threads, y_size);
+        unsigned int step = y_size / min(y_size, threads);
         Matrix resultant(mulator.getxsize(), y_size,(T) 0);
         for (unsigned int y_passer = 0; y_passer < y_size; y_passer++)
           for (unsigned int x_passer = 0; x_passer < mulator.getxsize(); x_passer++) {
@@ -116,6 +116,21 @@ public:
       }
     Matrix nullmat(0);
     return nullmat;
+  }
+
+  bool operator== (Matrix comparator)
+  {
+    if ((y_size == comparator.getysize()) && (x_size == comparator.getxsize())) {
+      for (unsigned int ypas = 0; ypas < y_size; ypas++) {
+        for (unsigned int xpas = 0; xpas < x_size; xpas++) {
+          if (get(xpas,ypas) != comparator.get(xpas,ypas)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   Matrix mulate(T mulator)
@@ -146,7 +161,7 @@ public:
   {
     return y_size;
   }
-
+                                   
   void resize(unsigned int newx, unsigned int newy , T *nullelem)
   {
     data.resize((newx * newy), *nullelem);

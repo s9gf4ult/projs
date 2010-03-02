@@ -28,7 +28,15 @@ int main(int argc, char **argv) {
   DMat rs2(1000,1000, (TT) 0);
   rs1.randomize();
   rs2.randomize();
-  rs1 * rs2;
+  DMat rr1 = rs1.mulate(rs2, 1);
+  DMat rr2 = rs1.mulate(rs2, 2);
+  
+  if (rr1 == rr2) {
+    cout << "this works !!" << endl;
+  } else {
+    cout << "no " <<endl;
+  }
+  
                 
   return 0;
 }

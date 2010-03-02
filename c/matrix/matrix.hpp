@@ -101,17 +101,29 @@ public:
 #endif
     if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0)
       if (x_size == mulator.getxsize()) {
-        unsigned int step = y_size / min(y_size, threads);
+        unsigned int maxthreads = min(y_size, threads);
+        unsigned int step = y_size / maxthreads;
         Matrix resultant(mulator.getxsize(), y_size,(T) 0);
-        for (unsigned int y_passer = 0; y_passer < y_size; y_passer++)
-          for (unsigned int x_passer = 0; x_passer < mulator.getxsize(); x_passer++) {
-            T summator = 0;
-            for (unsigned int middle_passer = 0; middle_passer < x_size; middle_passer++) {
-              T getter = mulator.get(x_passer, middle_passer);
-              summator += (getter * get(middle_passer, y_passer));
-            }
-            resultant.set(x_passer, y_passer, summator);
+        for (unsigned int curthread = 0; curthread < maxthreads; curthread++) {
+          if (fork()) { // магия юникс
+            unsigned int savecurthread = curthread; // ибо многопоточно надо скопировать переменную что изменится
+            unsigned int maxcury = (savecurthread + 1) * step; // граница отсчета для текущего потока
+            if (savecurthread == (maxthreads -1)) //последний поток
+              maxcury = y_size;
+            for (unsigned int y_passer = savecurthread * step; y_passer < maxcury; y_passer++)
+              for (unsigned int x_passer = 0; x_passer < mulator.getxsize(); x_passer++) {
+                T summator = 0;
+                for (unsigned int middle_passer = 0; middle_passer < x_size; middle_passer++) {
+                  T getter = mulator.get(x_passer, middle_passer);
+                  summator += (getter * get(middle_passer, y_passer));
+                }
+                resultant.set(x_passer, y_passer, summator);
+              }
+          } else {
+            usleep(1000); //sleep for millisecond
           }
+        }
+        wait(); //TODO: похоже не отрабатывает как надо выходит раньше положенного
         return resultant;
       }
     Matrix nullmat(0);

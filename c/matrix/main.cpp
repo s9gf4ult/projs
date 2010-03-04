@@ -5,38 +5,37 @@
 #include <math.h>
 
 #define TT double
+typedef Matrix<TT> DMat;
 
 TT mula(TT param)
 {
   return param * sin(param);
 }
 
- string TTshow(TT argnum)
- {
-   char *prev = (char *)calloc(1,256);
-   snprintf(prev, 256, "%2.5f  ", argnum);
-   string returned(prev);
-   free(prev);
-   return returned;
- }
+string TTshow(TT argnum)
+{
+  char *prev = (char *)calloc(1,256);
+  snprintf(prev, 256, "%2.5f  ", argnum);
+  string returned(prev);
+  free(prev);
+  return returned;
+}
+
+void passit(DMat *const arg){
+  cout << arg->show(&TTshow) << endl;
+  arg->set(0, 0, 1);
+  cout << arg->show(&TTshow) << endl;
+  return;
+}
 
 
 
 int main(int argc, char **argv) {
-  typedef Matrix<TT> DMat;
-  DMat rs1(1000,1000, (TT) 0);
-  DMat rs2(1000,1000, (TT) 0);
-  rs1.randomize();
-  rs2.randomize();
-  DMat rr1 = rs1.mulate(rs2, 1);
-  DMat rr2 = rs1.mulate(rs2, 2);
-  
-  if (rr1 == rr2) {
-    cout << "this works !!" << endl;
-  } else {
-    cout << "no " <<endl;
-  }
-  
+  TT arr[] = {3,3,3,3};
+  DMat arra(2,2,arr);
+  cout << arra.show(&TTshow) << endl;
+  passit(&arra);
+  cout << arra.show(&TTshow) << endl;
                 
   return 0;
 }

@@ -15,8 +15,15 @@ private:
   
   typedef struct {
     unsigned int from,to;
-    Matrix proceed;
+    Matrix proceed,getfrom;
   } MulThArg;
+
+  void *threadMulate(void *arg)
+  {
+
+  }
+  
+    
 
 public:
   typedef string ((*stringizer)(T));

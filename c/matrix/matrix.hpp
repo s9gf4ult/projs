@@ -121,23 +121,26 @@ public:
     return "Empty";
   }
   
-  Matrix mulate(Matrix mulator, unsigned int threads) 
+  Matrix *mulate(Matrix *mulator, unsigned int threads) 
   {
 #ifdef DEBUG
     cout << "mulate by Matrix" << endl;
 #endif
     if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0 && x_size == mulator.getysize()) {
       unsigned int maxthreads = min(threads, y_size);
+      Matrix *result = new Matrix(mulator->getxsize(), y_size);
+      unsigned int setp = y_size / maxthreads;
       
     } else {
 #ifdef DEBUG
       cerr << "Matrix::mulate(Matrix) incorrect operands or size" << endl
            << "   x_size = " << x_size << endl
            << "   y_size = " << y_size << endl
-           << "   mulator.getxsize() = " << mulator.getxsize() << endl
-           << "   mulator.getysize() = " << mulator.getysize() << endl;
+           << "   mulator.getxsize() = " << mulator->getxsize() << endl
+           << "   mulator.getysize() = " << mulator->getysize() << endl;
 #endif
       return NULL;
+    }
   }
 
   bool operator== (Matrix comparator)
@@ -209,7 +212,7 @@ public:
 
   Matrix operator* (Matrix mulator)
   {
-    return mulate(mulator,1);
+    return *(mulate(&mulator,1));
   }
 
   Matrix operator* (T mulator)

@@ -1,3 +1,6 @@
+#ifndef MATRIX.H
+#define MATRIX.H
+
 #include <vector>
 #include <string>
 #include <cstdlib>
@@ -6,6 +9,7 @@
 #include <iostream>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 using namespace std;
 
 template<class T> class Matrix {
@@ -15,12 +19,24 @@ private:
   
   typedef struct {
     unsigned int from,to;
-    Matrix proceed,getfrom;
-  } MulThArg;
+    Matrix *saveto;
+    Matrix *getfrom;
+  } ThreadMulate;
 
   void *threadMulate(void *arg)
   {
-
+    ThreadMulate *marg = (ThreadMulate *) arg;
+    unsigned int tox = marg->getfrom->getxsize();
+    for (unsigned int ypos = marg->from; ypos < marg->to; ypos++) {
+      for (unsigned int xpos = 0; xpos < tox; xpos++) {
+        T summator = 0;
+        for (unsigned int mpos = 0; mpos < x_size; mpos++) {
+          summator += get(mpos, ypos) * marg->getfrom->get(xpos, mpos);
+        }
+        marg->saveto->set(xpos, ypos, summator);
+      }
+    }
+    return NULL;
   }
   
     
@@ -110,13 +126,18 @@ public:
 #ifdef DEBUG
     cout << "mulate by Matrix" << endl;
 #endif
+    if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0 && x_size == mulator.getysize()) {
+      unsigned int maxthreads = min(threads, y_size);
       
-    if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0)
-      if (x_size == mulator.getxsize()) {
-        
-      }
-    Matrix nullmat(0);
-    return nullmat;
+    } else {
+#ifdef DEBUG
+      cerr << "Matrix::mulate(Matrix) incorrect operands or size" << endl
+           << "   x_size = " << x_size << endl
+           << "   y_size = " << y_size << endl
+           << "   mulator.getxsize() = " << mulator.getxsize() << endl
+           << "   mulator.getysize() = " << mulator.getysize() << endl;
+#endif
+      return NULL;
   }
 
   bool operator== (Matrix comparator)
@@ -248,3 +269,4 @@ public:
 };
   
   
+#endif

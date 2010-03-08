@@ -1,5 +1,5 @@
-#ifndef MATRIX.H
-#define MATRIX.H
+#ifndef MATRIX_H
+#define MATRIX_H
 
 #include <vector>
 #include <string>
@@ -42,8 +42,14 @@ private:
     
 
 public:
+  
   typedef string ((*stringizer)(T));
   typedef T ((*mapper)(T));
+  
+  ~Matrix()
+  {
+    data.clear();
+  }
 
   Matrix(unsigned int x,unsigned int y, T empty)
   {
@@ -130,6 +136,8 @@ public:
       unsigned int maxthreads = min(threads, y_size);
       Matrix *result = new Matrix(mulator->getxsize(), y_size);
       unsigned int setp = y_size / maxthreads;
+      //ThreadMulate oned = {getfrom = mulator; saveto = result;};
+      
       
     } else {
 #ifdef DEBUG
@@ -210,17 +218,17 @@ public:
     }
   }
 
-  Matrix operator* (Matrix mulator)
+  Matrix operator* (Matrix &mulator)
   {
     return *(mulate(&mulator,1));
   }
 
-  Matrix operator* (T mulator)
+  Matrix operator* (T &mulator)
   {
     return mulate(mulator);
   }
 
-  Matrix operator+ (T adder)
+  Matrix operator+ (T &adder)
   {
     if (x_size*y_size) {
       Matrix result(x_size, y_size,(T) 0);
@@ -239,7 +247,7 @@ public:
     }
   }
 
-  Matrix operator+ (Matrix adder)
+  Matrix operator+ (Matrix  &adder)
   {
     if ((x_size == adder.getxsize()) && (y_size == adder.getysize()) && (x_size * y_size)) {
       Matrix result(x_size, y_size, (T) 0);
@@ -251,7 +259,9 @@ public:
       return result;
     } else {
 #ifdef DEBUG
-      cerr << "Matrix::operator+ (Matrix) incorrect matrix's size or size of operator" << endl;
+      cerr << "Matrix::operator+ (Matrix) incorrect matrix's size or size of operator" << endl
+           << "     x_size = " << x_size << endl
+           << "     y_size = " << y_size << endl;
 #endif
       return NULL;
     }

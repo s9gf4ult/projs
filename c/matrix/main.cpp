@@ -14,14 +14,14 @@ TT mula(TT param)
 
 string TTshow(TT argnum)
 {
-  char *prev = (char *)calloc(1,256);
+  char *prev = new char[256];
   snprintf(prev, 256, "%2.5f  ", argnum);
   string returned(prev);
-  free(prev);
+  delete prev;
   return returned;
 }
 
-void passit(DMat *const arg){
+void passit(DMat *const arg) {
   cout << arg->show(&TTshow) << endl;
   arg->set(0, 0, 1);
   cout << arg->show(&TTshow) << endl;
@@ -32,10 +32,10 @@ void passit(DMat *const arg){
 
 int main(int argc, char **argv) {
   TT arr[] = {3,3,3,3};
-  DMat arra(2,2,arr);
-  cout << arra.show(&TTshow) << endl;
-  passit(&arra);
-  cout << arra.show(&TTshow) << endl;
+  DMat *aa = new DMat(2,2,arr);
+  DMat *bb = new DMat(2,2,arr);
+  cout << aa->mulate(bb,1)->show(&TTshow) << endl;
+  delete aa, bb;
                 
   return 0;
 }

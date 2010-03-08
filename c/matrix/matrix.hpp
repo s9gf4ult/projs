@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 using namespace std;
 
 template<class T> class Matrix {
@@ -17,11 +18,23 @@ private:
   vector<T> data;
   unsigned int x_size,y_size;
   
-  typedef struct {
+  struct ThreadMulate {
     unsigned int from,to;
     Matrix *saveto;
     Matrix *getfrom;
-  } ThreadMulate;
+    ThreadMulate(Matrix *s, Matrix *g)
+    {
+      saveto = s;
+      getfrom = g;
+    }
+    ThreadMulate(unsigned int f, unsigned int t, Matrix *s, Matrix *g)
+    {
+      from = f;
+      to = t;
+      saveto = s;
+      getfrom = g;
+    }
+  };
 
   void *threadMulate(void *arg)
   {
@@ -132,12 +145,52 @@ public:
 #ifdef DEBUG
     cout << "mulate by Matrix" << endl;
 #endif
-    if ((x_size * y_size) != 0 && (mulator.x_size * mulator.y_size) != 0 && x_size == mulator.getysize()) {
-      unsigned int maxthreads = min(threads, y_size);
-      Matrix *result = new Matrix(mulator->getxsize(), y_size);
-      unsigned int setp = y_size / maxthreads;
-      //ThreadMulate oned = {getfrom = mulator; saveto = result;};
+    if ((x_size * y_size) != 0 && (mulator->getysize() * mulator->getxsize()) != 0 && x_size == mulator->getysize()) {
+      unsigned int maxthreads = max((unsigned int) 1, min(threads, y_size));
+      unsigned int step = y_size / maxthreads;
+      Matrix *result = new Matrix(mulator->getxsize(), y_size, (T)0);
+      std::vector<ThreadMulate> thargs(maxthreads, ThreadMulate(result, mulator));
+      for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
+        thargs[cnt].from = cnt * step;
+        thargs[cnt].to = (cnt + 1) * step;
+      }
+      thargs[maxthreads - 1].to = y_size; // это в том случае если step не будет кратен количеству потоков
+      // теперь создаем сами потоки
+      std::vector<pthread_t> pthreads(maxthreads, 0);
+      bool thats_ok = true;
+      for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
+        pthread_t curth = pthreads[cnt];
+        ThreadMulate curarg = thargs[cnt];
+        if (pthread_create(&curth, NULL,(void * (*)(void *)) &threadMulate, (void *) &curarg)) { // TODO вывести threadMulate из класса
+            thats_ok = false;
+            break;
+        }
+        pthreads[cnt] = curth;
+      }
+      if (!thats_ok) {          // если чтото в создании потоков пошло не так надо убить все созданные потоки
+        for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
+          if (pthreads[cnt]) {
+            pthread_kill(pthreads[cnt], 9);
+          } else {
+            break;
+          }
+        }
+        thargs.clear();
+        pthreads.clear();
+        delete result;
+        return NULL;
+      }
+      // все потоки сдесь должны быть запущены и работать надо их дождаться
+      void * pthRet;
+      for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
+        pthread_join(pthreads[cnt], &pthRet);
+      }
+      // после отработки этого цикла все потоки должны завершить работу
+
       
+      thargs.clear();
+      pthreads.clear();
+      return result;
       
     } else {
 #ifdef DEBUG

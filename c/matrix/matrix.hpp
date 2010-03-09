@@ -168,13 +168,13 @@ public:
       std::vector<pthread_t> pthreads(maxthreads, 0);
       bool thats_ok = true;
       for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
-        pthread_t curth = pthreads[cnt];
-        ThreadMulate curarg = thargs[cnt];
-        if (pthread_create(&curth, NULL,(void * (*)(void *)) &threadMulate, (void *) &curarg)) { 
+        // pthread_t curth = pthreads[cnt];
+        // ThreadMulate curarg = thargs[cnt];
+        if (pthread_create(&pthreads[cnt], NULL,(void * (*)(void *)) &threadMulate, (void *) &thargs[cnt])) { 
             thats_ok = false;
             break;
         }
-        pthreads[cnt] = curth;
+        // pthreads[cnt] = curth;
       }
       if (!thats_ok) {          // если чтото в создании потоков пошло не так надо убить все созданные потоки
         for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {

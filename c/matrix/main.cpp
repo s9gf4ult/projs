@@ -32,8 +32,8 @@ void passit(DMat *const arg) {
 
 int main(int argc, char **argv) {
   TT arr[] = {3,3,3,3};
-  DMat *aa = new DMat(1000, 1000,(TT) 0);
-  DMat *bb = new DMat(1000, 1000, (TT) 0);
+  DMat *aa = new DMat(100, 100,(TT) 0);
+  DMat *bb = new DMat(100, 100, (TT) 0);
   bb->randomize();
   aa->randomize();
   if (*(aa->mulate(bb,1)) == *(aa->mulate(bb,2))) {

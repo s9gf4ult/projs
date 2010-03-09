@@ -38,7 +38,8 @@ int main(int argc, char **argv) {
   aa->randomize();
   DMat *cc = aa->mulate(bb,1);
   DMat *ccc = aa->mulate(bb,2);
-  if ((*cc) == (*ccc)) {
+  DMat *cccc = aa->mulate(bb,100);
+  if ((*cc) == (*ccc) && (*ccc) == (*cccc)) {
     cout << "Yes they a equal !!!!" << endl;
   } else {
     cout << "fuck" << endl;

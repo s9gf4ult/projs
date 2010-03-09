@@ -42,6 +42,9 @@ private:
   static void *threadMulate(void *arg)
   {
     ThreadMulate *marg = (ThreadMulate *) arg;
+#ifdef DEBUG
+    cout << "thread started form " << marg->from << " to " << marg->to << endl;
+#endif
     unsigned int tox = marg->getfrom->getxsize();
     for (unsigned int ypos = marg->from; ypos < marg->to; ypos++) {
       for (unsigned int xpos = 0; xpos < tox; xpos++) {

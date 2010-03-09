@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#define TT double
+#define TT int
 typedef Matrix<TT> DMat;
 
 TT mula(TT param)
@@ -15,7 +15,7 @@ TT mula(TT param)
 string TTshow(TT argnum)
 {
   char *prev = new char[256];
-  snprintf(prev, 256, "%2.5f  ", argnum);
+  snprintf(prev, 256, "%d  ", argnum);
   string returned(prev);
   delete prev;
   return returned;

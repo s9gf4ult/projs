@@ -32,9 +32,15 @@ void passit(DMat *const arg) {
 
 int main(int argc, char **argv) {
   TT arr[] = {3,3,3,3};
-  DMat *aa = new DMat(2,2,arr);
-  DMat *bb = new DMat(2,2,arr);
-  cout << aa->mulate(bb,1)->show(&TTshow) << endl;
+  DMat *aa = new DMat(1000, 1000,(TT) 0);
+  DMat *bb = new DMat(1000, 1000, (TT) 0);
+  bb->randomize();
+  aa->randomize();
+  if (*(aa->mulate(bb,1)) == *(aa->mulate(bb,2))) {
+    cout << "Yes they a equal !!!!" << endl;
+  } else {
+    cout << "fuck" << endl;
+  }
   delete aa, bb;
                 
   return 0;

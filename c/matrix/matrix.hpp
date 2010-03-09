@@ -20,31 +20,34 @@ private:
   
   struct ThreadMulate {
     unsigned int from,to;
+    Matrix *self;
     Matrix *saveto;
     Matrix *getfrom;
-    ThreadMulate(Matrix *s, Matrix *g)
+    ThreadMulate(Matrix *me, Matrix *s, Matrix *g)
     {
+      self = me;
       saveto = s;
       getfrom = g;
     }
-    ThreadMulate(unsigned int f, unsigned int t, Matrix *s, Matrix *g)
+    ThreadMulate(unsigned int f, unsigned int t, Matrix *me, Matrix *s, Matrix *g)
     {
       from = f;
       to = t;
+      self = me;
       saveto = s;
       getfrom = g;
     }
   };
 
-  void *threadMulate(void *arg)
+  static void *threadMulate(void *arg)
   {
     ThreadMulate *marg = (ThreadMulate *) arg;
     unsigned int tox = marg->getfrom->getxsize();
     for (unsigned int ypos = marg->from; ypos < marg->to; ypos++) {
       for (unsigned int xpos = 0; xpos < tox; xpos++) {
         T summator = 0;
-        for (unsigned int mpos = 0; mpos < x_size; mpos++) {
-          summator += get(mpos, ypos) * marg->getfrom->get(xpos, mpos);
+        for (unsigned int mpos = 0; mpos < marg->self->getxsize(); mpos++) {
+          summator += marg->self->get(mpos, ypos) * marg->getfrom->get(xpos, mpos);
         }
         marg->saveto->set(xpos, ypos, summator);
       }
@@ -149,7 +152,7 @@ public:
       unsigned int maxthreads = max((unsigned int) 1, min(threads, y_size));
       unsigned int step = y_size / maxthreads;
       Matrix *result = new Matrix(mulator->getxsize(), y_size, (T)0);
-      std::vector<ThreadMulate> thargs(maxthreads, ThreadMulate(result, mulator));
+      std::vector<ThreadMulate> thargs(maxthreads, ThreadMulate(this, result, mulator));
       for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
         thargs[cnt].from = cnt * step;
         thargs[cnt].to = (cnt + 1) * step;
@@ -161,7 +164,7 @@ public:
       for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
         pthread_t curth = pthreads[cnt];
         ThreadMulate curarg = thargs[cnt];
-        if (pthread_create(&curth, NULL,(void * (*)(void *)) &threadMulate, (void *) &curarg)) { // TODO вывести threadMulate из класса
+        if (pthread_create(&curth, NULL,(void * (*)(void *)) &threadMulate, (void *) &curarg)) { 
             thats_ok = false;
             break;
         }

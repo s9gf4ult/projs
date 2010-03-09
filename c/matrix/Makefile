@@ -1,8 +1,8 @@
 release:main.cpp matrix.hpp
-	g++ -O3 -lm main.cpp -o release
+	g++ -O3 -lm -lpthread main.cpp -o release
 
 debug:main.cpp matrix.hpp
-	g++ -O0 -DDEBUG -lm main.cpp -o debug
+	g++ -O0 -DDEBUG -lm -lpthread main.cpp -o debug
 
 distr:Makefile main.cpp matrix.hpp README
 	mkdir testmat

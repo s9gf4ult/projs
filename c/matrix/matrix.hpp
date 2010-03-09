@@ -159,6 +159,9 @@ public:
       for (unsigned int cnt = 0; cnt < maxthreads; cnt++) {
         thargs[cnt].from = cnt * step;
         thargs[cnt].to = (cnt + 1) * step;
+#ifdef DEBUG
+        cout << "cnt " << cnt << " from " << thargs[cnt].from << " to " << thargs[cnt].to << endl;
+#endif
       }
       thargs[maxthreads - 1].to = y_size; // это в том случае если step не будет кратен количеству потоков
       // теперь создаем сами потоки

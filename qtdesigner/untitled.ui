@@ -15,20 +15,20 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="4" column="1">
+    <item row="5" column="1">
      <widget class="QDateEdit" name="dateEdit_2"/>
     </item>
-    <item row="4" column="0">
+    <item row="5" column="0">
      <widget class="QDateEdit" name="dateEdit"/>
     </item>
-    <item row="6" column="1">
+    <item row="7" column="1">
      <widget class="QPushButton" name="pushButton_2">
       <property name="text">
        <string>Connect</string>
       </property>
      </widget>
     </item>
-    <item row="6" column="0">
+    <item row="7" column="0">
      <widget class="QPushButton" name="pushButton">
       <property name="text">
        <string>go</string>
@@ -38,11 +38,14 @@
     <item row="1" column="0" colspan="2">
      <widget class="QLineEdit" name="lineEdit"/>
     </item>
-    <item row="2" column="1">
+    <item row="3" column="1">
      <widget class="QCalendarWidget" name="calendarWidget_2"/>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="QCalendarWidget" name="calendarWidget"/>
+    </item>
+    <item row="2" column="0" colspan="2">
+     <widget class="QListWidget" name="listWidget"/>
     </item>
    </layout>
   </widget>
@@ -52,7 +55,7 @@
      <x>0</x>
      <y>0</y>
      <width>711</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -87,8 +90,8 @@
      <y>185</y>
     </hint>
     <hint type="destinationlabel">
-     <x>484</x>
-     <y>258</y>
+     <x>706</x>
+     <y>284</y>
     </hint>
    </hints>
   </connection>
@@ -99,12 +102,44 @@
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>289</x>
-     <y>286</y>
+     <x>293</x>
+     <y>312</y>
     </hint>
     <hint type="destinationlabel">
-     <x>190</x>
-     <y>51</y>
+     <x>194</x>
+     <y>49</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dateEdit</sender>
+   <signal>dateChanged(QDate)</signal>
+   <receiver>calendarWidget</receiver>
+   <slot>setSelectedDate(QDate)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>293</x>
+     <y>276</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>277</x>
+     <y>246</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dateEdit_2</sender>
+   <signal>dateChanged(QDate)</signal>
+   <receiver>calendarWidget_2</receiver>
+   <slot>setSelectedDate(QDate)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>464</x>
+     <y>276</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>465</x>
+     <y>248</y>
     </hint>
    </hints>
   </connection>

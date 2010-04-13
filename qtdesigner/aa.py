@@ -14,13 +14,16 @@ class MWin(QtGui.QMainWindow, unt.Ui_MainWindow):
         QtCore.QObject.connect(self.connectButton, QtCore.SIGNAL("clicked()"), self.connectButtonPush)
         QtCore.QObject.connect(self, QtCore.SIGNAL("destroyed()"), self.onClose)
     def connectButtonPush(self):
-        self.dbconn = cx_Oracle.connect(str(self.lineEdit.text()))
+        if sys.platform == "win32":
+            self.dbconn = cx_Oracle.connect("se/s2e3@sexp")
+        else:
+            self.dbconn = cx_Oracle.connect("se/s2e3@192.168.160.202/sexp")
         if not self.dbconn:
             print "database connect erro"
             return
         self.connectButton.setVisible(0)
-        self.lineEdit.setVisible(0)
         self.listWidget.setVisible(1)
+        
 
 
     def onClose(self):

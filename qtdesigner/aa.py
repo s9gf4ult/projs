@@ -23,7 +23,10 @@ class MWin(QtGui.QMainWindow, unt.Ui_MainWindow):
             return
         self.connectButton.setVisible(0)
         self.listWidget.setVisible(1)
-        
+        cursor = self.dbconn.cursor()
+        cursor.execute("select * from setable418")
+        print(cursor.fetchone())
+        cursor.close()
 
 
     def onClose(self):

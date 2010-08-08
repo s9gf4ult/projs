@@ -153,6 +153,23 @@
     ret))
 
 
+(defun max-lcs (seq1 seq2)
+  (declare (type array seq1 seq2))
+  (let ((l1 (length seq1))
+        (l2 (length seq2)))
+    (let* ((aseq (if (> l1 l2)
+                     seq2
+                     seq1))
+           (bseq (if (> l1 l2)
+                     seq1
+                     seq2))
+           (alen (length aseq))
+           (blen (length bseq))
+           (amas (make-array '(alen) :adjustable nil :element-type 'fixnum :initial-element 0))
+           (bmas (make-array '(blen) :adjustable nil :element-type 'fixnum :initial-element 0)))
+      
+            
+
 
 (defun lcs-list (list-1 list-2 &key (test #'eql))
   "Find the longest common subsequence of LIST-1 and LIST-2 using TEST."

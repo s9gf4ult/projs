@@ -133,3 +133,71 @@
                 ((< (second a) (second b)) b)
                 (t a))) (mapcar #'(lambda (a)
                                     (list a (instrict-compare str a))) str-seq )))
+
+(defun produce-lists-comparation (left right)
+  "`left' must be list of strings, `right' is the list of lists which first element is string. Returns list if lists which first element is `left' and tails is `right' which fist element more similary (but not equal) with `left'"
+  (declare (type list left right))
+  (let ((ret nil))
+    (dolist (lelt left)
+      (let ((found nil))
+        (dolist (relt right)
+          (if (string= lelt (car relt))
+              (progn (setf found nil)
+                     (return))
+              (let ((cweight (length (lcs-list (string->list (string-downcase lelt)) (string->list (string-downcase (car relt)))))))
+              ;(let ((cweight (instrict-compare (string-downcase lelt) (string-downcase (car relt)))))
+                (when (or (not found) (> cweight (car found)))
+                  (setf found (cons cweight relt))))))
+        (when found
+          (push (cons lelt (cdr found)) ret))))
+    ret))
+
+
+
+(defun lcs-list (list-1 list-2 &key (test #'eql))
+  "Find the longest common subsequence of LIST-1 and LIST-2 using TEST."
+  (cond
+    ((null list-1) nil)
+    ((null list-2) nil)
+    ((funcall test (first list-1) (first list-2))
+       (cons (first list-1) (lcs-list (rest list-1) (rest list-2) :test test)))
+    (t (let ((lcs-1 (lcs-list list-1 (rest list-2) :test test))
+             (lcs-2 (lcs-list (rest list-1) list-2 :test test)))
+         (if (> (length lcs-1) (length lcs-2))
+           lcs-1
+           lcs-2)))))
+
+(defun string->list (str)
+  (let* ((ret (cons nil nil))
+         (tail ret)
+         (len (length str)))
+    (dotimes (a len)
+      (setf (car tail) (elt str a))
+      (when (< a (- len 1))
+            (setf (cdr tail) (cons nil nil)
+                  tail (cdr tail))))
+    ret))
+ 
+(defun diff (list1 list2 &key (test #'eql))
+  "Find the differences between LIST1 and LIST2 using TEST."
+  (let ((lcs (lcs-list list1 list2 :test test))
+        result)
+    (dolist (c lcs)
+      (let* ((sync-list1 (position c list1 :test test))
+             (sync-list2 (position c list2 :test test))
+             (removed (subseq list1 0 sync-list1))
+             (added (subseq list2 0 sync-list2)))
+        (setf list1 (subseq list1 (1+ sync-list1)))
+        (setf list2 (subseq list2 (1+ sync-list2)))
+        (when removed
+          (push (cons :removed removed) result))
+        (when added
+          (push (cons :added added) result))
+        (push c result)))
+    (when list1
+      (push (cons :removed list1) result))
+    (when list2
+      (push (cons :added list2) result))
+    (nreverse result)))
+
+                  

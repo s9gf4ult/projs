@@ -1,8 +1,11 @@
+#CPP:=llvm-g++
+CPP:=g++
+
 release:main.cpp matrix.hpp
-	g++ -O3 -lm -lpthread main.cpp -o release
+	$(CPP) -O3 -lm -lpthread main.cpp -o release
 
 debug:main.cpp matrix.hpp
-	g++ -O0 -DDEBUG -lm -lpthread main.cpp -o debug
+	$(CPP) -O0 -DDEBUG -lm -lpthread main.cpp -o debug
 
 distr:Makefile main.cpp matrix.hpp README
 	mkdir testmat

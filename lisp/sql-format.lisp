@@ -44,3 +44,40 @@
                "as select year, row_number, "
                (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (format nil "sum(field_~a) as field_~a" a a)) (loop for a from 1 to fields-count collect a)))
                " from " table-name " group by year, row_number order by year, row_number;"))
+
+(defun form-62-create-data-table (table-name data-table-name field-names idmu-list)
+  (concatenate 'string "create table " table-name
+               " as select extract (year from t1.sdate) as year, mt.mu_tum as lpu_name, t1.rowno as row_number, "
+               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a)
+                                                    (format nil "sum(t1.~a) as ~a" a a)) field-names))
+               " from " data-table-name " t1, mu_tum mt where t1.idmu = mt.idmu_tum and ("
+               (format nil "~{~a~^ or ~}" (mapcar #'(lambda (a)
+                                                      (format nil "(t1.~a is not null and t1.~a <> 0)" a a)) field-names))
+               ") and ("
+               (format nil "~{~a~^ or ~}" (mapcar #'(lambda (a)
+                                                      (format nil "t1.idmu = ~a" a)) idmu-list))
+               ") group by extract(year from t1.sdate), mt.mu_tum, t1.rowno order by extract(year from t1.sdate), mt.mu_tum, t1.rowno;"))
+
+(defun form-62-create-data-tables (tslist)
+  (mapcar #'(lambda (a)
+              (form-62-create-data-table (format nil "f62t~a" (first a)) (format nil "setable~a" (second a)) (loop for fld from 1 to (third a) collect (format nil "field_~a" fld)) *idmus*)) tslist))
+
+(defun form-62-create-summ-table (table-name data-table-name field-names idmu-list)
+  (concatenate 'string "create table " table-name "_svd"
+               " as select extract (year from t1.sdate) as year, t1.rowno as row_number, "
+               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a)
+                                                    (format nil "sum(t1.~a) as ~a" a a)) field-names))
+               " from " data-table-name " t1, mu_tum mt where t1.idmu = mt.idmu_tum and ("
+               (format nil "~{~a~^ or ~}" (mapcar #'(lambda (a)
+                                                      (format nil "(t1.~a is not null and t1.~a <> 0)" a a)) field-names))
+               ") and ("
+               (format nil "~{~a~^ or ~}" (mapcar #'(lambda (a)
+                                                      (format nil "t1.idmu = ~a" a)) idmu-list))
+               ") group by extract(year from t1.sdate), t1.rowno order by extract(year from t1.sdate), t1.rowno;"))
+
+
+(defun form-62-create-summ-tables (tslist)
+  (mapcar #'(lambda (a)
+              (form-62-create-summ-table (format nil "f62t~a" (first a)) (format nil "setable~a" (second a)) (loop for fld from 1 to (third a) collect (format nil "field_~a" fld)) *idmus*)) tslist))
+
+

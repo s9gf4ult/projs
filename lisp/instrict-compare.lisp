@@ -1,45 +1,3 @@
-;; (defun make-standard-weights (&key (letter-letter 1) (double-space 0.1) (space-letter-space 1.2) (double-letter 0.5) (quotes-other-qouotes 0.1) (double-number 2) (number-number 2) (number-other-number 2) (other 0.1))
-;;   (let* ((weights (make-hash-table :test #'equal))
-;;          (alpha "abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя")
-;;          (numbers "1234567890")
-;;          (numbers-len (length numbers))
-;;          (other-chars ",.<>/?;:'\\][}{!@#$%^&*()_+")
-;;          (other-chars-len (length other-chars))
-;;          (alpha-len (length alpha))
-;;          (all-syms (concatenate 'string alpha numbers other-chars " \""))
-;;          (all-syms-len (+ other-chars-len numbers-len alpha-len)))
-    
-;;     (dotimes (a alpha-len)
-;;       (dotimes (b alpha-len)
-;;         (when (not (eql a b))
-;;           (setf (gethash (cons (elt alpha a) (elt alpha b)) weights) letter-letter))))
-;;     (setf (gethash (cons #\Space #\Space) weights) double-space)
-;;     (dotimes (a alpha-len)
-;;       (let ((celt (elt alpha a)))
-;;         (setf (gethash (cons #\Space celt) weights) space-letter-space
-;;               (gethash (cons celt #\Space) weights) space-letter-space
-;;               (gethash (cons celt celt) weights) double-letter)))
-;;     (dotimes (a all-syms-len)
-;;       (let ((celt (elt all-syms a)))
-;;         (setf (gethash (cons #\" celt) weights) quotes-other-qouotes
-;;               (gethash (cons celt #\") weights) quotes-other-qouotes)))
-;;     (dotimes (a numbers-len)
-;;       (dotimes (b numbers-len)
-;;         (setf (gethash (cons (elt numbers a) (elt numbers b)) weights) (if (eql a b)
-;;                                                                            double-number
-;;                                                                            number-number))))
-;;     (let*((not-numbers (concatenate 'string alpha other-chars " \""))
-;;           (not-nu-len (length not-numbers)))
-;;       (dotimes (b numbers-len)
-;;         (let ((cnelt (elt numbers b)))
-;;           (dotimes (a not-nu-len)
-;;             (let ((celt (elt not-numbers a)))
-;;               (setf (gethash (cons cnelt celt) weights) number-other-number
-;;                     (gethash (cons celt cnelt) weights) number-other-number))))))
-;;     (setf (gethash :other weights) other)
-
-;;     weights))
-
 (defun make-standard-weights (&key (letter-letter 1) (double-letter 0.2) (number-number 5) (number-other 2.5) (space-not-quote 0.5) (double-space 0.05) (quote-other 0.1) (double-quote 0.1) (other 0.1))
   (lambda (pare)
     (declare (type cons pare))
@@ -144,8 +102,24 @@
           (if (string= lelt (car relt))
               (progn (setf found nil)
                      (return))
-              (let ((cweight (length (lcs-list (string->list (string-downcase lelt)) (string->list (string-downcase (car relt)))))))
-              ;(let ((cweight (instrict-compare (string-downcase lelt) (string-downcase (car relt)))))
+              (let ((cweight (compare-by-words (string-downcase lelt) (string-downcase (car relt)))))
+                (when (or (not found) (> cweight (car found)))
+                  (setf found (cons cweight relt))))))
+        (when found
+          (push (cons lelt (cdr found)) ret))))
+    ret))
+
+(defun produce-lists-comparation-old (left right)
+  "`left' must be list of strings, `right' is the list of lists which first element is string. Returns list if lists which first element is `left' and tails is `right' which fist element more similary (but not equal) with `left'"
+  (declare (type list left right))
+  (let ((ret nil))
+    (dolist (lelt left)
+      (let ((found nil))
+        (dolist (relt right)
+          (if (string= lelt (car relt))
+              (progn (setf found nil)
+                     (return))
+              (let ((cweight (instrict-compare (string-downcase lelt) (string-downcase (car relt)))))
                 (when (or (not found) (> cweight (car found)))
                   (setf found (cons cweight relt))))))
         (when found
@@ -153,20 +127,30 @@
     ret))
 
 
-(defun max-lcs (seq1 seq2)
-  (declare (type array seq1 seq2))
-  (let ((l1 (length seq1))
-        (l2 (length seq2)))
-    (let* ((aseq (if (> l1 l2)
-                     seq2
-                     seq1))
-           (bseq (if (> l1 l2)
-                     seq1
-                     seq2))
-           (alen (length aseq))
-           (blen (length bseq))
-           (amas (make-array '(alen) :adjustable nil :element-type 'fixnum :initial-element 0))
-           (bmas (make-array '(blen) :adjustable nil :element-type 'fixnum :initial-element 0)))
+(defun produce-maybe-equal (string-list arg-list)
+  (declare (type list string-list arg-list))
+  (let ((ret nil))
+    (dolist (str1 string-list ret)
+      (let ((found-equal (loop for a in arg-list when (strings-maybe-equal str1 (car a)) collect a)))
+        (when found-equal
+          (push (cons str1 found-equal) ret))))))
+          
+
+
+;; (defun max-lcs (seq1 seq2)
+;;   (declare (type array seq1 seq2))
+;;   (let ((l1 (length seq1))
+;;         (l2 (length seq2)))
+;;     (let* ((aseq (if (> l1 l2)
+;;                      seq2
+;;                      seq1))
+;;            (bseq (if (> l1 l2)
+;;                      seq1
+;;                      seq2))
+;;            (alen (length aseq))
+;;            (blen (length bseq))
+;;            (amas (make-array '(alen) :adjustable nil :element-type 'fixnum :initial-element 0))
+;;            (bmas (make-array '(blen) :adjustable nil :element-type 'fixnum :initial-element 0)))
       
             
 
@@ -217,4 +201,91 @@
       (push (cons :added list2) result))
     (nreverse result)))
 
-                  
+
+(defun split-by-words (str)
+  (declare (type string str))
+  (delete-if #'(lambda (a) (and (<= (length a) 3)
+                                (not (ppcre:scan "[0-9]" a)))) (ppcre:split "(-|\\(|\\)|\\.|\\ |\"|,)+" str)))
+
+(defun compare-coefficient (str1 str2)
+  (/ (instrict-compare str1 str2)
+     (instrict-compare str1 str1)))
+
+(defun strings-maybe-equal (str1 str2)
+  (> (/ (compare-by-words str1 str2)
+        (compare-by-words str1 str1)) 0.5))
+
+(defun compare-coefficient-by-words (str1 str2)
+  (/ (compare-by-words str1 str2)
+     (compare-by-words str1 str1)))
+
+(defun compare-by-words (str1 str2)
+  (declare (type string str1 str2))
+  (let ((ww1 (split-by-words str1))
+        (ww2 (split-by-words str2))
+        (acc 0))
+    (if (or (= 0 (length ww1)) (= 0 (length ww2)))
+        0
+        (dolist (w1 ww1 acc)
+          (cond
+            ((= 0 (length ww2)) (return))
+            (t (let* ((weights (mapcar #'(lambda (a) (list (compare-coefficient w1 a) a )) ww2))
+                      (maxelt (reduce #'(lambda (a b)
+                                          (if (> (car a) (car b))
+                                              a
+                                              b)) weights)))
+                 (when (> (car maxelt) 0)(setf acc (+ acc (car maxelt)))))))))))
+                      
+                 
+                            
+
+(defun get-mutum (path)
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
+  (labels ((delete-double-quotes (str)
+             (ppcre:regex-replace-all "\"\"" str "\"")))
+    (let ((inc nil)
+          (ret nil))
+      (with-open-file (fin path :direction :input)
+        (loop for a = (read-line fin nil) while a do (push a inc)))
+      (dolist (el inc ret)
+        (multiple-value-bind (val vals) (ppcre:scan-to-strings "^([0-9]+)\\s+\"(.*)\"$" el)
+          (when (> (length vals) 1)
+            (push (list (delete-double-quotes (aref vals 1))
+                        (aref vals 0)) ret)))))))
+  
+            
+(defun get-strings-from-file (path)
+  (with-open-file (fin path :direction :input)
+    (loop for a = (read-line fin nil) while a collect a)))
+
+(defun manual-filter-list (flist)
+  (remove-if #'(lambda (a)
+                 (write-line (format nil "~a" (first a)))
+                 (write-line (format nil "~a" (second a)))
+                 (and (string/= (first a) (second a))
+                      (string/= "y" (string-downcase (read-line))))) flist))
+
+(defun produce-list-equation (strs lists)
+  (declare (type list strs lists))
+  (let ((ret nil))
+    (dolist (st strs ret)
+      (let ((much-more (reduce #'(lambda (a b)
+                                   (if (> (car a) (car b))
+                                       a
+                                       b)) (mapcar #'(lambda (a)
+                                                       (cons (compare-by-words st (car a))
+                                                             a)) lists))))
+        (push (cons st (cdr much-more)) ret)))))
+
+(defun uniq (flist)
+  (labels ((rec-rem (head tail)
+             (cond
+               ((not (cdr tail)) head)
+               ((equal (car tail) (cadr tail)) (progn
+                                                 (setf (car tail) (cadr tail)
+                                                       (cdr tail) (cddr tail))
+                                                 (rec-rem head (cdr tail))))
+               (t (rec-rem head (cdr tail))))))
+    (rec-rem flist flist)))
+                 
+    

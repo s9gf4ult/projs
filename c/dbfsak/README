@@ -1,0 +1,40 @@
+4 February 2001
+
+I wrote this program (dbfdump) because of the fact that Midnight
+Commander uses a program called dbview, which doesn't work. Looking over
+the docs/source for dbview, it appears it was written long ago,
+abandoned, and then someone resurrected it with little or no
+modification. When I've tried to run it, it often hasn't worked. I
+needed something to display FoxPro data files, so I wrote this little
+program. Now, I just do a symlink from dbview to dbfdump (I made the
+command lines similar), and off I go.
+
+I'll leave it to the man page to tell you how to run it.
+
+Compilation and installation are the usual:
+
+make ; make install
+
+Installation is in the /usr/local tree. If you don't like this, edit the
+makefile.
+
+There are no extraordinary dependencies with this program. It is written
+in C++ and relies only on g++ and the standard C/C++ libraries.
+
+This was a quicky program. The code is not beautiful, and I do not take
+advantage of some of the features of C++. For instance, iostreams. As
+far as I'm concerned, they are a pain, so I don't use them. If you have
+suggestions for improvement or bug reports, feel free. If you'd like to
+contribute code, let me know.
+
+I cannot claim perfection in this program. It may well have bugs. As
+such, I make no claims about the suitability of these programs for your
+application, and cannot assume responsibility for your use of them, or
+the results thereof.
+
+Naturally, this program is released under an Open Source license. Do
+with it as you will, but give me credit for the original work, if you
+please.
+
+Paul M. Foster
+

@@ -1,0 +1,24 @@
+2001.03.01
+
+Changes to Makefile, in particular to add version and release numbers to
+the makefile which are also visible within the program.
+
+Added support for Microsoft Visual FoxPro files.
+
+2001.12.09
+
+Change name to dbfsak.
+Add support for creating rdb files.
+Add support for creating dbf files from rdb structure files.
+Add support for appending records from rdb files.
+
+2001.12.19
+
+Add 0x0d to end of header.
+Remove extraneous variables.
+Change logical comparison variables to unsigned.
+
+$Log: CHANGES,v $
+Revision 1.2  2001/12/20 00:00:00  paulf
+Sync CHANGES file with cvs log.
+

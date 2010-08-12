@@ -1,0 +1,118 @@
+.\" All lines like this are comments. Uncomment those needed.
+.\" Next section should include program name, man section, program version,
+.\" author, and category the program fits in.
+.\" Note that each of these .X or .XY lines is a macro for troff.
+.\" See /usr/lib/groff/tmac/tmac.an for macros on my system
+.\" See also man mdoc.samples.
+.TH "dbfsak" "1" "2.0" "Paul M. Foster" "Miscellaneous"
+.\" This is the first of many sections, called out just like this.
+.SH "NAME"
+.\" Next line is the name of the program and short description.
+.\" Note that you must escape a dash with a backslash.
+dbfsak \- xBase files Swiss Army Knife
+.\" Another section, this one tells how the program is called.
+.SH "SYNOPSIS"
+.\" .BR says alternate type BOLD and ROMAN, for each argument
+.\" The program name is, by convention, BOLD.
+.B dbfsak OPTIONS 
+filename
+.\" .IR says alternate ITALICS with ROMAN, for each argument.
+.\" Quotes are needed if you want to include spaces in the arguments.
+.\" Note also that this ITALICS/ROMAN alternating is normal for program
+.\" arguments.
+.\" Here we describe the program in more detail. Note that paragraphs are
+.\" separated by blank lines.
+.SH "DESCRIPTION"
+This program does various things with and to xBase (dBase/FoxPro/Clipper) files.
+
+.SH "OPTIONS"
+The following options are available (unless otherwise specified, output goes to STDOUT):
+.\" Here we explain each of the options available in calling the program.
+.\" .SH "OPTIONS"
+.\" I do not know what .TP is, but it's needed for each subsection here.
+.TP
+.I \-a rdbfile
+Append records to xBase file from nosql/rdb file.
+.TP 
+.I \-b
+This dumps the records themselves, their contents.
+.TP
+.I \-d fieldsep
+This specifies the field separator character when dumping record contents. By default, this is the pipe symbol (|).
+.TP
+.I \-e
+Dump the field descriptions.
+.TP
+.I \-h
+Show help.
+.TP
+.I \-i
+Dump header information, such as how many records, etc.
+.TP
+.I \-n nsqlstructfile
+Dump table to NoSQL database file. This also creates a NoSQL structure file named for the parameter above. Structure of this file is as in option \-r below.
+.TP
+.I \-r nsqlfile
+Make dbf from a NoSQL table file. The table must have four fields, in the following order: field name, field type, field length and field decimals. The names of the fields are irrelevant, but they must be in that order. 
+.TP
+.I \-s
+Dump the records in PostgreSQL SQL format. Without this option, records are simply dumped in human-readable format.
+This option is meaningless without the inclusion of the \-b, \-e or \-i flags as well.
+.TP
+.I \-t
+Specifies that the record dumps (human readable format) will have all unnecessary leading and trailing spaces deleted for each field. Normally, record dumps contain leading and trailing spaces as indicated by the size and type of field.
+.TP
+.I \-v
+Show version number.
+
+.\" What environment variables are important? 
+.SH "ENVIRONMENT"
+.TP 
+None.
+
+.\" What files are involved with this program?
+.SH "FILES"
+.I /usr/local/bin/dbfsak
+
+.\" Examples; pretty self-explanatory. This section is optional.
+.SH "EXAMPLES"
+For dbview compatibility, run the program this way:
+.\" I don't know what LP is either, but you start each subsection with it.
+.LP
+.\" .RS means "reference start" and .RE means "reference end". Has something
+.\" to do with indentation, I believe.
+.RS 
+.B dbfdump \-b myfile.dbf
+.RE
+.LP 
+To change the field separator character, for example:
+.LP
+.RS 
+.B dbfdump \-db @ myfile.dbf
+.RE
+.LP 
+To dump to a PostgreSQL\-compatible SQL script:
+.LP
+.RS 
+.B dbfdump \-s \-i \-e \-b myfile.dbf
+
+or
+
+.B dbfdump \-sieb myfile.dbf
+.RE
+.\" Related programs. We don't need that section in this one.
+.\" .SH "SEE ALSO"
+.\" History of the program.
+.SH "HISTORY"
+I wrote this program to replace the dbview program that Midnight Commander uses to view dbf files. The dbview program is apparently very old code, resurrected and only slightly modified. Unfortunately, it often doesn't work for me.
+.\" Who wrote this?
+.SH "AUTHORS"
+Paul M. Foster <paulf@quillandmouse.com>
+.\" What are the known bugs or idiosyncracies.
+.SH "BUGS"
+.LP
+When dumping out to a SQL script, the script includes the username of the user in the script. However, when called under Midnight Commander, the system call that returns the user name apparently only returns a NULL. Go figure.
+
+Also, no attempt has been made to encompass
+.B all
+brands of xBase files. The current program works with dBase III, FoxPro and Visual FoxPro files, and Clipper files.

@@ -2,16 +2,22 @@
 MY=192.168.0.9
 ACCEPTED_FOR_PROXY=( "192.168.0.48" )
 
+protect () {
+    eval $@ && return 0 ||
+    (stop ; echo failed: $@ && return 1)
+}
+
+
 
 start () {
-    iptables -P INPUT DROP
-    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    protect iptables -P INPUT DROP
+    protect iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
     for addr in ${ACCEPTED_FOR_PROXY};do
-        iptables -A INPUT -s ${addr} -d ${MY} -p tcp --dport 3128 -j ACCEPT
+        protect iptables -A INPUT -s ${addr} -d ${MY} -p tcp --dport 3128 -j ACCEPT
     done
-    iptables -A INPUT -i lo -s 127.0.0.1 -j ACCEPT
-    iptables -A INPUT -i lo -s ${MY} -d ${MY} -j ACCEPT
-    iptables -A INPUT -d ${MY} -p tcp --dport 22 -j ACCPET
+    protect iptables -A INPUT -i lo -s 127.0.0.1 -j ACCEPT
+    protect iptables -A INPUT -i lo -s ${MY} -d ${MY} -j ACCEPT
+    protect iptables -A INPUT -d ${MY} -p tcp --dport 22 -j ACCEPT
 }
 
 stop () {

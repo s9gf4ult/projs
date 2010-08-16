@@ -10,7 +10,7 @@ start () {
         iptables -A INPUT -s ${addr} -d ${MY} -p tcp --dport 3128 -j ACCEPT
     done
     iptables -A INPUT -i lo -s 127.0.0.1 -j ACCEPT
-    iptables -A INPUT -i lo -s ${MY} -o ${MY} -j ACCEPT
+    iptables -A INPUT -i lo -s ${MY} -d ${MY} -j ACCEPT
     iptables -A INPUT -d ${MY} -p tcp --dport 22 -j ACCPET
 }
 

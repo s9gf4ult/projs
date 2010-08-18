@@ -68,7 +68,7 @@
                ((not (cdr tail)) ret-head)
                (t (let ((dif (abs (- (car tail) (car head)))))
                     (cond
-                      jjjjjjjjjjjjjjjjjjjjj((member dif ret-head) (rec-get ret-head ret-tail (cdr head) (cdr tail)))
+                      ((member dif ret-head) (rec-get ret-head ret-tail (cdr head) (cdr tail)))
                       (t (progn
                            (setf (car ret-tail) dif
                                  (cdr ret-tail) (cons nil nil))

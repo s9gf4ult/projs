@@ -284,7 +284,7 @@
                ((equal (car tail) (cadr tail)) (progn
                                                  (setf (car tail) (cadr tail)
                                                        (cdr tail) (cddr tail))
-                                                 (rec-rem head (cdr tail))))
+                                                 (rec-rem head  tail)))
                (t (rec-rem head (cdr tail))))))
     (rec-rem flist flist)))
                  

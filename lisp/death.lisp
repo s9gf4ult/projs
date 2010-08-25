@@ -75,4 +75,3 @@
                            (rec-get ret-head (cdr ret-tail) (cdr head) (cdr tail))))))))))
     (let ((new-list (cons nil nil)))
       (rec-get new-list new-list  flist (cdr flist)))))
-                    

@@ -81,3 +81,11 @@
               (form-62-create-summ-table (format nil "f62t~a" (first a)) (format nil "setable~a" (second a)) (loop for fld from 1 to (third a) collect (format nil "field_~a" fld)) *idmus*)) tslist))
 
 
+(defun gen-days (days sufix)
+  (loop for a in days collect (concatenate 'string (format nil "~d." a) sufix )))
+
+(defun gen-dlo-prescriptions (days)
+  (concatenate 'string
+               "select t1.create_date, count(*) as count from prescriptions t1, doctors t2, polyclinics t3 where t1.doctor_id = t2.id and t2.polyclinic_id = t3.id and ("
+               (format nil "~{~a~^ or ~}" (loop for a in days collect (format nil "t1.create_date = '~a'" a)))
+               ") group by t1.create_date;"))

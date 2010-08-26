@@ -60,7 +60,86 @@
       (list "ELSE")
       (indent-all stringselse)))
    (list "END IF")))
-   
+
+(defmacro qif (condition bodyif &optional bodyelse)
+  (labels ((procbody (body)
+             (mapcar #'(lambda (a)
+                         (if (typep a 'list)
+                             a
+                             `(list ,a))) body)))
+    (let ((sbodyif (procbody bodyif))
+          (sbodyelse (procbody bodyelse)))
+      `(qpile-if ,condition
+                 (append ,@sbodyif)
+                 (append ,@sbodyelse)))))
+
+(macrolet ((defqcomb (name operator)
+             (let ((formater (format nil "(~~{~~a~~^ ~a ~~})" operator)))
+               `(defun ,name (&rest args)
+                  (format nil ,formater args))))
+           (defall (&rest pares)
+             `(progn
+                ,@(loop for a in pares collect `(defqcomb ,(car a) ,(cadr a))))))
+  (defall
+      (qand and)
+      (qor or)
+    (qmul *)
+    (qadd +)
+    (qdiv /)
+    (qsub -)
+    (qconcat &)))
+
+(macrolet ((defcondcomb (name operator)
+             (let ((formater (format nil "(~~a ~a ~~a)" operator))
+                   (and-formater "(~{~a~^ AND ~})"))
+               `(defun ,name (&rest args)
+                  (format nil ,and-formater
+                          (reduce #'append (maplist #'(lambda (a)
+                                                        (if (cdr a)
+                                                            (list (format nil ,formater (car a) (cadr a)))
+                                                            nil)) args))))))
+           (defall (&rest pares)
+             `(progn
+                ,@(loop for a in pares collect `(defcondcomb ,(car a) ,(cadr a))))))
+  (defall
+      (qeq =)
+      (qmore >)
+    (qless <)
+    (qmoreq >=)
+    (qlesseq <=)
+    (qneq !=)))
+
+
+
+(defmacro qcond (&rest pairs)
+  (if pairs
+      `(qif ,(caar pairs)
+            (,(cadar pairs))
+             ((qcond ,@(cdr pairs))))))
+
+(qcond ((qand "a = 10" "b = 100")
+        "a = a * b"
+        "c = c + 1"
+        )
+       ((qor "c = 100")
+        "out = out + 100"))
+             
+            
+
+(defmacro acol (&rest lsls)
+  (if lsls
+      `(,(car lsls)
+         ,@(cdr lsls))))
+
+     
+
+
+                                        ;(defun qcond (&rest pairs)
+  
+           
+    
+    
+                  
 
 (defun indent-all (strs)
   (mapcar #'(lambda (a)

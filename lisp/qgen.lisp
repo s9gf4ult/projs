@@ -75,8 +75,8 @@
 
 (macrolet ((defqcomb (name operator)
              (let ((formater (format nil "(~~{~~a~~^ ~a ~~})" operator)))
-               `(defmacro ,name (&rest args)
-                  `(list ,(format nil ,formater args)))))
+               `(defun ,name (&rest args)
+                  (format nil ,formater args))))
            (defall (&rest pares)
              `(progn
                 ,@(loop for a in pares collect `(defqcomb ,(car a) ,(cadr a))))))
@@ -92,12 +92,12 @@
 (macrolet ((defcondcomb (name operator)
              (let ((formater (format nil "~~a ~a ~~a" operator))
                    (and-formater "(~{~a~^ AND ~})"))
-               `(defmacro ,name (&rest args)
-                  `(list ,(format nil ,and-formater
-                                  (reduce #'append (maplist #'(lambda (a)
-                                                                (if (cdr a)
-                                                                    (list (format nil ,formater (car a) (cadr a)))
-                                                                    nil)) args)))))))
+               `(defun ,name (&rest args)
+                  (format nil ,and-formater
+                          (reduce #'append (maplist #'(lambda (a)
+                                                        (if (cdr a)
+                                                            (list (format nil ,formater (car a) (cadr a)))
+                                                            nil)) args))))))
            (defall (&rest pares)
              `(progn
                 ,@(loop for a in pares collect `(defcondcomb ,(car a) ,(cadr a))))))
@@ -189,22 +189,32 @@
   (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
     (loop for a in strings do (write-line a fout))))
 
-(defun get-week (year month day)
-  (let* ((a (truncate (- 14 month) 12))
-         (y (- (+ 1 year) a))
-         (m (- (+ month
-                  (* 12 a))
-               2))
-         (result (mod
-                  (+ 7000
-                     day
-                     y
-                     (truncate y 4)
-                     (- (truncate y 100))
-                     (truncate y 400)
-                     (truncate (* 31 m) 12))
-                  7)))
-    result))
+(defmacro qset (name val)
+  `(list ,(format nil "~a = ~a" name val)))
+
+(defmacro qglobal (name &optional val)
+  `(list ,(if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
+              (format nil "NEW_GLOBAL(~a)" name))))
+
+(defmacro qgetval (dest src name)
+  `(list ,(format nil "~a = GET_VALUE(~a, ~a)" dest src name)))
+
+;; (defun get-week (year month day)
+;;   (let* ((a (truncate (- 14 month) 12))
+;;          (y (- (+ 1 year) a))
+;;          (m (- (+ month
+;;                   (* 12 a))
+;;                2))
+;;          (result (mod
+;;                   (+ 7000
+;;                      day
+;;                      y
+;;                      (truncate y 4)
+;;                      (- (truncate y 100))
+;;                      (truncate y 400)
+;;                      (truncate (* 31 m) 12))
+;;                   7)))
+;;     result))
                   
                   
                

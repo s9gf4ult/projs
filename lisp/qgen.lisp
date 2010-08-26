@@ -113,34 +113,68 @@
 
 (defmacro qcond (&rest pairs)
   (if pairs
-      `(qif ,(caar pairs)
-            (,(cadar pairs))
-             ((qcond ,@(cdr pairs))))))
+      (if (and (cdr pairs)
+               (eq 't (caadr pairs)))
+          `(qif ,(caar pairs)
+                (,@(cdar pairs))
+                (,@(cdadr pairs)))
+          
+          `(qif ,(caar pairs)
+                (,@(cdar pairs))
+                ((qcond ,@(cdr pairs)))))))
 
-(qcond ((qand "a = 10" "b = 100")
-        "a = a * b"
-        "c = c + 1"
-        )
-       ((qor "c = 100")
-        "out = out + 100"))
-             
-            
 
 (defmacro acol (&rest lsls)
   (if lsls
       `(,(car lsls)
          ,@(cdr lsls))))
 
-     
+(defun qpile-while (condition strings)
+  (let ((smsm (gensym)))
+    (append
+     (list (format nil "FOR ~a FROM 1 TO 2" smsm))
+     (indent-all (append
+                  (list (format nil "~a = 1" smsm))
+                  (qpile-if condition
+                            strings
+                            '("BREAK"))))
+     '("END FOR"))))
 
+(defun qpile-until (condition strings)
+  (let ((smsm (gensym)))
+    (append
+     (list (format nil "FOR ~a FROM 1 TO 2" smsm))
+     (indent-all (append
+                  (list (format nil "~a=1" smsm))
+                  strings
+                  (qpile-if condition
+                            '("BREAK"))))
+     '("END FOR"))))
 
-                                        ;(defun qcond (&rest pairs)
-  
-           
-    
-    
+(defmacro qwhile (condition &body body)
+  (let ((sbody (mapcar #'(lambda (a)
+                           (if (typep a 'list)
+                               a
+                               `(list ,a))) body)))
+    `(qpile-while ,condition
+                  (append
+                   ,@sbody))))
+
+(defmacro quntil (condition &body body)
+  (let ((sbody (mapcar #'(lambda (a)
+                           (if (typep a 'list)
+                               a
+                               `(list ,a))) body)))
+    `(qpile-until ,condition
+                  (append
+                   ,@sbody))))
                   
 
 (defun indent-all (strs)
   (mapcar #'(lambda (a)
               (format nil "  ~a" a)) strs))
+
+
+(defun write-on (filename strings)
+  (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
+    (loop for a in strings do (write-line a fout))))

@@ -75,8 +75,8 @@
 
 (macrolet ((defqcomb (name operator)
              (let ((formater (format nil "(~~{~~a~~^ ~a ~~})" operator)))
-               `(defun ,name (&rest args)
-                  (format nil ,formater args))))
+               `(defmacro ,name (&rest args)
+                  `(list ,(format nil ,formater args)))))
            (defall (&rest pares)
              `(progn
                 ,@(loop for a in pares collect `(defqcomb ,(car a) ,(cadr a))))))
@@ -90,14 +90,14 @@
     (qconcat &)))
 
 (macrolet ((defcondcomb (name operator)
-             (let ((formater (format nil "(~~a ~a ~~a)" operator))
+             (let ((formater (format nil "~~a ~a ~~a" operator))
                    (and-formater "(~{~a~^ AND ~})"))
-               `(defun ,name (&rest args)
-                  (format nil ,and-formater
-                          (reduce #'append (maplist #'(lambda (a)
-                                                        (if (cdr a)
-                                                            (list (format nil ,formater (car a) (cadr a)))
-                                                            nil)) args))))))
+               `(defmacro ,name (&rest args)
+                  `(list ,(format nil ,and-formater
+                                  (reduce #'append (maplist #'(lambda (a)
+                                                                (if (cdr a)
+                                                                    (list (format nil ,formater (car a) (cadr a)))
+                                                                    nil)) args)))))))
            (defall (&rest pares)
              `(progn
                 ,@(loop for a in pares collect `(defcondcomb ,(car a) ,(cadr a))))))
@@ -174,7 +174,37 @@
   (mapcar #'(lambda (a)
               (format nil "  ~a" a)) strs))
 
+(defun qpile-map-values (variable &rest pairs)
+  (loop for pair in pairs collect (format nil "~a = SET_VALUE(~a, ~a, ~a)" variable variable (car pair) (cadr pair))))
+
+(defmacro qforms (&body body)
+  (let ((sbody (mapcar #'(lambda (a)
+                           (if (typep a 'list)
+                               a
+                               `(list ,a))) body)))
+    `(append
+      ,@sbody)))
 
 (defun write-on (filename strings)
   (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
     (loop for a in strings do (write-line a fout))))
+
+(defun get-week (year month day)
+  (let* ((a (truncate (- 14 month) 12))
+         (y (- (+ 1 year) a))
+         (m (- (+ month
+                  (* 12 a))
+               2))
+         (result (mod
+                  (+ 7000
+                     day
+                     y
+                     (truncate y 4)
+                     (- (truncate y 100))
+                     (truncate y 400)
+                     (truncate (* 31 m) 12))
+                  7)))
+    result))
+                  
+                  
+               

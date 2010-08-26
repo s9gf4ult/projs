@@ -89,6 +89,9 @@
     (qsub -)
     (qconcat &)))
 
+(defun qstr (val)
+  (format nil "\"~a\"" val))
+
 (macrolet ((defcondcomb (name operator)
              (let ((formater (format nil "~~a ~a ~~a" operator))
                    (and-formater "(~{~a~^ AND ~})"))
@@ -123,11 +126,6 @@
                 (,@(cdar pairs))
                 ((qcond ,@(cdr pairs)))))))
 
-
-(defmacro acol (&rest lsls)
-  (if lsls
-      `(,(car lsls)
-         ,@(cdr lsls))))
 
 (defun qpile-while (condition strings)
   (let ((smsm (gensym)))
@@ -189,15 +187,18 @@
   (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
     (loop for a in strings do (write-line a fout))))
 
-(defmacro qset (name val)
-  `(list ,(format nil "~a = ~a" name val)))
+(defun qset (name val)
+  (format nil "~a = ~a" name val))
 
-(defmacro qglobal (name &optional val)
-  `(list ,(if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
-              (format nil "NEW_GLOBAL(~a)" name))))
+(defun qglobal (name &optional val)
+  (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
+      (format nil "NEW_GLOBAL(~a)" name)))
 
-(defmacro qgetval (dest src name)
-  `(list ,(format nil "~a = GET_VALUE(~a, ~a)" dest src name)))
+(defun qgetval (dest src name)
+  (format nil "GET_VALUE(~a, ~a)" src name))
+
+(defun qpile-apply (name &rest args)
+  (format nil "~a(~{~a~^, ~})" name args))
 
 ;; (defun get-week (year month day)
 ;;   (let* ((a (truncate (- 14 month) 12))

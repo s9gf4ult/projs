@@ -89,8 +89,11 @@
     (qsub -)
     (qconcat &)))
 
+(defun qstr (val)
+  (format nil "\"~a\"" val))
+
 (macrolet ((defcondcomb (name operator)
-             (let ((formater (format nil "(~~a ~a ~~a)" operator))
+             (let ((formater (format nil "~~a ~a ~~a" operator))
                    (and-formater "(~{~a~^ AND ~})"))
                `(defun ,name (&rest args)
                   (format nil ,and-formater
@@ -123,11 +126,6 @@
                 (,@(cdar pairs))
                 ((qcond ,@(cdr pairs)))))))
 
-
-(defmacro acol (&rest lsls)
-  (if lsls
-      `(,(car lsls)
-         ,@(cdr lsls))))
 
 (defun qpile-while (condition strings)
   (let ((smsm (gensym)))
@@ -174,7 +172,50 @@
   (mapcar #'(lambda (a)
               (format nil "  ~a" a)) strs))
 
+(defun qpile-map-values (variable &rest pairs)
+  (loop for pair in pairs collect (format nil "~a = SET_VALUE(~a, ~a, ~a)" variable variable (car pair) (cadr pair))))
+
+(defmacro qforms (&body body)
+  (let ((sbody (mapcar #'(lambda (a)
+                           (if (typep a 'list)
+                               a
+                               `(list ,a))) body)))
+    `(append
+      ,@sbody)))
 
 (defun write-on (filename strings)
   (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
     (loop for a in strings do (write-line a fout))))
+
+(defun qset (name val)
+  (format nil "~a = ~a" name val))
+
+(defun qglobal (name &optional val)
+  (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
+      (format nil "NEW_GLOBAL(~a)" name)))
+
+(defun qgetval (dest src name)
+  (format nil "GET_VALUE(~a, ~a)" src name))
+
+(defun qpile-apply (name &rest args)
+  (format nil "~a(~{~a~^, ~})" name args))
+
+;; (defun get-week (year month day)
+;;   (let* ((a (truncate (- 14 month) 12))
+;;          (y (- (+ 1 year) a))
+;;          (m (- (+ month
+;;                   (* 12 a))
+;;                2))
+;;          (result (mod
+;;                   (+ 7000
+;;                      day
+;;                      y
+;;                      (truncate y 4)
+;;                      (- (truncate y 100))
+;;                      (truncate y 400)
+;;                      (truncate (* 31 m) 12))
+;;                   7)))
+;;     result))
+                  
+                  
+               

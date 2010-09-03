@@ -188,11 +188,11 @@
     (loop for a in strings do (write-line a fout))))
 
 (defun qset (name val)
-  (format nil "~a = ~a" name val))
+  (list (format nil "~a = ~a" name val)))
 
 (defun qglobal (name &optional val)
-  (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
-      (format nil "NEW_GLOBAL(~a)" name)))
+  (list (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
+            (format nil "NEW_GLOBAL(~a)" name))))
 
 (defun qgetval (dest src name)
   (format nil "GET_VALUE(~a, ~a)" src name))
@@ -216,6 +216,11 @@
 ;;                      (truncate (* 31 m) 12))
 ;;                   7)))
 ;;     result))
+
+(defmacro xchg (&rest expand-all)
+  (let ((exp (mapcar #'eval expand-all)))
+    `(list ,@(reverse (mapcar #'(lambda (a) (car a)) exp)))))
+  
                   
                   
                

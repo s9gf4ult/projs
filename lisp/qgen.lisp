@@ -191,11 +191,11 @@
     (loop for a in strings do (write-line a fout))))
 
 (defun qset (name val)
-  (format nil "~a = ~a" name val))
+  (list (format nil "~a = ~a" name val)))
 
 (defun qglobal (name &optional val)
-  (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
-      (format nil "NEW_GLOBAL(~a)" name)))
+  (list (if val (format nil "NEW_GLOBAL(~a, ~a)" name val)
+            (format nil "NEW_GLOBAL(~a)" name))))
 
 (defun qgetval (dest src name)
   (format nil "GET_VALUE(~a, ~a)" src name))
@@ -203,23 +203,6 @@
 (defun qpile-apply (name &rest args)
   (format nil "~a(~{~a~^, ~})" name args))
 
-;; (defun get-week (year month day)
-;;   (let* ((a (truncate (- 14 month) 12))
-;;          (y (- (+ 1 year) a))
-;;          (m (- (+ month
-;;                   (* 12 a))
-;;                2))
-;;          (result (mod
-;;                   (+ 7000
-;;                      day
-;;                      y
-;;                      (truncate y 4)
-;;                      (- (truncate y 100))
-;;                      (truncate y 400)
-;;                      (truncate (* 31 m) 12))
-;;                   7)))
-;;     result))
-                  
                   
 (defun create-collection-of-strings(name &rest values)
   (append
@@ -238,4 +221,18 @@
                                                                (format nil "~4,'0d~2,'0d~2,'0d" (car years) (car months) day)))))))))
                                                                
                                                         
-                 
+(defmacro xchg (&rest expand-all)
+  (let ((exp (mapcar #'eval expand-all)))
+    `(list ,@(reverse (mapcar #'(lambda (a) (car a)) exp)))))
+  
+(defmacro lispy-qpile (&rest forms)
+  (let ((processed (mapcar #'(lambda (form)
+                               (labels ((expand-form (local-form)
+                                          (case (car local-form)
+                                            (':string (mapcar #'(lambda (str)
+                                                                      `(format nil "~a" ,(format nil "~a" str))) (cdr local-form))))))
+                                 (expand-form form))) forms)))
+    `(list
+      ,@(reduce #'append processed))))
+
+(lispy-qpile (:string "ijij" "eijeij"))

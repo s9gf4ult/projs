@@ -221,6 +221,16 @@
   (let ((exp (mapcar #'eval expand-all)))
     `(list ,@(reverse (mapcar #'(lambda (a) (car a)) exp)))))
   
-                  
-                  
-               
+(defmacro lispy-qpile (&rest forms)
+  (let ((processed (mapcar #'(lambda (form)
+                               (labels ((expand-form (local-form)
+                                          (case (car local-form)
+                                            (':string (mapcar #'(lambda (str)
+                                                                      `(format nil "~a" ,(format nil "~a" str))) (cdr local-form))))))
+                                 (expand-form form))) forms)))
+    `(list
+      ,@(reduce #'append processed))))
+
+(lispy-qpile (:string "ijij" "eijeij"))
+                                              
+                                           

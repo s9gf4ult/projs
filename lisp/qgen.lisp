@@ -230,9 +230,8 @@
                                (labels ((expand-form (local-form)
                                           (case (car local-form)
                                             (':string (mapcar #'(lambda (str)
-                                                                      `(format nil "~a" ,(format nil "~a" str))) (cdr local-form))))))
+                                                                      (format nil "~a" str)) (cdr local-form))))))
                                  (expand-form form))) forms)))
     `(list
       ,@(reduce #'append processed))))
 
-(lispy-qpile (:string "ijij" "eijeij"))

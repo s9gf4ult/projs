@@ -92,6 +92,9 @@
 (defun qstr (val)
   (format nil "\"~a\"" val))
 
+(defmacro qstrl (&rest vals)
+  `(,@(loop for val in vals collect (format nil "\"~a\"" val))))
+
 (macrolet ((defcondcomb (name operator)
              (let ((formater (format nil "~~a ~a ~~a" operator))
                    (and-formater "(~{~a~^ AND ~})"))
@@ -200,23 +203,24 @@
 (defun qpile-apply (name &rest args)
   (format nil "~a(~{~a~^, ~})" name args))
 
-;; (defun get-week (year month day)
-;;   (let* ((a (truncate (- 14 month) 12))
-;;          (y (- (+ 1 year) a))
-;;          (m (- (+ month
-;;                   (* 12 a))
-;;                2))
-;;          (result (mod
-;;                   (+ 7000
-;;                      day
-;;                      y
-;;                      (truncate y 4)
-;;                      (- (truncate y 100))
-;;                      (truncate y 400)
-;;                      (truncate (* 31 m) 12))
-;;                   7)))
-;;     result))
+                  
+(defun create-collection-of-strings(name &rest values)
+  (append
+   (list (format nil "~a = CREATE_COLLECTION()" name))
+   (loop for val in values collect (format nil "~a = INSERT_COLLECTION_ITEM(~a, \"~a\")" name name val))))
 
+(defun create-date-values (name list-of-dates)
+  (append
+   (list (format nil "~a = CREATE_COLLECTION()" name))
+   (let ((nmb -1))
+     (loop for years in list-of-dates append
+          (loop for months in (cdr years) append
+               (loop for day in (car (cdr months)) collect (progn
+                                                       (setf nmb (+ nmb 1))
+                                                       (format nil "~a = INSERT_COLLECTION_ITEM(~a, ~a, \"~a\"" name name nmb
+                                                               (format nil "~4,'0d~2,'0d~2,'0d" (car years) (car months) day)))))))))
+                                                               
+                                                        
 (defmacro xchg (&rest expand-all)
   (let ((exp (mapcar #'eval expand-all)))
     `(list ,@(reverse (mapcar #'(lambda (a) (car a)) exp)))))
@@ -232,5 +236,3 @@
       ,@(reduce #'append processed))))
 
 (lispy-qpile (:string "ijij" "eijeij"))
-                                              
-                                           

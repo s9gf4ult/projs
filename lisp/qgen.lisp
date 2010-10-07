@@ -221,17 +221,59 @@
                                                                (format nil "~4,'0d~2,'0d~2,'0d" (car years) (car months) day)))))))))
                                                                
                                                         
-(defmacro xchg (&rest expand-all)
-  (let ((exp (mapcar #'eval expand-all)))
-    `(list ,@(reverse (mapcar #'(lambda (a) (car a)) exp)))))
-  
-(defmacro lispy-qpile (&rest forms)
-  (let ((processed (mapcar #'(lambda (form)
-                               (labels ((expand-form (local-form)
-                                          (case (car local-form)
-                                            (':string (mapcar #'(lambda (str)
-                                                                      (format nil "~a" str)) (cdr local-form))))))
-                                 (expand-form form))) forms)))
-    `(list
-      ,@(reduce #'append processed))))
+(defclass hash-stacks ()
+  ((stacks :accessor stacks :initform (make-hash-table :test #'equal) :initarg :stacks :type hash-table))
+  (:documentation "stores stack of values for any key"))
 
+(defgeneric hash-stacks-push (place key obj))
+
+(defmethod hash-stacks-push ((place hash-stacks) key obj)
+  (multiple-value-bind (val isit?) (gethash key (stacks place))
+    (setf (gethash key (stacks place))
+          (if isit?
+              (cons obj val)
+              (list obj)))))
+
+(defgeneric hash-stacks-pop (place key))
+
+(defmethod hash-stacks-pop ((place hash-stacks) key)  
+  (multiple-value-bind (val isit?) (gethash key (stacks place))
+    (if isit?
+        (multiple-value-prog1
+            (values (car val) t)
+          (if (cdr val)
+              (setf (gethash key (stacks place)) (cdr val))
+              (remhash key (stacks place))))
+        (values nil nil))))
+
+(defgeneric hash-stacks-top (place key))
+(defmethod hash-stacks-top ((place hash-stacks) key)
+  (multiple-value-bind (val isit?) (gethash key (stacks place))
+    (if isit?
+        (values (car val) t)
+        (values nil nil))))
+  
+  
+
+   
+   
+
+(defun lispy-qpile (&rest forms)
+  (let ((*vars* (make-instance 'hash-stacks)))
+    (labels ((process-one-form (form)
+               (cond
+                 ((listp form) (dispatch-form form)
+                  (stringp form) (list form)
+                  (numberp form) (format nil "~a" form)
+                  t (
+                 
+      (reduce #'append (mapcar #'process-one-form forms))
+
+
+(defun generate ()
+  (lispy-qpile
+   `(defun func1 (arg1 arg2)
+      (let ((a (+ arg1 arg2))
+            (b (* arg1 arg2)))
+        (/ a b)))
+   ))

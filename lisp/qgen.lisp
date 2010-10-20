@@ -1,3 +1,7 @@
+(defpackage :lispy-qpile
+  (:use 'cl))
+
+(in-package 'lispy-qpile)
 
 (defun qpile-for (val from to strings)
   (declare (type list strings)
@@ -219,7 +223,23 @@
                                                        (setf nmb (+ nmb 1))
                                                        (format nil "~a = INSERT_COLLECTION_ITEM(~a, ~a, \"~a\"" name name nmb
                                                                (format nil "~4,'0d~2,'0d~2,'0d" (car years) (car months) day)))))))))
-                                                               
+
+
+
+
+
+
+
+
+
+
+(progn
+  (defparameter *qpile-dispatchers* (make-hash-table))
+  (macrolet ((setmany (&rest pairs)
+               `(setf ,@(loop for pair in pairs append
+                             `((gethash ',(car pair) *qpile-dispatchers*) ',(cadr pair))))))
+    (setmany (for for-path)
+             (defun defun-path))))
                                                         
 (defclass hash-stacks ()
   ((stacks :accessor stacks :initform (make-hash-table :test #'equal) :initarg :stacks :type hash-table))
@@ -252,22 +272,47 @@
     (if isit?
         (values (car val) t)
         (values nil nil))))
-  
-  
 
-   
-   
+(defclass transformed ()
+  ((execution :type list :initform nil :initarg :execution :accessor transformed-execution)
+   (returned :initform nil :initarg :returned :accessor transformed-returned)))
+
+(define-condition qpile-error (error)  ())
+
+(define-condition qpile-bad-form (qpile-error)
+  ((form-value :initarg :form-value :reader form-value)))
+
+(define-condition qpile-incorrect-dispatcher (qpile-bad-form)
+  ())
+
+(defun with-pushed-vars (env vars func)
+  (dolist (var vars)
+    (hash-stacks-push env var (gensym)))
+  (prog1
+      (funcall func)
+    (dolist (var vars)
+      (hash-stacks-pop env var))))
+
+(defun process-form-in-environment (env form)
+  (restart-case
+      (cond
+        ((listp form) (dispatch-form env form))
+        ((stringp form) (list form))
+        ((numberp form) (list (format nil "~a" form)))
+        (t (error (make-condition 'qpile-bad-form :form-value form))))
+    (return-nil () nil)))
+
+(defun dispatch-form (env form)
+  (multiple-value-bind (disp isit?) (gethash (car form) *qpile-dispatchers*)
+    (if (not isit?) (error (make-condition 'qpile-incorrect-dispatcher :form-value form)))
+    (funcall disp env (cdr form))))
+
 
 (defun lispy-qpile (&rest forms)
-  (let ((*vars* (make-instance 'hash-stacks)))
+  (let ((env (make-instance 'hash-stacks)))
     (labels ((process-one-form (form)
-               (cond
-                 ((listp form) (dispatch-form form)
-                  (stringp form) (list form)
-                  (numberp form) (format nil "~a" form)
-                  t (
-                 
-      (reduce #'append (mapcar #'process-one-form forms))
+               (process-form-in-environment env form)))
+      (reduce #'append (mapcar #'process-one-form forms)))))
 
 
 (defun generate ()

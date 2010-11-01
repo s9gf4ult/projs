@@ -66,12 +66,40 @@
 
   
 
-(defun load-coasts-from-source (source outbase)
-    (sqlite:execute-non-query outbase "create table if not exists candles (id integer primary key not null, period iteger, datetime integer, open float, close float, high float, low float, volume float, unique(datetime))")
+(defun load-coasts-from-source-to-database (source outbase)
+  (sqlite:execute-non-query outbase "create table if not exists candles (id integer primary key not null, period iteger, datetime integer, open float, close float, high float, low float, volume float, unique(datetime))")
+  (sqlite:with-transaction outbase
     (with-source-iter el source
-                      (sqlite:execute-non-query outbase "insert into candles (period, datetime, open, close, high, low, volume) values (?,?,?,?,?,?,?)" (gethash "<PER>" el) (convert-datetime (gethash "<DATE>" el) (gethash "<TIME>" el)) (gethash "<OPEN>" el) (gethash "<CLOSE>"el ) (gethash "<HIGH>" el) (gethash "<LOW>" el) (gethash "<VOL>" el))))
+      (sqlite:execute-non-query outbase "insert into candles (period, datetime, open, close, high, low, volume) values (?,?,?,?,?,?,?)" (read-from-string (gethash "<PER>" el)) (convert-datetime (gethash "<DATE>" el) (gethash "<TIME>" el)) (read-from-string (gethash "<OPEN>" el)) (read-from-string (gethash "<CLOSE>"el )) (read-from-string (gethash "<HIGH>" el)) (read-from-string (gethash "<LOW>" el))  (read-from-string (gethash "<VOL>" el))))))
 
-    
+(defun convert-datetime (date time)
+  (macrolet ((bb (&rest pass)
+               `(encode-universal-time ,@(loop for p in pass append
+                                              (loop for pp in (cdr p) collect
+                                                   (if (cadr pp)
+                                                       `(parse-integer (subseq ,(car p) ,(car pp) ,(cadr pp)))
+                                                       `(parse-integer (subseq ,(car p) ,(car pp)))))))))
+                         
+    (bb (time (4)
+              (2 4)
+              (0 2))
+        (date (6)
+              (4 6)
+              (0 4)))))
+
+(defmacro with-source-iter (var source &body body)
+  `(loop for ,var = (get-next ,source) while ,var do
+        (progn
+          ,@body)))
+
+(defun load-coasts-from-file-to-sqlite (coasts-file sqlite-file)
+  (let ((coasts (make-instance 'micex-iter :file-name coasts-file))
+        (dbconn (sqlite:connect sqlite-file)))
+    (unwind-protect
+         (load-coasts-from-source-to-database coasts dbconn)
+      (sqlite:disconnect dbconn)
+      (finalize-iter coasts))))
+           
          
          
   

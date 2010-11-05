@@ -2,6 +2,10 @@
 (require 'sqlite)
 (require 'alexandria)
 
+(defpackage :gaussian
+  (:use :cl :sqlite :iter :cl-ppcre :alexandria))
+
+(in-package :gaussian)
 
 (defun mean (seq)
   (/ (reduce #'+ seq)
@@ -60,17 +64,34 @@
         (loop for key being the hash-keys of (header iter) do
              (setf (gethash key ret) (elt splited (gethash key (header iter)))))
         ret))))
-      
-  
-      
 
-  
+(defmacro sqlite-insert-into (db table &rest pairs)
+  `(sqlite:execute-non-query ,db ,(concatenate 'string
+                                               (format nil "insert into ~a(" table)
+                                               (format nil "~{~a~^, ~}" (mapcar #'first pairs)) ") values ("
+                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) "?") pairs)) ")")
+                             ,@(mapcar #'second pairs)))
+                                               
+                                               
 
 (defun load-coasts-from-source-to-database (source outbase)
   (sqlite:execute-non-query outbase "create table if not exists candles (id integer primary key not null, period iteger, datetime integer, open float, close float, high float, low float, volume float, unique(datetime))")
   (sqlite:with-transaction outbase
     (with-source-iter el source
-      (sqlite:execute-non-query outbase "insert into candles (period, datetime, open, close, high, low, volume) values (?,?,?,?,?,?,?)" (read-from-string (gethash "<PER>" el)) (convert-datetime (gethash "<DATE>" el) (gethash "<TIME>" el)) (read-from-string (gethash "<OPEN>" el)) (read-from-string (gethash "<CLOSE>"el )) (read-from-string (gethash "<HIGH>" el)) (read-from-string (gethash "<LOW>" el))  (read-from-string (gethash "<VOL>" el))))))
+      (macrolet ((short-insert (db table &rest pairs)
+                   `(sqlite-insert-into ,db ,table ,@(mapcar #'(lambda (a)
+                                                               (list (first a)
+                                                                     (if (stringp (second a))
+                                                                         `(read-from-string (gethash ,(second a) el))
+                                                                         (second a)))) pairs))))
+        (short-insert outbase candles
+                      (period "<PER>")
+                      (datetime (convert-datetime (gethash "<DATE>" el) (gethash "<TIME>" el)))
+                      (open "<OPEN>")
+                      (close "<CLOSE>")
+                      (high "<HIGH>")
+                      (low "<LOW>")
+                      (volume "<VOL>"))))))
 
 (defun convert-datetime (date time)
   (macrolet ((bb (&rest pass)
@@ -100,15 +121,41 @@
       (sqlite:disconnect dbconn)
       (finalize-iter coasts))))
            
+
+(defmacro with-sqlite-select (db varlist query parameters &body body)
+  (let ((statement (gensym))
+        (colcount (gensym))
+        (name-number (gensym))
+        (i (gensym)))
+    `(let ((,statement (prepare-statement ,db ,query)))
+       ,@(iter (for i from 1)
+               (declare (type fixnum i))
+               (for par in parameters)
+               (collect `(bind-parameter ,statement ,i ,par)))
+       (let ((,colcount (sqlite-ffi:sqlite3-column-count (sqlite::handle ,statement)))
+             (,name-number (make-hash-table :test #'equal)))
+         (loop for ,i from 0 to (- ,colcount 1) do
+              (setf (gethash (sqlite-ffi:sqlite3-column-name (sqlite::handle ,statement) ,i) ,name-number) ,i))
+         ,@(loop for var in varlist collect
+               `(multiple-value-bind (val has?) (gethash ,(if (listp var)
+                                                              (second var)
+                                                              (string-downcase (format nil "~a" var))) ,name-number)
+                  (declare (ignore val))
+                  (if (not has?)
+                      (error (make-condition 'simple-condition :format-control "There is no \"~a\" in \"~a\" query results" :format-arguments (list ,(if (listp var)
+                                                                                                                                                         (second var)
+                                                                                                                                                         (string-downcase (format nil "~a" var))) ,query))))))
+         (loop while (step-statement ,statement) do
+              (let (,@(loop for var in varlist collect
+                           `(,(if (listp var)
+                                  (first var)
+                                  var) (sqlite:statement-column-value ,statement (gethash ,(if (listp var)
+                                                                                               (second var)
+                                                                                               (string-downcase (format nil "~a" var))) ,name-number)))))
+                ,@body)))
+       (sqlite:finalize-statement ,statement))))
+
          
-         
-  
+(defclass strategy () ())
 
-
-
-;; (defun make-money (datasource start-money strategy)
-;;   (let ((min-time (+ 10 (sqlite:execute-single datasource "select min(time) from coasts")))
-;;         (max-time (sqlite:execute-single datasource "select max(time) from coasts"))
-;;         (deposit (make-deposit)))
-;;     (loop for time from min-time to max-time by 0.1 do
-;;          (when 
+(defgeneric check-strategy (strategy account historydata))

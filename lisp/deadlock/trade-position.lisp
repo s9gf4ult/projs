@@ -1,0 +1,10 @@
+(in-package :deadlock)
+
+(defclass trade-position ()
+  ((open-time :initarg :time :reader open-time)
+   (close-time :initform nil :accessor close-time)
+   (open-coast :initarg :open-coast :reader open-coast)
+   (close-coast :initform nil :accessor close-coast)
+   (position-type :initarg :position-type :reader position-type :documentation "can be :short or :long")
+   (back-stop :initform nil :initarg :back-stop :accessor back-stop)
+   (profit-stop :initform nil :initarg :profit-stop :accessor profit-stop)))

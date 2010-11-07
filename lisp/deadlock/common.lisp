@@ -1,3 +1,5 @@
+(in-package :deadlock)
+
 (defun mean (seq)
   (/ (reduce #'+ seq)
      (length seq)))
@@ -36,6 +38,7 @@
    (header :initform (make-hash-table :test #'equal) :initarg :header :accessor header)))
 
 (defmethod shared-initialize :after ((obj micex-iter) slot-names &rest init-args &key)
+  (declare (ignore slot-names init-args))
   (when (file-name obj)
     (setf (file-descriptor obj) (open (file-name obj) :direction :input))
     (let  ((fline (ppcre:split "\ *;\ *" (read-line (file-descriptor obj) nil))))
@@ -60,7 +63,7 @@
   `(sqlite:execute-non-query ,db ,(concatenate 'string
                                                (format nil "insert into ~a(" table)
                                                (format nil "~{~a~^, ~}" (mapcar #'first pairs)) ") values ("
-                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) "?") pairs)) ")")
+                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (declare (ignore a)) "?") pairs)) ")")
                              ,@(mapcar #'second pairs)))
                                                
                                                
@@ -88,9 +91,7 @@
   (macrolet ((bb (&rest pass)
                `(encode-universal-time ,@(loop for p in pass append
                                               (loop for pp in (cdr p) collect
-                                                   (if (cadr pp)
-                                                       `(parse-integer (subseq ,(car p) ,(car pp) ,(cadr pp)))
-                                                       `(parse-integer (subseq ,(car p) ,(car pp)))))))))
+                                                       `(parse-integer (subseq ,(car p) ,@pp)))))))
                          
     (bb (time (4)
               (2 4)
@@ -128,14 +129,14 @@
          (loop for ,i from 0 to (- ,colcount 1) do
               (setf (gethash (sqlite-ffi:sqlite3-column-name (sqlite::handle ,statement) ,i) ,name-number) ,i))
          ,@(loop for var in varlist collect
-               `(multiple-value-bind (val has?) (gethash ,(if (listp var)
-                                                              (second var)
-                                                              (string-downcase (format nil "~a" var))) ,name-number)
-                  (declare (ignore val))
-                  (if (not has?)
-                      (error (make-condition 'simple-condition :format-control "There is no \"~a\" in \"~a\" query results" :format-arguments (list ,(if (listp var)
-                                                                                                                                                         (second var)
-                                                                                                                                                         (string-downcase (format nil "~a" var))) ,query))))))
+                `(multiple-value-bind (val has?) (gethash ,(if (listp var)
+                                                               (second var)
+                                                               (string-downcase (format nil "~a" var))) ,name-number)
+                   (declare (ignore val))
+                   (if (not has?)
+                       (error (make-condition 'simple-condition :format-control "There is no \"~a\" in \"~a\" query results" :format-arguments (list ,(if (listp var)
+                                                                                                                                                          (second var)
+                                                                                                                                                          (string-downcase (format nil "~a" var))) ,query))))))
          (loop while (step-statement ,statement) do
               (let (,@(loop for var in varlist collect
                            `(,(if (listp var)

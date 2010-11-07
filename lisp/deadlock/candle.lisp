@@ -1,0 +1,10 @@
+(in-package :deadlock)
+
+(defclass candle()
+  ((open :initarg :open :reader candle-open)
+   (close :initarg :close :reader candle-close)
+   (high :initarg :high :reader candle-high)
+   (low :initarg :low :reader candle-low)
+   (volume :initarg :volume :reader candle-volume)
+   (datetime :initarg :datetime :reader candle-datetime)
+   (type :initarg :type :initform :s1 :reader candle-type :documentation "can be :s1 :m1 :m5 :h1 :d1 :month :year")))

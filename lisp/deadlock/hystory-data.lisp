@@ -22,6 +22,7 @@
    (file-name :initform nil :initarg :file-name :reader file-name)))
 
 (defgeneric finalize-hystory (hyst))
+(defgeneric
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (sqlite-handle obj))

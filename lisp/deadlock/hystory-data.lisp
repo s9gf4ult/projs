@@ -22,7 +22,7 @@
    (file-name :initform nil :initarg :file-name :reader file-name)))
 
 (defgeneric finalize-hystory (hyst))
-(defgeneric
+(defgeneric back-step-candle (hystory candle period-type &optional steps))
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (sqlite-handle obj))
@@ -31,3 +31,10 @@
 (defmethod finalize-hystory ((obj hystory-data))
   (disconnect (sqlite-handle obj))
   (setf (sqlite-handle obj) nil))
+
+(defmethod back-step-candle ((hystory hystory-data) (candle candle) period-type &optional steps)
+  (let ((end-period (or end-period
+                        (candle-datetime candle)))
+        (price (or price
+                   (get-candle-avg candle))))
+    ))

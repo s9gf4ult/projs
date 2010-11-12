@@ -33,8 +33,13 @@
   (setf (sqlite-handle obj) nil))
 
 (defmethod back-step-candle ((hystory hystory-data) (candle candle) period-type &optional steps)
-  (let ((end-period (or end-period
-                        (candle-datetime candle)))
-        (price (or price
-                   (get-candle-avg candle))))
-    ))
+  (if (not (period>= period-type (candle-period candle)))
+      (error "candle period has type ~a but period-type is ~a and it less" (candle-period candle) period-type))
+  (let* ((steps (or steps
+                    1))
+         (back-datetime (datetitime-add-period (candle-datetime candle) (neg-period period-type) :times steps)))
+    (make-candle-from-period hystory period-type (start-of-the-period back-datetime period-type)
+                             (end-of-the-period  back-datetime period-type))))
+        
+  
+  

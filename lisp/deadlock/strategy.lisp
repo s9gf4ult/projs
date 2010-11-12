@@ -16,16 +16,16 @@
                       (try-open-position strategy account hystory position candle)))))
 
 (defclass everyday (strategy)
-  ((start-period :initform (* 40 60) :initarg :start-day-period :accessor everyday-start-period)
+  ((start-period :initform (* 40 60) :initarg :start-period :accessor everyday-start-period)
    (backstop-value :initform (list 'percent 2) :initarg :backstop-value :accessor everyday-backstop-value)))
 
 (defmethod try-open-position ((strategy everyday) (account account) (hystory hystory-data) (position trade-position) (candle candle))
-  (let ((ctype (candle-type (back-step-candle hystory candle :day 1))))
+  (let ((ctype (candle-type (back-step-candle hystory candle :day))))
     (labels ((try-open-long ()
-               (when (> (candle-high candle) (reduce-candle-values #'candle-high #'max (start-of-the-period hystory candle :day) (back-step-candle hystory candle :s1))) ; максимальное значение цены текущей свечи больше всех максимальных значений свечей с начала дня
+               (when (> (candle-high candle) (reduce-candle-values #'candle-high #'max (start-of-the-period hystory candle :day) (back-step-candle hystory candle :sec))) ; максимальное значение цены текущей свечи больше всех максимальных значений свечей с начала дня
                  (open-long-position account position candle :backstop (everyday-backstop-value strategy))))
              (try-open-short ()
-               (when (< (candle-low candle) (reduce-candle-values #'candle-low #'min (start-of-the-period hystory candle :day) (back-step-candle hystory candle :s1))) 
+               (when (< (candle-low candle) (reduce-candle-values #'candle-low #'min (start-of-the-period hystory candle :day) (back-step-candle hystory candle :sec))) 
                  (open-short-position account position candle :backstop (everyday-backstop-value strategy)))))
       (when (> (- (candle-datetime candle) (candle-datetime (start-of-the-period candle :day))) (everyday-start-period strategy))
         (cond

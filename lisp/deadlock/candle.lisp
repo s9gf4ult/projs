@@ -42,6 +42,9 @@
              ((numberp per) per))))
 
   (defun datetime-add-period (datetime period-type &key (times 1))
+    "добавляем к датавремя период в формате временного периода
+в случае работы с месяцами учитывается что разные месяцы состоят из разного количества дней, так если к дате конца месяца прибавить один месяц, то полученная дата будет концом следующего месяца даже если это будет февраль"
+
     (let ((p-sym (getpsym period-type))
           (p-num (getpnumb period-type)))
       (cond
@@ -66,6 +69,7 @@
              (encode-universal-time sec min hour day month year)))))))
   
   (defun start-of-the-period (datetime period-type)
+    "вычисляем начало временного периода в котором находиться `datetime'"
     (let ((p-sym (getpsym period-type))
           (p-num (getpnumb period-type)))
       (if (equal 0 p-num)
@@ -81,7 +85,41 @@
              (:month (encode-universal-time 0 0 0 1 month year))
              (:year (encode-universal-time 0 0 0 1 1 year)))))
         (t
-         
+         (first (return-range-of-multiple-period datetime period-type))))))
+
+  (defun end-of-the-period (datetime period-type)
+    "выделяем конец периода `period-type' в котором `datetime'"
+    (let ((p-sym (getpsym period-type))
+          (p-num (getpnumb period-type)))
+      (if (equal 0 p-num)
+          (error "period is 0 and can not be used"))
+      (cond
+        ((equal 1 (abs p-num)) ;если вычисляем конец периода в одну величину
+         (multiple-value-bind (sec min hour day month year) (decode-universal-time datetime)
+           (case p-sym
+             (:sec datetime)
+             (:min (encode-universal-time 59 min hour day month year))
+             (:hour (encode-universal-time 59 59 hour day month year))
+             (:day (encode-universal-time 59 59 23 day month year))
+             (:month (multiple-value-bind (sec min hour day month year) (decode-universal-time (datetime-add-period datetime :month))
+                       (- (encode-universal-time 59 59 23 1 month year) (* 60 60 24)))) ;вернуть первый день следующего месяца минус один день (тобишь конец предыдущего дня)
+             (:year (encode-universal-time 59 59 23 31 12 year)))))
+        (t
+         (second (return-range-of-multiple-period datetime period-type))))))
+  (defun return-range-of-multiple-period (datetime period-type)
+    "возвращаем список с началом и концом временного периодка `period-type' в котором находиться `datetime' если первый является составным временным периодом"
+    (let ((p-sym (getpsym period-type))
+          (p-num (getpnumb period-type)))
+      (let ((counting (cond
+                        ((member p-sym '(:sec :min)) 60)
+                        ((eq :hour p-sym) 24)
+    
+
+  )
+
+        
+        
+            
         
              
     

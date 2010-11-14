@@ -23,6 +23,7 @@
 
 (defgeneric finalize-hystory (hyst))
 (defgeneric back-step-candle (hystory candle period-type &optional steps))
+(defgeneric make-candle-from-period (hystory datetime period))
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (sqlite-handle obj))
@@ -38,8 +39,17 @@
   (let* ((steps (or steps
                     1))
          (back-datetime (datetitime-add-period (candle-datetime candle) (neg-period period-type) :times steps)))
-    (make-candle-from-period hystory period-type (start-of-the-period back-datetime period-type)
-                             (end-of-the-period  back-datetime period-type))))
+    (make-candle-from-period hystory back-datetime period-type)))
         
-  
+(defmethod make-candle-from-period ((hyst hystory-data) datetime period-type)
+  (let ((start (start-of-the-period period-type))
+        (end (end-of-the-period period-type)))
+    (let ((openco (execute-single (sqlite-handle hyst) "select open from candles where datetime >= ? order by datetime asc" start))
+          (closeco (execute-single (sqlite-handle hyst) "select close from candles where datetime <= ? order by datetime desc" end))
+          (highco (execute-single (sqlite-handle hyst) "select max(high) from candles where datetime between ? and ?" start end))
+          (lowco (execute-single (sqlite-handle hyst) "select min(low) from candles where datetime between ? and ?" start end)))
+      (if (and (and openco closeco highco lowco)
+               (not (member "" (list openco closeco highco lowco))))
+          (make-instance 'candle :open openco :close closeco :high highco :low lowco :datetime start :period period-type)))))
+        
   

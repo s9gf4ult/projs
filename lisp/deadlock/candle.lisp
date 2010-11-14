@@ -8,7 +8,7 @@
    (volume :initarg :volume :reader candle-volume)
    (datetime :initarg :datetime :reader candle-datetime)
    (type :reader candle-type)
-   (period :initarg :type :initform :sec :reader candle-period :documentation "period can be one symbol of this (:sec :min :hour :day :week :month :year) or list like this (`symbol' number) where `symbol' is one of above listed. It can be number, in this case it will the same as (:sec number)")))
+   (period :initarg :period :initform :sec :reader candle-period :documentation "period can be one symbol of this (:sec :min :hour :day :week :month :year) or list like this (`symbol' number) where `symbol' is one of above listed. It can be number, in this case it will the same as (:sec number)")))
 
 (defmethod shared-initialize :after ((obj candle) slot-names &rest initargs &key)
   (setf (slot-value obj 'type) (cond

@@ -1,5 +1,50 @@
 (in-package :deadlock)
 
+(defmacro with-sqlite-select (db varlist query parameters &body body)
+  (let ((statement (gensym))
+        (colcount (gensym))
+        (name-number (gensym))
+        (i (gensym)))
+    `(let ((,statement (prepare-statement ,db ,query)))
+       ,@(iter (for i from 1)
+               (declare (type fixnum i))
+               (for par in parameters)
+               (collect `(bind-parameter ,statement ,i ,par)))
+       (let ((,colcount (sqlite-ffi:sqlite3-column-count (sqlite::handle ,statement)))
+             (,name-number (make-hash-table :test #'equal)))
+         (loop for ,i from 0 to (- ,colcount 1) do
+              (setf (gethash (sqlite-ffi:sqlite3-column-name (sqlite::handle ,statement) ,i) ,name-number) ,i))
+         ,@(loop for var in varlist collect
+                `(multiple-value-bind (val has?) (gethash ,(if (listp var)
+                                                               (second var)
+                                                               (string-downcase (format nil "~a" var))) ,name-number)
+                   (declare (ignore val))
+                   (if (not has?)
+                       (error (make-condition 'simple-condition :format-control "There is no \"~a\" in \"~a\" query results" :format-arguments (list ,(if (listp var)
+                                                                                                                                                          (second var)
+                                                                                                                                                          (string-downcase (format nil "~a" var))) ,query))))))
+         (loop while (step-statement ,statement) do
+              (let (,@(loop for var in varlist collect
+                           `(,(if (listp var)
+                                  (first var)
+                                  var) (sqlite:statement-column-value ,statement (gethash ,(if (listp var)
+                                                                                               (second var)
+                                                                                               (string-downcase (format nil "~a" var))) ,name-number)))))
+                ,@body)))
+       (sqlite:finalize-statement ,statement))))
+
+(defmacro with-source-iter (var source &body body)
+  `(loop for ,var = (get-next ,source) while ,var do
+        (progn
+          ,@body)))
+
+(defmacro sqlite-insert-into (db table &rest pairs)
+  `(sqlite:execute-non-query ,db ,(concatenate 'string
+                                               (format nil "insert into ~a(" table)
+                                               (format nil "~{~a~^, ~}" (mapcar #'first pairs)) ") values ("
+                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (declare (ignore a)) "?") pairs)) ")")
+                             ,@(mapcar #'second pairs)))
+
 (defun mean (seq)
   (/ (reduce #'+ seq)
      (length seq)))
@@ -46,10 +91,12 @@
            (setf (gethash (elt fline a) (header obj)) a)))))
 
 (defgeneric finalize-iter (iter))
+(defgeneric get-next (iter))
+
+
 (defmethod finalize-iter ((iter micex-iter))
   (close (file-descriptor iter)))
 
-(defgeneric get-next (iter))
 (defmethod get-next ((iter micex-iter))
   (let ((line (read-line (file-descriptor iter) nil)))
     (when line
@@ -59,12 +106,6 @@
              (setf (gethash key ret) (elt splited (gethash key (header iter)))))
         ret))))
 
-(defmacro sqlite-insert-into (db table &rest pairs)
-  `(sqlite:execute-non-query ,db ,(concatenate 'string
-                                               (format nil "insert into ~a(" table)
-                                               (format nil "~{~a~^, ~}" (mapcar #'first pairs)) ") values ("
-                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (declare (ignore a)) "?") pairs)) ")")
-                             ,@(mapcar #'second pairs)))
                                                
                                                
 
@@ -85,7 +126,8 @@
                       (close "<CLOSE>")
                       (high "<HIGH>")
                       (low "<LOW>")
-                      (volume "<VOL>"))))))
+                      ;(volume "<VOL>")
+                      )))))
 
 (defun convert-datetime (date time)
   (macrolet ((bb (&rest pass)
@@ -100,10 +142,6 @@
               (4 6)
               (0 4)))))
 
-(defmacro with-source-iter (var source &body body)
-  `(loop for ,var = (get-next ,source) while ,var do
-        (progn
-          ,@body)))
 
 (defun load-coasts-from-file-to-sqlite (coasts-file sqlite-file)
   (let ((coasts (make-instance 'micex-iter :file-name coasts-file))
@@ -114,35 +152,3 @@
       (finalize-iter coasts))))
            
 
-(defmacro with-sqlite-select (db varlist query parameters &body body)
-  (let ((statement (gensym))
-        (colcount (gensym))
-        (name-number (gensym))
-        (i (gensym)))
-    `(let ((,statement (prepare-statement ,db ,query)))
-       ,@(iter (for i from 1)
-               (declare (type fixnum i))
-               (for par in parameters)
-               (collect `(bind-parameter ,statement ,i ,par)))
-       (let ((,colcount (sqlite-ffi:sqlite3-column-count (sqlite::handle ,statement)))
-             (,name-number (make-hash-table :test #'equal)))
-         (loop for ,i from 0 to (- ,colcount 1) do
-              (setf (gethash (sqlite-ffi:sqlite3-column-name (sqlite::handle ,statement) ,i) ,name-number) ,i))
-         ,@(loop for var in varlist collect
-                `(multiple-value-bind (val has?) (gethash ,(if (listp var)
-                                                               (second var)
-                                                               (string-downcase (format nil "~a" var))) ,name-number)
-                   (declare (ignore val))
-                   (if (not has?)
-                       (error (make-condition 'simple-condition :format-control "There is no \"~a\" in \"~a\" query results" :format-arguments (list ,(if (listp var)
-                                                                                                                                                          (second var)
-                                                                                                                                                          (string-downcase (format nil "~a" var))) ,query))))))
-         (loop while (step-statement ,statement) do
-              (let (,@(loop for var in varlist collect
-                           `(,(if (listp var)
-                                  (first var)
-                                  var) (sqlite:statement-column-value ,statement (gethash ,(if (listp var)
-                                                                                               (second var)
-                                                                                               (string-downcase (format nil "~a" var))) ,name-number)))))
-                ,@body)))
-       (sqlite:finalize-statement ,statement))))

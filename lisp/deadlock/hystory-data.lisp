@@ -14,7 +14,6 @@
                                                                             "select * from candles") ,period
          (let ((,candle (make-instance 'candle :datetime ,datetime :open ,open :close ,close :high ,high :low ,low :volume ,volume)))
                ,@body)))))
-             
      
 
 (defclass hystory-data ()
@@ -24,6 +23,8 @@
 (defgeneric finalize-hystory (hyst))
 (defgeneric back-step-candle (hystory candle period-type &optional steps))
 (defgeneric make-candle-from-period (hystory datetime period))
+(defgeneric back-step-existing-candle (hystory candle period-type &optioan steps)
+  (:documentation "вернет предыдущую суцествующую свечу, тобиш в которой проходили сделки(не было выходных проходили сделки и прочее"))
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (sqlite-handle obj))
@@ -42,8 +43,8 @@
     (make-candle-from-period hystory back-datetime period-type)))
         
 (defmethod make-candle-from-period ((hyst hystory-data) datetime period-type)
-  (let ((start (start-of-the-period period-type))
-        (end (end-of-the-period period-type)))
+  (let ((start (start-of-the-period datetime period-type))
+        (end (end-of-the-period datetime period-type)))
     (let ((openco (execute-single (sqlite-handle hyst) "select open from candles where datetime >= ? order by datetime asc" start))
           (closeco (execute-single (sqlite-handle hyst) "select close from candles where datetime <= ? order by datetime desc" end))
           (highco (execute-single (sqlite-handle hyst) "select max(high) from candles where datetime between ? and ?" start end))
@@ -51,5 +52,10 @@
       (if (and (and openco closeco highco lowco)
                (not (member "" (list openco closeco highco lowco))))
           (make-instance 'candle :open openco :close closeco :high highco :low lowco :datetime start :period period-type)))))
-        
-  
+
+(defmethod back-step-existing-candle ((hyst hystory-data) (candle candle) period-type &optioal steps)
+  (let ((steps (or steps
+                   1))
+        last)
+    (loop
+         (

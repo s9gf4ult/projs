@@ -1,13 +1,14 @@
 (in-package :deadlock)
 
 (defclass candle()
-  ((open :initarg :open :reader candle-open)
-   (close :initarg :close :reader candle-close)
-   (high :initarg :high :reader candle-high)
-   (low :initarg :low :reader candle-low)
-   (volume :initarg :volume :reader candle-volume)
-   (datetime :initarg :datetime :reader candle-datetime)
-   (type :reader candle-type)
+  ((open :initform nil :initarg :open :reader candle-open)
+   (close :initform nil :initarg :close :reader candle-close)
+   (high :initform nil :initarg :high :reader candle-high)
+   (low :initform nil  :initarg :low :reader candle-low)
+   (volume :initform nil :initarg :volume :reader candle-volume)
+   (datetime :initform nil :initarg :datetime :reader candle-datetime)
+   (datetime-close :initform nil :initarg :datetime-close :reader candle-datetime-close)
+   (type :initform nil :reader candle-type)
    (period :initarg :period :initform :sec :reader candle-period :documentation "period can be one symbol of this (:sec :min :hour :day :week :month :year) or list like this (`symbol' number) where `symbol' is one of above listed. It can be number, in this case it will the same as (:sec number)")))
 
 (defmethod shared-initialize :after ((obj candle) slot-names &rest initargs &key)
@@ -29,6 +30,9 @@
     (period<= <=)))
 
 (defgeneric period-to-seconds (per))
+(defgeneric neg-period (per))
+(defgeneric print-candle (candle))
+
 
 (labels ((getpsym (per)
            (cond
@@ -151,7 +155,6 @@
     
   
                
-(defgeneric neg-period (per))
 (defmethod neg-period ((per list))
   (list (first per) (- (second per))))
 (defmethod neg-period ((per symbol))
@@ -178,5 +181,25 @@
 (defmethod period-to-seconds ((per number))
   number)
 
+(defmethod print-candle ((candle candle))
+  (when (candle-datetime candle)
+    (multiple-value-bind (sec min hour day month year) (decode-universal-time (candle-datetime candle))
+      
+      (write-line (format nil "(datetime (sec ~a) (min ~a) (hour ~a) (day ~a) (month ~a) (year ~a))" sec min hour day month year))))
+  (when (candle-datetime-close candle)
+    (multiple-value-bind (sec min hour day month year) (decode-universal-time (candle-datetime-close candle))
+      (write-line (format nil "(datetime-close (sec ~a) (min ~a) (hour ~a) (day ~a) (month ~a) (year ~a))" sec min hour day month year))))
+  (macrolet ((short-write (&rest pairs)
+               `(progn ,@(loop for pair in pairs collect 
+                             `(when (,(first pair) candle)
+                                (write-line (format nil ,(format nil "(~a ~~a)" (second pair)) (,(first pair) candle))))))))
+    (short-write (candle-open open)
+                 (candle-close close)
+                 (candle-high high)
+                 (candle-low low)
+                 (candle-volume volume)
+                 (candle-type type)
+                 (candle-period period))) nil )
 
-
+(defmethod print-candle ((candle null))
+  (write-line "NIL"))

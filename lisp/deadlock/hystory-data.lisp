@@ -1,21 +1,36 @@
 (in-package :deadlock)
 
-(defmacro with-candles (hystory candle period &body body)
-  (let ((hyst (gensym))
-        (open (gensym))
-        (close (gensym))
-        (datetime (gensym))
-        (high (gensym))
-        (low (gensym))
-        (volume (gensym)))
-    `(let ((,hyst (hystory-sqlite-handle ,hystory)))
-       (with-sqlite-select ,hyst ((,datetime "datetime") (,open "open") (,close "close") (,high "high") (,low "low") (,volume "volume")) ,(if period
-                                                                            "select * from candles where datetime between ? and ?"
-                                                                            "select * from candles") ,period
-         (let ((,candle (make-instance 'candle :datetime ,datetime :open ,open :close ,close :high ,high :low ,low :volume ,volume)))
-               ,@body)))))
-     
-
+(defmacro with-candles (hystory candle period-type period &body body)
+  (let ((move-up (gensym))
+        (move-to (gensym))
+        (current-shift (gensym))
+        (current-date (gensym))
+        (start (gensym))
+        (end (gensym))
+        (datetime-open (gensym))
+        (datetime-close (gensym)))
+    `(let (,@(if period
+                 `((,datetime-open (let ((,start ,(first period)))
+                                       (if (typep ,start 'candle)
+                                         (candle-datetime ,start)
+                                         ,start)))
+                   (,datetime-close (let ((,end ,(second period)))
+                                      (if (typep ,end 'candle)
+                                          (candle-datetime ,end)
+                                          ,end))))
+                 `((,datetime-open (execute-single (hystory-sqlite-handle ,hystory) "select min(datetime) from candles"))
+                   (,datetime-close (execute-single (hystory-sqlite-handle ,hystory) "select max(datetime) from candles")))))
+       (let ((,move-up (start-of-the-period ,datetime-open ,period-type))
+             (,move-to (start-of-the-period ,datetime-close ,period-type)))
+         (iter (for ,current-shift from 0)
+               (declare (type fixnum ,current-shift))
+               (let ((,current-date (datetime-add-period ,move-up ,period-type :times ,current-shift)))
+                 (if (<= ,current-date ,move-to)
+                     (let ((,candle (make-candle-from-period ,hystory ,current-date ,period-type)))
+                       (when ,candle
+                         ,@body))
+                     (return nil))))))))
+                           
 (defclass hystory-data ()
   ((sqlite-handle :initform nil :initarg :sqlite-handle :accessor hystory-sqlite-handle)
    (file-name :initform nil :initarg :file-name :reader hystory-file-name)
@@ -26,6 +41,7 @@
 (defgeneric make-candle-from-period (hystory datetime period))
 (defgeneric back-step-existing-candle (hystory candle period-type &optional steps)
   (:documentation "вернет предыдущую суцествующую свечу, тобиш в которой проходили сделки(не было выходных проходили сделки и прочее"))
+(defgeneric reduce-candle-values (hystory reduce-function map-function start-datetime end-datetiem))
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (hystory-sqlite-handle obj))
@@ -64,9 +80,12 @@
                    1))
         last)
     (iter (for back-counter from 1)
+          (declare (type fixnum back-counter))
           (if (equal 0 steps)
               (return last)
               (let ((elt (back-step-candle hyst datetime period-type back-counter)))
                 (if elt
                     (setf last elt
                           steps (- steps 1))))))))
+;; (defmethod reduce-candle-values ((hys hystory-data) reduce-function map-function start end)
+;;   (with-candles hys 

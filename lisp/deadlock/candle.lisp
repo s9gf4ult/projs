@@ -66,101 +66,100 @@
                    (period-to-seconds period-type))))
             ((eq p-sym :month)
              (multiple-value-bind (sec min hour day month year) (decode-universal-time datetime)
-               (multiple-value-bind (di re) (truncate (+ month (* p-num times)) 12)
-                 (let ((month (if (> re 0)
-                                  re
-                                  (+ 12 re)))
-                       (year (+ year di)))
-                   (multiple-value-bind (sec2 min2 hour2 day2 month2 year2) (decode-universal-time (encode-universal-time sec min hour day month year))
-                     (if (not (= day2 day))
-                         (datetime-add-period (datetime-add-period datetime (list :day (- day2))) period-type :times times)
-                         (encode-universal-time sec min hour day month year)))))))
+               (let ((supermonth (+ (* 12 year) month (* p-num times) -1)))
+                 (multiple-value-bind (di re) (truncate supermonth 12)
+                   (let ((month (+ 1 re))
+                         (year di))
+                     (multiple-value-bind (sec2 min2 hour2 day2 month2 year2) (decode-universal-time (encode-universal-time sec min hour day month year))
+                       (if (not (= day2 day))
+                           (datetime-add-period (datetime-add-period datetime (list :day (- day2))) period-type :times times)
+                           (encode-universal-time sec min hour day month year))))))))
             ((eq p-sym :year)
              (multiple-value-bind (sec min hour day month year) (decode-universal-time datetime)
                (let ((year (+ year (* p-num times))))
                  (encode-universal-time sec min hour day month year))))))))
-    
-    (defmethod start-of-the-period ((datetime number) period-type)
-      "вычисляем начало временного периода в котором находиться `datetime'"
-      (let ((p-sym (getpsym period-type))
-            (p-num (getpnumb period-type)))
-        (if (equal 0 p-num)
-            (error "period is 0 and can not be used"))
+  
+  (defmethod start-of-the-period ((datetime number) period-type)
+    "вычисляем начало временного периода в котором находиться `datetime'"
+    (let ((p-sym (getpsym period-type))
+          (p-num (getpnumb period-type)))
+      (if (equal 0 p-num)
+          (error "period is 0 and can not be used"))
+      (cond
+        ((equal 1 (abs p-num))
+         (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
+           (case p-sym
+             (:sec datetime)
+             (:min (encode-universal-time 0 min hour day month year))
+             (:hour (encode-universal-time 0 0 hour day month year))
+             (:day (encode-universal-time 0 0 0 day month year))
+             (:week (datetime-add-period (encode-universal-time 0 0 0 day month year) (list :day (- dow))))
+             (:month (encode-universal-time 0 0 0 1 month year))
+             (:year (encode-universal-time 0 0 0 1 1 year)))))
+        (t
+         (return-range-of-multiple-period datetime period-type)))))
+  
+  (defmethod start-of-the-period ((candle candle) period-type)
+    (start-of-the-period (candle-datetime candle) period-type))
+
+  (defmethod end-of-the-period ((datetime number) period-type)
+    "выделяем конец периода `period-type' в котором `datetime'"
+    (let ((p-sym (getpsym period-type))
+          (p-num (getpnumb period-type)))
+      (if (equal 0 p-num)
+          (error "period is 0 and can not be used"))
+      (cond
+        ((equal 1 (abs p-num)) ;если вычисляем конец периода в одну величину
+         (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
+           (case p-sym
+             (:sec datetime)
+             (:min (encode-universal-time 59 min hour day month year))
+             (:hour (encode-universal-time 59 59 hour day month year))
+             (:day (encode-universal-time 59 59 23 day month year))
+             (:week (datetime-add-period (encode-universal-time 59 59 23 day month year) (list :day (- 6 dow))))
+             (:month (multiple-value-bind (sec min hour day month year) (decode-universal-time (datetime-add-period datetime :month))
+                       (- (encode-universal-time 59 59 23 1 month year) (* 60 60 24)))) ;вернуть первый день следующего месяца минус один день (тобишь конец предыдущего месяца)
+             (:year (encode-universal-time 59 59 23 31 12 year)))))
+        (t
+         (return-range-of-multiple-period datetime period-type :end)))))
+
+  (defmethod end-of-the-period ((candle candle) period-type)
+    (end-of-the-period (candle-datetime candle) period-type))
+  
+  (defun return-range-of-multiple-period (datetime period-type &optional (start-or-end :start))
+    "возвращаем список с началом и концом временного периодка `period-type' в котором находиться `datetime' если первый является составным временным периодом"
+    (let ((p-sym (getpsym period-type))
+          (p-num (getpnumb period-type)))
+      (let ((counting (cond
+                        ((member p-sym '(:sec :min)) 60)
+                        ((eq :hour p-sym) 24)
+                        ((eq :month p-sym) 12))))
         (cond
-          ((equal 1 (abs p-num))
-           (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
-             (case p-sym
-               (:sec datetime)
-               (:min (encode-universal-time 0 min hour day month year))
-               (:hour (encode-universal-time 0 0 hour day month year))
-               (:day (encode-universal-time 0 0 0 day month year))
-               (:week (datetime-add-period (encode-universal-time 0 0 0 day month year) (list :day (- dow))))
-               (:month (encode-universal-time 0 0 0 1 month year))
-               (:year (encode-universal-time 0 0 0 1 1 year)))))
-          (t
-           (return-range-of-multiple-period datetime period-type)))))
-    
-    (defmethod start-of-the-period ((candle candle) period-type)
-      (start-of-the-period (candle-datetime candle) period-type))
+          ((member p-sym '(:sec :min :hour :month))
+           (labels ((p-start (val per)
+                      (* per (truncate val per)))
+                    (p-end (val per)
+                      (+ (p-start val per) (- per 1))))
+             (if (not (and (< p-num counting) (= 0 (rem counting p-num))))
+                 (error "you want to use ~a of ~a as period type, you can not do that" p-num p-sym)
+                 (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
+                   (case p-sym
+                     (:sec (if (eq :start start-or-end)
+                               (encode-universal-time (p-start sec p-num) min hour day month year)
+                               (encode-universal-time (p-end sec p-num) min hour day month year)))
+                     (:min (if (eq :start start-or-end)
+                               (encode-universal-time 0 (p-start min p-num) hour day month year)
+                               (encode-universal-time 59 (p-end min p-num) hour day month year)))
+                     (:hour (if (eq :start start-or-end)
+                                (encode-universal-time 0 0 (p-start hour p-num) day month year)
+                                (encode-universal-time 59 59 (p-end hour p-num) day month year)))
+                     (:month (if (eq :start start-or-end)
+                                 (encode-universal-time 0 0 0 1 (+ 1 (p-start (- month 1) p-num)) year)
+                                 (end-of-the-period (encode-universal-time 0 0 0 1 (+ 1 (p-end (- month 1) p-num)) year) :month))))))))
+          
+          ))))
 
-    (defmethod end-of-the-period ((datetime number) period-type)
-      "выделяем конец периода `period-type' в котором `datetime'"
-      (let ((p-sym (getpsym period-type))
-            (p-num (getpnumb period-type)))
-        (if (equal 0 p-num)
-            (error "period is 0 and can not be used"))
-        (cond
-          ((equal 1 (abs p-num)) ;если вычисляем конец периода в одну величину
-           (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
-             (case p-sym
-               (:sec datetime)
-               (:min (encode-universal-time 59 min hour day month year))
-               (:hour (encode-universal-time 59 59 hour day month year))
-               (:day (encode-universal-time 59 59 23 day month year))
-               (:week (datetime-add-period (encode-universal-time 59 59 23 day month year) (list :day (- 6 dow))))
-               (:month (multiple-value-bind (sec min hour day month year) (decode-universal-time (datetime-add-period datetime :month))
-                         (- (encode-universal-time 59 59 23 1 month year) (* 60 60 24)))) ;вернуть первый день следующего месяца минус один день (тобишь конец предыдущего месяца)
-               (:year (encode-universal-time 59 59 23 31 12 year)))))
-          (t
-           (return-range-of-multiple-period datetime period-type :end)))))
-
-    (defmethod end-of-the-period ((candle candle) period-type)
-      (end-of-the-period (candle-datetime candle) period-type))
-    
-    (defun return-range-of-multiple-period (datetime period-type &optional (start-or-end :start))
-      "возвращаем список с началом и концом временного периодка `period-type' в котором находиться `datetime' если первый является составным временным периодом"
-      (let ((p-sym (getpsym period-type))
-            (p-num (getpnumb period-type)))
-        (let ((counting (cond
-                          ((member p-sym '(:sec :min)) 60)
-                          ((eq :hour p-sym) 24)
-                          ((eq :month p-sym) 12))))
-          (cond
-            ((member p-sym '(:sec :min :hour :month))
-             (labels ((p-start (val per)
-                        (* per (truncate val per)))
-                      (p-end (val per)
-                        (+ (p-start val per) (- per 1))))
-               (if (not (and (< p-num counting) (= 0 (rem counting p-num))))
-                   (error "you want to use ~a of ~a as period type, you can not do that" p-num p-sym)
-                   (multiple-value-bind (sec min hour day month year dow) (decode-universal-time datetime)
-                     (case p-sym
-                       (:sec (if (eq :start start-or-end)
-                                 (encode-universal-time (p-start sec p-num) min hour day month year)
-                                 (encode-universal-time (p-end sec p-num) min hour day month year)))
-                       (:min (if (eq :start start-or-end)
-                                 (encode-universal-time 0 (p-start min p-num) hour day month year)
-                                 (encode-universal-time 59 (p-end min p-num) hour day month year)))
-                       (:hour (if (eq :start start-or-end)
-                                  (encode-universal-time 0 0 (p-start hour p-num) day month year)
-                                  (encode-universal-time 59 59 (p-end hour p-num) day month year)))
-                       (:month (if (eq :start start-or-end)
-                                   (encode-universal-time 0 0 0 1 (+ 1 (p-start (- month 1) p-num)) year)
-                                   (end-of-the-period (encode-universal-time 0 0 0 1 (+ 1 (p-end (- month 1) p-num)) year) :month))))))))
-            
-            ))))
-
-    )
+  )
     
   
                

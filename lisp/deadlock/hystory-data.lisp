@@ -41,7 +41,7 @@
 (defgeneric make-candle-from-period (hystory datetime period))
 (defgeneric back-step-existing-candle (hystory candle period-type &optional steps)
   (:documentation "вернет предыдущую суцествующую свечу, тобиш в которой проходили сделки(не было выходных проходили сделки и прочее"))
-(defgeneric reduce-candle-values (hystory reduce-function map-function start-datetime end-datetiem))
+(defgeneric reduce-candle-values (hystory reduce-function map-function &key start end period))
 
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (hystory-sqlite-handle obj))
@@ -87,5 +87,17 @@
                 (if elt
                     (setf last elt
                           steps (- steps 1))))))))
-;; (defmethod reduce-candle-values ((hys hystory-data) reduce-function map-function start end)
-;;   (with-candles hys 
+
+(defmethod reduce-candle-values ((hys hystory-data) reduce-function map-function &key start end period)
+  (let ((start (or start
+                   (execute-single (hystory-sqlite-handle hys) "select min(datetime) from candles")))
+        (end (or end
+                 (execute-single (hystory-sqlite-handle hys) "select max(datetime) from candles")))
+        (period (or period :min)))
+    
+    (let (result)
+      (with-candles hys candle period (start end)
+        (setf result (if (not result)
+                         (funcall map-function candle)
+                         (funcall reduce-function result (funcall map-function candle)))))
+      result)))

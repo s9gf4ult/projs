@@ -126,7 +126,7 @@
                       (close "<CLOSE>")
                       (high "<HIGH>")
                       (low "<LOW>")
-                      ;(volume "<VOL>")
+                      (volume "<VOL>")
                       )))))
 
 (defun convert-datetime (date time)

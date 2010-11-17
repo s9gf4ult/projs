@@ -22,11 +22,11 @@
 (defmethod try-open-position ((strategy everyday) (account account) (hystory hystory-data) (position trade-position) (candle candle))
   (let ((ctype (candle-type (back-step-existing-candle hystory candle :day))))
     (labels ((try-open-long ()
-               (when (> (candle-high candle) (reduce-candle-values hystory #'max #'candle-high :start (start-of-the-period  candle :day) :end (back-step-candle hystory candle :min))) ; максимальное значение цены текущей свечи больше всех максимальных значений свечей с начала дня
+               (when (> (candle-high candle) (reduce-candle-values hystory #'max #'candle-high :start (start-of-the-period  candle :day) :end (back-step-existing-candle hystory candle (candle-period candle)))) ; максимальное значение цены текущей свечи больше всех максимальных значений свечей текущего типа с начала дня
                  (open-long-position strategy account position candle)))
              (try-open-short ()
-               (when (< (candle-low candle) (reduce-candle-values #'candle-low #'min (start-of-the-period hystory candle :day) (back-step-candle hystory candle :sec))) 
-                 (open-short-position account position candle :backstop (everyday-backstop-value strategy)))))
+               (when (< (candle-low candle) (reduce-candle-values hystory #'min #'candle-low :start (start-of-the-period candle :day) (back-step-existing-candle hystory candle (candle-period candle)))) 
+                 (open-short-position strategy account position candle))))
       (when (> (- (candle-datetime candle) (start-of-the-period candle :day)) (everyday-start-period strategy))
         (cond
           ((eq :long ctype) (try-open-long))

@@ -3,7 +3,6 @@
 (defclass quick()
   ((name :initform "quick" :initarg :name :reader quick-name)
    (subaccounts :initform (list (make-instance 'subaccount)) :initarg :subaccounts :reader quick-subaccounts :documentation "список субаккаунтов доступных для работы")
-   (money-holds :initform nil :initarg :money-holds :reader quick-money-holds :documentation "список удержаний средств")
    (requests :initform nil :initarg :requests :reader quick-requests :documentation "список заявок")
    (positions :initform nil :initarg :positions :reader quick-positions :documentation "список открытых позиций")
    (log :initform (make-instance 'quick-log) :initarg :log :reader quick-log :documentation "специальный объект логирования")
@@ -41,8 +40,33 @@
    (sell-go :initform nil :initarg :sell-go :reader instrument-sell-go :documentation "гарантийное обеспечение продавца")
    (hystory :initform nil :initarg :hystory :reader instrument-hystory :documentation "история изменения цены инструмента"))
   (:documentation "торговый инструмент"))
+
+(defclass open-position ()
+  ((code :initform nil :initarg :code :reader open-position-code)
+   (direction :initform nil :initarg :direction :reader open-position-direction :documentation "can be `:long' or `:short'")
+   (deals :initform nil :initarg :deals :reader open-position-deals :documentation "список сделок по данной позиции")
+   (money-holds :initform nil :initarg :money-holds :reader open-position-money-holds :documentation "список удержаний денежных средств по позиции")
+   (profit :initform 0 :initarg :profit :reader open-position-profit :documentation "профит при закрытии позиции, вычисляется автоматически")
+   (open-date :initform nil :initarg :open-date :reader open-position-open-date)
+   (close-date :initform nil :initarg :close-date :reader open-position-close-date))
+  (:documentation "открытая позиция по инструменту"))
+
+(defclass deal ()
+  ((date :initform nil :initarg :date :reader deal-date)
+   (directtion :initform nil :initarg :dirction :reader deal-direction :documentation "can be `:buy' or `:sell'")
+   (instrument :initform nil :initarg :instrument :reader deal-instrument)
+   (count :initform 0 :initarg :count :reader deal-count :documentation "количество лотов по инструменту")
+   (commission :initform 0 :initarg :withdraw :reader deal-commission "комиссия с совершения сделки")))
    
-   
+(defclass quick-log()
+  ((file-name :initform nil :initarg :file-name :reader quick-log-file-name)
+   (sqlite-handler :initform nil :initarg :sqlite-handler :reader quick-log-sqlite-handler)))
+
+(defmethod shared-initialize :after ((obj quick-log) slot-names &rest initargs &key)
+  (declare (ignore slot-names initargs))
+  (when (and (quick-log-file-name obj) (not (quick-log-sqlite-handler obj)))
+    (let ((con (setf (slot-value obj 'sqlite-handler) (connect (quick-log-file-name obj)))))
+      (execute-non-query con "create table if not exists positions (id integer primary key not null, open-date integer not null, close-date integer not null, direction varchar not null, profit
    
    
    

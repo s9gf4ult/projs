@@ -33,6 +33,16 @@
    (execute-callback :initform nil :initarg :execute-callback :reader request-execute-callback :documentation "коллбэк на исполнение заявки")
    (overtime-callback :initform nil :initarg :overtime-callback :reader request-overtime-callback :documentation "коллбэк на просрочку заявки"))
   (:documentation "заявка на покупку - продажу"))
+
+(defclass instrument ()
+  ((name :initform nil :initarg :instrument :reader instrument-name :documentation "название ценной бумаги")
+   (code :initform nil :initarg :code :reader instrument-code :documentation "код ценной бумаги")
+   (buy-go :initform nil :initarg :buy-go :reader instrument-buy-go :documentation "гарантийное обеспечение покупателя")
+   (sell-go :initform nil :initarg :sell-go :reader instrument-sell-go :documentation "гарантийное обеспечение продавца")
+   (hystory :initform nil :initarg :hystory :reader instrument-hystory :documentation "история изменения цены инструмента"))
+  (:documentation "торговый инструмент"))
+   
+   
    
    
    

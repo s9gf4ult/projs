@@ -18,6 +18,12 @@
   ((subaccount :initarg :subaccount :reader money-hold-subaccount :documentation "ссылка на субсчет в котором удержаны денежные средства")
    (money :initform 0 :initarg :money :reader money-hold-money :documentation "количество денег удержанных в данной сущности"))
   (:documentation "сущность олицетворяющая удержанные средства (ГО при открытии позиции удерживается)"))
+(defmethod initialize-instance :after ((obj money-hold) &rest initargs &key)
+  (with-slots (money subaccount) obj
+    (declare (type number money)
+             (type subaccount subaccount))
+    (withdraw-money subaccount money)
+    obj))
 
 (defclass request ()
   ((direction :initarg :direction :reader request-direction :documentation  "must be `:buy' or `:sell'")
@@ -32,6 +38,11 @@
    (execute-callback :initform nil :initarg :execute-callback :reader request-execute-callback :documentation "коллбэк на исполнение заявки")
    (overtime-callback :initform nil :initarg :overtime-callback :reader request-overtime-callback :documentation "коллбэк на просрочку заявки"))
   (:documentation "заявка на покупку - продажу"))
+(defmethod shared-initialize :after ((obj request) slot-names &rest initargs &key)
+  (declare (ignore slot-names initargs))
+  (with-slots (direction) obj
+    (declare (type (member :sell :buy) direction))
+    obj))
 
 (defclass instrument ()
   ((name :initform nil :initarg :instrument :reader instrument-name :documentation "название ценной бумаги")
@@ -92,7 +103,13 @@
   (declare (ignore slot-names initargs))
   (when (and (quick-log-file-name obj) (not (quick-log-sqlite-handler obj)))
     (let ((con (setf (slot-value obj 'sqlite-handler) (connect (quick-log-file-name obj)))))
-      (execute-non-query con "create table if not exists positions (id integer primary key not null, open-date integer not null, close-date integer not null, direction varchar not null, profit
+      (execute-non-query con "pragma foreign_keys=on")
+      (execute-non-query con "create table if not exists positions (id integer primary key not null, open-date integer not null, close-date integer not null, direction varchar not null, profit read not null, instrument varchar not null)")
+      (execute-non-query con "create table if not exists deals (id integer primary key not null, direction varchar not null, instrument varchar not null, count real not null, date varchar not null, position integer not null, foreign key (position) references positions(id) on delete cascade)")
+      (execute-non-query con "create table if not exists requests (id integer primary key not null, direction varchar not null, instrument varchar not null, count integer not null, price real not null, set-date varchar not null, execution-date varchar, overtime-date varchar, state varchar not null)"))))
+      
+      
+      
    
    
    

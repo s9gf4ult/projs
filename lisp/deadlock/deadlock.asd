@@ -4,8 +4,6 @@
                (:file "common" :depends-on ("packages"))
                (:file "candle" :depends-on ("packages"))
                (:file "account" :depends-on ("packages" "common"))
-               (:file "trade-position" :depends-on ("packages"))
-               (:file "hystory-data" :depends-on ("packages" "common" "candle"))
                (:file "strategy" :depends-on ("packages" "common" "account" "hystory-data" "trade-position"))
                (:file "conditions" :depends-on ("packages"))
                (:file "classes" :depends-on ("packages" "common"))

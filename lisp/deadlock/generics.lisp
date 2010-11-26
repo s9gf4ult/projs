@@ -5,3 +5,10 @@
 (defgeneric withdraw-money (subaccount money)
   (:documentation "withdraw some money from subaccount"))
 (defgeneric free-holded-money (money-hold))
+
+(defgeneric finalize-hystory (hyst))
+(defgeneric back-step-candle (hystory candle period-type &optional steps))
+(defgeneric make-candle-from-period (hystory datetime period))
+(defgeneric back-step-existing-candle (hystory candle period-type &optional steps)
+  (:documentation "вернет предыдущую суцествующую свечу, тобиш в которой проходили сделки(не было выходных проходили сделки и прочее"))
+(defgeneric reduce-candle-values (hystory reduce-function map-function &key start end period))

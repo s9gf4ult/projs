@@ -2,7 +2,6 @@
 
 
          
-(defclass strategy () ())
 
 (defgeneric check-strategy (strategy account historydata))
 (defgeneric try-close-position (strategy account hystory position candle))

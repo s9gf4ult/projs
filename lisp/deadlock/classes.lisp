@@ -33,15 +33,17 @@
    (set-date :initform nil :initarg :set-date :reader request-set-date :documentation "дата выставления заявки")
    (execution-date :initform nil :reader request-execution-date :documentation "дата исполнения заявки")
    (overtime-date :initform nil :reader request-overtime-date :documentation "дата просрочки исполнения заявки")
-   (state :initform :awaiting :initarg :state :reader request-state :documentation "can be `:awaiting' `:executed' or `:overdated'")
+   (state :initform :awaiting :initarg :state :reader request-state :documentation "can be `:awaiting' `:executed' or `:overtimed'")
    (set-callback :initform nil :initarg :set-callback :reader request-set-callback :documentation "коллбэк на установку заявки в торговую систему")
    (execute-callback :initform nil :initarg :execute-callback :reader request-execute-callback :documentation "коллбэк на исполнение заявки")
    (overtime-callback :initform nil :initarg :overtime-callback :reader request-overtime-callback :documentation "коллбэк на просрочку заявки"))
   (:documentation "заявка на покупку - продажу"))
 (defmethod shared-initialize :after ((obj request) slot-names &rest initargs &key)
   (declare (ignore slot-names initargs))
-  (with-slots (direction) obj
-    (declare (type (member :sell :buy) direction))
+  (let ((direction (slot-value obj 'direction))
+        (state (slot-value obj 'state)))
+    (declare (type (member :sell :buy) direction)
+             (type (member :awaiting :executed :overtimed) state))
     obj))
 
 (defclass instrument ()
@@ -68,7 +70,7 @@
     (dolist (di (mapcar #'deal-instrument (open-position-deals obj)))
       (if ret
           (when (not (eq di ret))
-            (error "there is deals with other papers ~a and ~a" ret di))
+            (error (make-condition 'incorrect-position :format-control "there is deals with other papers ~a and ~a" :format-arguments '(ret di))))
           (setf ret di)))
     ret))
 (defgeneric open-position-count (obj)
@@ -84,9 +86,8 @@
                  (:long (- buy sell))
                  (:short (- sell buy)))))
       (if (< ret 0)
-          (error "there is ~a sell and ~a buy deals in ~a position" sell buy (open-position-direction obj)))
+          (error (make-condition 'incorrect-position :format-control "there is ~a sell and ~a buy deals in ~a position" :format-arguments '(sell buy (open-position-direction obj)))))
       ret)))
-     
 
 (defclass deal ()
   ((date :initform nil :initarg :date :reader deal-date)
@@ -95,7 +96,7 @@
    (count :initform 0 :initarg :count :reader deal-count :documentation "количество лотов по инструменту")
    (commission :initform 0 :initarg :withdraw :reader deal-commission :documentation "комиссия с совершения сделки")))
    
-(defclass quick-log()
+(defclass quick-log ()
   ((file-name :initform nil :initarg :file-name :reader quick-log-file-name)
    (sqlite-handler :initform nil :initarg :sqlite-handler :reader quick-log-sqlite-handler)))
 
@@ -108,8 +109,16 @@
       (execute-non-query con "create table if not exists deals (id integer primary key not null, direction varchar not null, instrument varchar not null, count real not null, date varchar not null, position integer not null, foreign key (position) references positions(id) on delete cascade)")
       (execute-non-query con "create table if not exists requests (id integer primary key not null, direction varchar not null, instrument varchar not null, count integer not null, price real not null, set-date varchar not null, execution-date varchar, overtime-date varchar, state varchar not null)"))))
       
+(defclass strategy () ())
+
+(defclass hystory-data ()
+  ((sqlite-handle :initform nil :initarg :sqlite-handle :accessor hystory-sqlite-handle)
+   (file-name :initform nil :initarg :file-name :reader hystory-file-name)
+   (candle-period :initform :min :initarg :candle-period :reader hystory-candle-period)))
+(defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
+  (if (not (hystory-sqlite-handle obj))
+      (setf (hystory-sqlite-handle obj) (connect (hystory-file-name obj)))))
+
       
       
-   
-   
    

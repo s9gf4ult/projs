@@ -31,3 +31,9 @@
 (defgeneric datetime-add-period (datetime period &key times))
 (defgeneric start-of-the-period (candle-or-datetime period))
 (defgeneric end-of-the-period (candle-or-datetime period))
+
+;;;;;;;;;;;
+;; quick ;;
+;;;;;;;;;;;
+
+;(defgeneric set-request (quick 

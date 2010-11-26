@@ -119,6 +119,19 @@
   (if (not (hystory-sqlite-handle obj))
       (setf (hystory-sqlite-handle obj) (connect (hystory-file-name obj)))))
 
-      
-      
-   
+(defclass candle()
+  ((open :initform nil :initarg :open :reader candle-open)
+   (close :initform nil :initarg :close :reader candle-close)
+   (high :initform nil :initarg :high :reader candle-high)
+   (low :initform nil  :initarg :low :reader candle-low)
+   (volume :initform nil :initarg :volume :reader candle-volume)
+   (datetime :initform nil :initarg :datetime :reader candle-datetime)
+   (datetime-close :initform nil :initarg :datetime-close :reader candle-datetime-close)
+   (type :initform nil :reader candle-type)
+   (period :initarg :period :initform :sec :reader candle-period :documentation "period can be one symbol of this (:sec :min :hour :day :week :month :year) or list like this (`symbol' number) where `symbol' is one of above listed. It can be number, in this case it will the same as (:sec number)")))
+(defmethod shared-initialize :after ((obj candle) slot-names &rest initargs &key)
+  (declare (ignore slot-names initargs))
+  (setf (slot-value obj 'type) (cond
+                                 ((> (candle-close obj) (candle-open obj)) :long)
+                                 ((< (candle-close obj) (candle-open obj)) :short)
+                                 (t :empty))))

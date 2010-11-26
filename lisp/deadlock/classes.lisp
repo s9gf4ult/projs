@@ -6,6 +6,7 @@
    (requests :initform nil :initarg :requests :reader quick-requests :documentation "список заявок")
    (positions :initform nil :initarg :positions :reader quick-positions :documentation "список открытых позиций")
    (log :initform (make-instance 'quick-log) :initarg :log :reader quick-log :documentation "специальный объект логирования")
+   (subaccount-instrument :initform nil :initarg :subaccount-instrument :reader quick-subaccount-instrument :documentation "связь многие ко многим между инстрементами и субсчетами на которых они торгуются список таких списков (list subaccount-instrument)")
    (instruments :initform nil :initarg :instruments :reader quick-instuments :documentation "список торговых инструментов"))
   (:documentation "сущность надо которой будут проводиться все операции и котороая хранит состояние торгового терминала"))
    
@@ -27,8 +28,10 @@
 
 (defclass request ()
   ((direction :initarg :direction :reader request-direction :documentation  "must be `:buy' or `:sell'")
+   (subaccount :initform nil :initarg :subaccount :reader request-subaccount)
    (instrument :initarg :instrument :reader request-instrument :documentation "ссылка на ценную бумагу (торговый инструмент)")
    (count :initform 1 :initarg :count :reader request-count :documentation "количество лотов для покупки")
+   (price :initform nil :initarg :price :reader request-price)
    (ttl :initform nil :initarg :ttl :accessor request-ttl :documentation "время жизни заявки, по истечении которого должен вызваться коллбэк")
    (set-date :initform nil :initarg :set-date :reader request-set-date :documentation "дата выставления заявки")
    (execution-date :initform nil :reader request-execution-date :documentation "дата исполнения заявки")

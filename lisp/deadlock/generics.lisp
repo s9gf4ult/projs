@@ -36,4 +36,5 @@
 ;; quick ;;
 ;;;;;;;;;;;
 
-;(defgeneric set-request (quick 
+(defgeneric set-request (quick instrument direction count price &key subaccount overtime on-set on-execute on-overtime)
+  (:documentation "выставляет заявку в quick"))

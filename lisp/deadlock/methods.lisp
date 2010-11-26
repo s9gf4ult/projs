@@ -269,3 +269,33 @@
 
 (defmethod print-candle ((candle null))
   (write-line "NIL"))
+
+;;;;;;;;;;;
+;; quick ;;
+;;;;;;;;;;;
+
+(defmethod set-request ((quick quick) (instrument instrument) (direction symbol) (count fixnum) (price number) &key (subaccount null) overtime (on-set function) (on-execute function) (on-overtime function))
+  (with-slots (subaccounts subaccount-instrument instruments) quick
+    (let ((sc-inst-count 0)
+          sbc)
+      (dolist (sc-inst subaccount-instrument)
+        (when (eql (second sc-inst) instrument)
+          (incf sc-inst-count)
+          (setf sbc (first sc-inst))))
+      (unless (= 1 sc-inst-count)
+        (error (make-condition 'incorrect-arguments :format-control "there is ~a allignments between subaccounts and sepcified instrument, can not chose automaticly" :format-arguments '(sc-inst-count))))
+      (unless (member sbc subaccounts)
+        (error (make-condition 'incorrect-quick :format-control "at least one subaccount link is broken in the quick's list of allignments subaccount-instrument")))
+      (set-request quick instrument direction count price :subaccount sbc :overtime overtime :on-set on-set :on-execute on-execute :on-overtime on-overtime))))
+
+(defmethod set-request ((quick quick) (instrument instrument) (direction symbol) (count fixnum) (price number) &key (subaccount subaccount) overtime (on-set function) (on-execute function) (on-overtime function))
+  (with-slots (subaccounts instruments requests) quick
+    (unless (member instrument instruments)
+      (error (make-condition 'incorrect-arguments :format-control "there is no that instrument in the quick")))
+    (unless (member subaccount subaccounts)
+      (error (make-condition 'incorrect-arguments :format-control "there is no that subaccount in the quick")))
+    (let ((new-request (make-instance 'request :instrument instrument :direction direction :count count :price price :subaccount subaccount :ttl overtime :set-callback on-set :execute-callback on-execute :overtime-callback on-overtime)))
+      (push new-request requests)
+      (when on-set (funcall on-set new-request)))))
+  
+  

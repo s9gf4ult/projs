@@ -9,6 +9,7 @@
 
 (define-condition incorrect-position (quick-error)
   ())
+(define-condition wrong-period (quick-error) ())
 (define-condition incorrect-quick (quick-error) ())
 
 (define-condition incorrect-arguments (quick-error) ())

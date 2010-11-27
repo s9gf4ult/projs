@@ -42,15 +42,18 @@
 (defmethod make-candle-from-period ((hyst hystory-data) datetime period-type)
   (let ((start (start-of-the-period datetime period-type))
         (end (end-of-the-period datetime period-type)))
-    (let ((openco (execute-single (hystory-sqlite-handle hyst) "select open from candles where datetime >= ? order by datetime asc" start))
-          (closeco (execute-single (hystory-sqlite-handle hyst) "select close from candles where datetime <= ? order by datetime desc" end))
+    (make-candle hyst start end period-type)))
+
+(defmethod make-candle ((hyst hystory-data) start end period-type)
+    (let ((openco (execute-single (hystory-sqlite-handle hyst) "select open from candles where datetime between ? and ? order by datetime asc" start end))
+          (closeco (execute-single (hystory-sqlite-handle hyst) "select close from candles where datetime between ? and ? order by datetime desc" start end))
           (highco (execute-single (hystory-sqlite-handle hyst) "select max(high) from candles where datetime between ? and ?" start end))
-          (datetime-open (execute-single (hystory-sqlite-handle hyst) "select datetime from candles where datetime >= ? order by datetime asc" start))
-          (datetime-close (execute-single (hystory-sqlite-handle hyst) "select datetime from candles where datetime <= ? order by datetime desc" end))
+          (datetime-open (execute-single (hystory-sqlite-handle hyst) "select datetime from candles where datetime between ? and ? order by datetime asc" start end))
+          (datetime-close (execute-single (hystory-sqlite-handle hyst) "select datetime from candles where datetime between ? and ? order by datetime desc" start end))
           (lowco (execute-single (hystory-sqlite-handle hyst) "select min(low) from candles where datetime between ? and ?" start end)))
       (if (and (and openco closeco highco lowco)
                (not (member "" (list openco closeco highco lowco))))
-          (make-instance 'candle :open openco :close closeco :high highco :low lowco :datetime datetime-open :datetime-close datetime-close :period period-type)))))
+          (make-instance 'candle :open openco :close closeco :high highco :low lowco :datetime datetime-open :datetime-close datetime-close :period period-type))))
 
 (defmethod back-step-existing-candle ((hyst hystory-data) datetime period-type &optional steps)
   (let ((steps (or steps
@@ -79,6 +82,21 @@
                          (funcall reduce-function result (funcall map-function candle)))))
       result)))
 
+(defmethod hystory-go-next ((hystory hystory-data))
+  (with-slots (current-date sqlite-handle) hystory
+    (setf current-date
+          (execute-single sqlite-handle "select min(datetime) from candles where datetime > ? order by datetime asc" current-date))))
+
+(defmethod hystory-get-current-candle ((hystory hystory-data) &optional period)
+  (if (not period)
+      (make-candle-from-period hystory (hystory-current-date hystory) (hystory-candle-period hystory))
+      (cond 
+        ((period>= period (hystory-candle-period hystory))
+         (make-candle hystory (start-of-the-period (hystory-current-date hystory) period) (hystory-current-date hystory) period))
+
+        (t (error (make-condition 'wrong-period :format-control "period ~a is less than current hystory's candle's period ~a" :format-arguments (list period (hystory-candle-period hystory))))))))
+           
+             
 ;;;;;;;;;;;;;
 ;; candles ;;
 ;;;;;;;;;;;;;
@@ -95,19 +113,20 @@
     (period>= >=)
     (period<= <=)))
 
-(labels ((getpsym (per)
-           (cond
-             ((listp per) (first per))
-             ((symbolp per) per)
-             ((numberp per) :sec)))
-         (getpnumb (per)
-           (cond
-             ((listp per) (second per))
-             ((symbolp per) 1)
-             ((numberp per) per))))
+(defun getpsym (per)
+  (cond
+    ((listp per) (first per))
+    ((symbolp per) per)
+    ((numberp per) :sec)))
 
-  (defmethod datetime-add-period ((candle candle) period &key times)
-    (datetime-add-period (candle-datetime candle) period times))
+(defun getpnumb (per)
+  (cond
+    ((listp per) (second per))
+    ((symbolp per) 1)
+    ((numberp per) per)))
+
+(defmethod datetime-add-period ((candle candle) period &key times)
+  (datetime-add-period (candle-datetime candle) period times))
 
   (defmethod datetime-add-period ((datetime number) period-type &key times)
     "добавляем к датавремя период в формате временного периода
@@ -216,8 +235,6 @@
                                  (end-of-the-period (encode-universal-time 0 0 0 1 (+ 1 (p-end (- month 1) p-num)) year) :month))))))))
           
           ))))
-
-  )
     
   
                
@@ -274,28 +291,38 @@
 ;; quick ;;
 ;;;;;;;;;;;
 
-(defmethod set-request ((quick quick) (instrument instrument) (direction symbol) (count fixnum) (price number) &key (subaccount null) overtime (on-set function) (on-execute function) (on-overtime function))
-  (with-slots (subaccounts subaccount-instrument instruments) quick
-    (let ((sc-inst-count 0)
-          sbc)
-      (dolist (sc-inst subaccount-instrument)
-        (when (eql (second sc-inst) instrument)
-          (incf sc-inst-count)
-          (setf sbc (first sc-inst))))
-      (unless (= 1 sc-inst-count)
-        (error (make-condition 'incorrect-arguments :format-control "there is ~a allignments between subaccounts and sepcified instrument, can not chose automaticly" :format-arguments '(sc-inst-count))))
-      (unless (member sbc subaccounts)
-        (error (make-condition 'incorrect-quick :format-control "at least one subaccount link is broken in the quick's list of allignments subaccount-instrument")))
-      (set-request quick instrument direction count price :subaccount sbc :overtime overtime :on-set on-set :on-execute on-execute :on-overtime on-overtime))))
+(defmethod set-request ((quick quick) (instrument string) (direction symbol) (count fixnum) (price number) &key subaccount overtime on-set on-execute on-overtime)
+  (let ((found-instrument (find-if #'(lambda (a) (equal (string-upcase instrument) (string-upcase (instrument-code a)))) (quick-instuments quick))))
+    (unless found-instrument
+      (error (make-condition 'incorrect-arguments :format-control "there is no ~a in instruments" :format-arguments '(instrument))))
+    (set-request quick found-instrument direction count price :subaccount subaccount :overtime overtime :on-set on-set :on-execute on-execute :on-overtime on-overtime)))
 
-(defmethod set-request ((quick quick) (instrument instrument) (direction symbol) (count fixnum) (price number) &key (subaccount subaccount) overtime (on-set function) (on-execute function) (on-overtime function))
-  (with-slots (subaccounts instruments requests) quick
-    (unless (member instrument instruments)
-      (error (make-condition 'incorrect-arguments :format-control "there is no that instrument in the quick")))
-    (unless (member subaccount subaccounts)
-      (error (make-condition 'incorrect-arguments :format-control "there is no that subaccount in the quick")))
-    (let ((new-request (make-instance 'request :instrument instrument :direction direction :count count :price price :subaccount subaccount :ttl overtime :set-callback on-set :execute-callback on-execute :overtime-callback on-overtime)))
-      (push new-request requests)
-      (when on-set (funcall on-set new-request)))))
+(defmethod set-request ((quick quick) (instrument instrument) (direction symbol) (count fixnum) (price number) &key subaccount overtime on-set on-execute on-overtime)
+  (with-slots (subaccounts instruments subaccount-instrument requests) quick
+    (if (not subaccount)
+        (let ((sc-inst-count 0)
+              sbc)
+          (dolist (sc-inst subaccount-instrument)
+            (when (eql (second sc-inst) instrument)
+              (incf sc-inst-count)
+              (setf sbc (first sc-inst))))
+          (unless (= 1 sc-inst-count)
+            (error (make-condition 'incorrect-arguments :format-control "there is ~a allignments between subaccounts and sepcified instrument, can not chose automaticly" :format-arguments '(sc-inst-count))))
+          (unless (member sbc subaccounts)
+            (error (make-condition 'incorrect-quick :format-control "at least one subaccount link is broken in the quick's list of allignments subaccount-instrument")))
+          (set-request quick instrument direction count price :subaccount sbc :overtime overtime :on-set on-set :on-execute on-execute :on-overtime on-overtime))
+        (progn
+          (unless (member instrument instruments)
+            (error (make-condition 'incorrect-arguments :format-control "there is no that instrument in the quick: ~a" :format-arguments (list instrument))))
+          (unless (member subaccount subaccounts)
+            (error (make-condition 'incorrect-arguments :format-control "there is no that subaccount in the quick: ~a" :format-arguments (list subaccount))))
+          (let ((new-request (make-instance 'request :instrument instrument :direction direction :count count :price price :subaccount subaccount :ttl overtime :set-callback on-set :execute-callback on-execute :overtime-callback on-overtime)))
+            (push new-request requests)
+            (when on-set (funcall on-set new-request)))))))
   
-  
+;;;;;;;;;;;;;;;
+;; quick-log ;;
+;;;;;;;;;;;;;;;
+
+(defmethod finalize-quick-log ((quick-log quick-log))
+  (disconnect (quick-log-sqlite-handler quick-log)))

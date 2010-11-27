@@ -108,19 +108,24 @@
   (when (and (quick-log-file-name obj) (not (quick-log-sqlite-handler obj)))
     (let ((con (setf (slot-value obj 'sqlite-handler) (connect (quick-log-file-name obj)))))
       (execute-non-query con "pragma foreign_keys=on")
-      (execute-non-query con "create table if not exists positions (id integer primary key not null, open-date integer not null, close-date integer not null, direction varchar not null, profit read not null, instrument varchar not null)")
+      (execute-non-query con "create table if not exists positions (id integer primary key not null, open_date integer not null, close_date integer not null, direction varchar not null, profit read not null, instrument varchar not null)")
       (execute-non-query con "create table if not exists deals (id integer primary key not null, direction varchar not null, instrument varchar not null, count real not null, date varchar not null, position integer not null, foreign key (position) references positions(id) on delete cascade)")
-      (execute-non-query con "create table if not exists requests (id integer primary key not null, direction varchar not null, instrument varchar not null, count integer not null, price real not null, set-date varchar not null, execution-date varchar, overtime-date varchar, state varchar not null)"))))
+      (execute-non-query con "create table if not exists requests (id integer primary key not null, direction varchar not null, instrument varchar not null, count integer not null, price real not null, set_date varchar not null, execution_date varchar, overtime_date varchar, state varchar not null)"))))
       
 (defclass strategy () ())
 
 (defclass hystory-data ()
   ((sqlite-handle :initform nil :initarg :sqlite-handle :accessor hystory-sqlite-handle)
    (file-name :initform nil :initarg :file-name :reader hystory-file-name)
+   (current-date :initform nil :initarg :current-date :reader hystory-current-date)
    (candle-period :initform :min :initarg :candle-period :reader hystory-candle-period)))
 (defmethod shared-initialize :after ((obj hystory-data) slot-names &rest initarts &key)
   (if (not (hystory-sqlite-handle obj))
-      (setf (hystory-sqlite-handle obj) (connect (hystory-file-name obj)))))
+      (let ((con (setf (hystory-sqlite-handle obj) (connect (hystory-file-name obj)))))
+        (unless (hystory-current-date obj)
+          (setf (slot-value obj 'current-date)
+                (execute-single con "select min(datetime) from candles"))))))
+        
 
 (defclass candle()
   ((open :initform nil :initarg :open :reader candle-open)

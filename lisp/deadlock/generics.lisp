@@ -17,9 +17,12 @@
 (defgeneric finalize-hystory (hyst))
 (defgeneric back-step-candle (hystory candle period-type &optional steps))
 (defgeneric make-candle-from-period (hystory datetime period))
+(defgeneric make-candle (hystory start end priod-type))
 (defgeneric back-step-existing-candle (hystory candle period-type &optional steps)
   (:documentation "вернет предыдущую суцествующую свечу, тобиш в которой проходили сделки(не было выходных проходили сделки и прочее"))
 (defgeneric reduce-candle-values (hystory reduce-function map-function &key start end period))
+(defgeneric hystory-go-next (hystory))
+(defgeneric hystory-get-current-candle (hystory &optional period))
 
 ;;;;;;;;;;;;;
 ;; candles ;;
@@ -38,3 +41,9 @@
 
 (defgeneric set-request (quick instrument direction count price &key subaccount overtime on-set on-execute on-overtime)
   (:documentation "выставляет заявку в quick"))
+
+;;;;;;;;;;;;;;;
+;; quick-log ;;
+;;;;;;;;;;;;;;;
+
+(defgeneric finalize-quick-log (quick-log))

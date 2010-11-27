@@ -41,9 +41,29 @@
 
 (defgeneric set-request (quick instrument direction count price &key subaccount overtime on-set on-execute on-overtime)
   (:documentation "выставляет заявку в quick"))
+(defgeneric execute-request (quick request)
+  (:documentation "return t if executed, nil otherwise. execution of request generates new deal, deal being commited in opened position, or position opening before it"))
+(defgeneric open-deal-in-position (quick subaccount pos direction  count price &optional commission)
+  (:documentation "creates new deal in opened position, does not check if position has deals with other instruments, if `open-position-count' becomes 0 then automatically finalize and log position"))
+(defgeneric open-new-position (quick subaccount instrument direction count price &optional commission)
+  (:documentation "opens new position and creates deal in it"))
+(defgeneric check-overtime-request (quick request)
+  (:documentation "returns t if request is overtimed and execute callback in it if set"))
+(defgeneric quick-log-and-finalize-request (quick request))
+(defgeneric quick-log-and-finalize-position (quick position))
 
 ;;;;;;;;;;;;;;;
 ;; quick-log ;;
 ;;;;;;;;;;;;;;;
 
 (defgeneric finalize-quick-log (quick-log))
+
+;;;;;;;;;;;;;
+;; request ;;
+;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;
+;; open-positions ;;
+;;;;;;;;;;;;;;;;;;;;
+

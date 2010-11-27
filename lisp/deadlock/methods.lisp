@@ -84,8 +84,10 @@
 
 (defmethod hystory-go-next ((hystory hystory-data))
   (with-slots (current-date sqlite-handle) hystory
-    (setf current-date
-          (execute-single sqlite-handle "select min(datetime) from candles where datetime > ? order by datetime asc" current-date))))
+    (let ((next-date (execute-single sqlite-handle "select min(datetime) from candles where datetime > ? order by datetime asc" current-date)))
+      (unless next-date
+        (error (make-condition 'end-of-hystory :format-control "this is the end of hystory")))
+      (setf current-date next-date))))
 
 (defmethod hystory-get-current-candle ((hystory hystory-data) &optional period)
   (if (not period)
@@ -316,13 +318,112 @@
             (error (make-condition 'incorrect-arguments :format-control "there is no that instrument in the quick: ~a" :format-arguments (list instrument))))
           (unless (member subaccount subaccounts)
             (error (make-condition 'incorrect-arguments :format-control "there is no that subaccount in the quick: ~a" :format-arguments (list subaccount))))
-          (let ((new-request (make-instance 'request :instrument instrument :direction direction :count count :price price :subaccount subaccount :ttl overtime :set-callback on-set :execute-callback on-execute :overtime-callback on-overtime)))
+          (let ((new-request (make-instance 'request :instrument instrument :direction direction :count count :price price :subaccount subaccount :ttl overtime :set-callback on-set :execute-callback on-execute :overtime-callback on-overtime :set-date (candle-datetime (hystory-get-current-candle (instrument-hystory instrument))))))
             (push new-request requests)
             (when on-set (funcall on-set new-request)))))))
+
+(defmethod execute-request ((q quick) (rq request))
+  (unless (check-overtime-request q rq)
+    (with-slots (positions deals (qlog log)) q
+      (with-slots (instrument subaccount direction price count) rq
+        (with-slots (hystory sell-go buy-go) instrument
+          (when (let ((c (hystory-get-current-candle hystory)))
+                  (>= (candle-low c) price (candle-high c))) ;в текущей свече истории была цена заявленная в нашей заявке
+            (let ((found-pos (find-if #'(lambda (pos) (eql (open-position-instrument pos) instrument)) positions)))
+              (if found-pos
+                  (let ((fdir (open-position-direction found-pos))
+                        (fcount (open-position-count found-pos)))
+                    (if (or (and (eql fdir :long) (eql direction :buy)) (and (eql fdir :short) (eql direction :sell)))
+                        (open-deal-in-position q subaccount found-pos direction instrument count price)
+                        (progn
+                          (open-deal-in-position q subaccount found-pos  direction instrument (min count fcount) price)
+                          (when (> count fcount)
+                            (open-new-position q subaccount instrument direction (- count fcount) price))))
+                    (let ((fun (request-execute-callback rq))
+                          (cc (hystory-get-current-candle hystory)))
+                      (when fun (funcall fun rq cc))
+                      (setf (slot-value rq 'execution-date)
+                            (candle-datetime cc))
+                      (quick-log-and-finalize-request q rq))
+                    t)
+                  (progn
+                    (open-new-position q instrument direction count price)
+                    (setf (slot-value rq 'execution-date)
+                          (candle-datetime (hystory-get-current-candle hystory)))
+                    (quick-log-and-finalize-request q rq)
+                    t)))))))))
+
+(defmethod check-overtime-request ((q quick) (rq request))
+  (labels ((overtimed? (rq)
+             (let* ((inst (request-instrument rq))
+                    (hys (instrument-hystory inst))
+                    (cc (hystory-get-current-candle hys))
+                    (cd (candle-datetime cc)))
+               (> cd (+ (request-set-date rq) (period-to-seconds (request-ttl rq)))))))
+    (when (overtimed? rq)
+      (let ((fun (request-overtime-callback rq))
+            (cc (hystory-get-current-candle (instrument-hystory (request-instrument rq)))))
+        (when fun (funcall fun rq cc))
+        (when (overtimed? rq)
+          (quick-log-and-finalize-request q rq))))))
+
+(defmethod open-deal-in-position ((q quick) (sbc subaccount) (p open-position) (dir symbol) (count fixnum) (price number) &optional commission)
+  (let ((inst (open-position-instrument p))
+        (dir (case dir
+               (:sell :sell)
+               (:buy :buy)
+               (:long :buy)
+               (:short :sell)))
+        (cms (* count (or commission 2.04))))
+    (let* ((hys (instrument-hystory inst))
+           (sell-go (instrument-sell-go inst))
+           (buy-go (instrument-buy-go inst))
+           (cc (hystory-get-current-candle hys))
+           (cd (candle-datetime cc)))
+      (let ((new-deal (make-instance 'deal :count count :instrument inst :date cd :price price :direction dir :commission cms)))
+        (with-slots (deals money-holds direction) p
+          (push new-deal deals)
+          (if (or (and (eql direction :long) (eql dir :buy)) (and (eql direction :short) (eql dir :sell)))
+              (dotimes (var count)
+                (declare (ignore var))
+                (push (hold-money sbc (case dir (:sell sell-go) (:buy buy-go))) money-holds))
+              (dotimes (var count)
+                (declare (ignore var))
+                (free-holded-money (car money-holds))
+                (setf money-holds (cdr money-holds))))))
+      (let ((new-pcount (open-position-count p)))
+        (when (= new-pcount 0)
+          (quick-log-and-finalize-position q p))))))
+      
+(defmethod open-new-position ((q quick) (sbc subaccount) (inst instrument) (dir symbol) (count fixnum) (price number) &optional (commission number))
+  (let* ((cms (* count (or commission 2.04)))
+         (hys (instrument-hystory inst))
+         (cc (hystory-get-current-candle hys))
+         (cd (candle-datetime cc))
+         (dir (case dir (:buy :buy) (:sell :sell) (:short :sell) (:long :buy)))
+                    
+         (new-deal (make-instance 'deal :commission commission :direction dir :count count :instrument inst :date cd :price price))
+         (holds (loop for a from 1 to count collect
+                     (hold-money sbc (case dir
+                                       (:buy (instrument-buy-go inst))
+                                       (:sell (instrument-sell-go inst))))))
+         (new-pos (make-instance 'open-position :direction (case dir (:buy :long) (:sell :short)) :money-holds holds :deals (list new-deal) :open-date cd)))
+    (push new-pos (quick-positions q))))
   
+                  
 ;;;;;;;;;;;;;;;
 ;; quick-log ;;
 ;;;;;;;;;;;;;;;
 
 (defmethod finalize-quick-log ((quick-log quick-log))
   (disconnect (quick-log-sqlite-handler quick-log)))
+
+;;;;;;;;;;;;;
+;; request ;;
+;;;;;;;;;;;;;
+
+      
+    
+    
+  
+  

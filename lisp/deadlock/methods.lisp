@@ -395,21 +395,22 @@
         (when (= new-pcount 0)
           (quick-log-and-finalize-position q p))))))
       
-(defmethod open-new-position ((q quick) (sbc subaccount) (inst instrument) (dir symbol) (count fixnum) (price number) &optional (commission number))
+(defmethod open-new-position ((q quick) (sbc subaccount) (inst instrument) (dir symbol) (count fixnum) (price number) &optional commission)
   (let* ((cms (* count (or commission 2.04)))
          (hys (instrument-hystory inst))
          (cc (hystory-get-current-candle hys))
          (cd (candle-datetime cc))
          (dir (case dir (:buy :buy) (:sell :sell) (:short :sell) (:long :buy)))
                     
-         (new-deal (make-instance 'deal :commission commission :direction dir :count count :instrument inst :date cd :price price))
+         (new-deal (make-instance 'deal :commission cms :direction dir :count count :instrument inst :date cd :price price))
          (holds (loop for a from 1 to count collect
                      (hold-money sbc (case dir
                                        (:buy (instrument-buy-go inst))
                                        (:sell (instrument-sell-go inst))))))
          (new-pos (make-instance 'open-position :direction (case dir (:buy :long) (:sell :short)) :money-holds holds :deals (list new-deal) :open-date cd)))
-    (push new-pos (quick-positions q))))
-  
+    (push new-pos (slot-value q 'positions))))
+
+(defmethod quick-log-and-finalize-request ((q quick) (rq request))
                   
 ;;;;;;;;;;;;;;;
 ;; quick-log ;;

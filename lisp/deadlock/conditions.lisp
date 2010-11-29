@@ -14,3 +14,4 @@
 
 (define-condition incorrect-arguments (quick-error) ())
 (define-condition end-of-hystory (quick-error)())
+(define-condition can-not-finalize (quick-error) ())

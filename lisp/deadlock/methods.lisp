@@ -411,6 +411,12 @@
     (push new-pos (slot-value q 'positions))))
 
 (defmethod quick-log-and-finalize-request ((q quick) (rq request))
+  (if (eql (request-state rq) :awaiting)
+      (error (make-instance 'can-not-finalize :format-control "can not finalize request because of state is eql :awaiting"_))
+      (case (request-state rq)
+        (:
+      
+  
                   
 ;;;;;;;;;;;;;;;
 ;; quick-log ;;

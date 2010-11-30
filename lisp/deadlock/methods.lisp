@@ -410,11 +410,68 @@
          (new-pos (make-instance 'open-position :direction (case dir (:buy :long) (:sell :short)) :money-holds holds :deals (list new-deal) :open-date cd)))
     (push new-pos (slot-value q 'positions))))
 
+(defmethod quick-log-and-finalize-request :around ((q quick) (rq request))
+  (restart-case
+      (let ((state (request-state rq))
+            (sbc (request-subaccount rq))
+            (inst (request-instrument rq))
+            (count (request-count rq))
+            (price (request-price rq))
+            (sd (request-set-date rq)))
+        (cond
+          ((eql state :awaiting) (error (make-condition 'can-not-finalize :format-control "state of request is :awaiting, can not finalize")))
+          ((eql state :overtimed)
+           (unless (request-overtime-date rq)
+             (restart-case
+                 (error (make-condition 'can-not-finalize :format-control "state of request is :overtimed but overtime-date is not set"))
+               (get-from-parameters ()
+                 (let ((hys (instrument-hystory inst)))
+                   (setf (request-overtime-date rq) (candle-datetime (hystory-get-current-candle hys)))
+                   (quick-log-and-finalize-request q rq))))))
+          ((eql state :executed)
+           (unless (request-execution-date eq)
+             (restart-case
+                 (error (make-condition 'can-not-finalize :format-control "state of request is :executed but execution-date is not set"))
+               (get-from-parameters ()
+                 (let ((hys (instrument-hystory inst)))
+                   (setf (request-execution-date rq) (candle-datetime (hystory-get-current-candle hys)))
+                   (quick-log-and-finalize-request q rq))))))
+          (t (error (make-condition 'incorrect-request :format-control "state of request is ~a, it can not be that" :format-arguments (list state)))))
+        (unless (numberp sd)
+          (error (make-condition 'can-not-finalize :format-control "can not finalize request with set-date equal to ~a" :format-arguments (list sd))))
+        (when (or (not sbc) (not (member sbc (quick-subaccounts q))))
+          (error (make-condition 'can-not-finalize :format-control "can not finalize request with subaccount set to ~a" :format-arguments (list sbc))))
+        (when (or (not inst) (not (member inst (quick-instuments q))))
+          (error (make-condition 'can-not-finalize :format-control "can not finalize request with instrument set to ~a" :format-arguments (list inst))))
+        (when (or (not count) (not (typep count 'fixnum)) (<= count 0))
+          (error (make-condition 'incorrect-request :format-control "can not finalize request with count set to ~a" :format-arguments (list count))))
+        (when (or (not price) (not (numberp price)) (<= price 0))
+          (error (make-condition 'incorrect-request :format-control "can not finalize request with price set to ~a" :format-arguments (list price))))
+        (call-next-method q rq))
+    (do-nothing () nil)
+    (do-anyway () (call-next-method q rq))))
+
 (defmethod quick-log-and-finalize-request ((q quick) (rq request))
-  (if (eql (request-state rq) :awaiting)
-      (error (make-instance 'can-not-finalize :format-control "can not finalize request because of state is eql :awaiting"_))
-      (case (request-state rq)
-        (:
+  (quick-log-request q rq)
+  (quick-finalize-request q rq))
+
+(defmethod quick-log-request ((q quick) (rq request))
+  (sqlite-insert-into (quick-log-sqlite-handler (quick-log q))
+                      requests
+                      (direction (request-direction rq))
+                      (instrument (instrument-code (request-instrument rq)))
+                      (count (request-count rq))
+                      (price (request-price rq))
+                      (set_date (request-set-date rq))
+                      (execution_date (request-execution-date rq))
+                      (overtime_date (request-overtime-date rq))
+                      (state (request-state rq))))
+
+(defmethod quick-finalize-request ((q quick) (rq request))
+  (with-accessors ((rqs quick-requests)) q
+    (setf rqs (remove rq rqs))))
+          
+        
       
   
                   

@@ -41,9 +41,9 @@
 (defmacro sqlite-insert-into (db table &rest pairs)
   `(sqlite:execute-non-query ,db ,(concatenate 'string
                                                (format nil "insert into ~a(" table)
-                                               (format nil "~{~a~^, ~}" (mapcar #'first pairs)) ") values ("
+                                               (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (if (listp a) (first a) a)) pairs)) ") values ("
                                                (format nil "~{~a~^, ~}" (mapcar #'(lambda (a) (declare (ignore a)) "?") pairs)) ")")
-                             ,@(mapcar #'second pairs)))
+                             ,@(mapcar #'(lambda (a) (if (listp a) (second a) a)) pairs)))
 
 (defun mean (seq)
   (/ (reduce #'+ seq)
@@ -182,3 +182,15 @@
                          ,@body))
                      (return nil))))))))
                            
+(defmacro declare-around-list-checker (class slot class-slot &body body)
+  (let ((val (gensym))
+        (obj (gensym))
+        (v (gensym)))
+    `(defmethod (setf ,slot) :around (,val (,obj ,class))
+       (declare (type list ,val))
+       (dolist (,v ,val)
+         (declare (type ,class-slot ,v)
+                  (ignore ,v)))
+       ,@body
+       (call-next-method ,val ,obj))))
+

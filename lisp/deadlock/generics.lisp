@@ -51,6 +51,8 @@
   (:documentation "returns t if request is overtimed and execute callback in it if set"))
 (defgeneric quick-log-and-finalize-request (quick request))
 (defgeneric quick-log-and-finalize-position (quick position))
+(defgeneric quick-log-request (quick request))
+(defgeneric quick-finalize-request (quick request))
 
 ;;;;;;;;;;;;;;;
 ;; quick-log ;;

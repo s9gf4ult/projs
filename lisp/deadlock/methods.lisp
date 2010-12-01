@@ -8,14 +8,14 @@
   (make-instance 'money-hold :subaccount subaccount :money count))
 
 (defmethod withdraw-money ((subaccount subaccount) (money number))
-  (with-slots (free-money) subaccount
-    (if (<= money free-money)
+  (with-accessors ((free-money subaccount-free-money)) subaccount
+    (restart-case
         (setf free-money (- free-money money))
-        (error (make-condition 'not-enought-money :need-money money :got-money free-money :format-control "there is not enought money to withdraw")))))
+      (do-nothing () nil))))
 
 (defmethod free-holded-money ((hold money-hold))
-  (with-slots (subaccount money) hold
-    (with-slots (free-money) subaccount
+  (with-accessors ((subaccount money-hold-subaccount) (money money-hold-money)) hold
+    (with-slots ((free-money subaccount-free-money)) subaccount
       (incf free-money money)
       (setf money 0
             subaccount nil))))
@@ -429,7 +429,7 @@
                    (setf (request-overtime-date rq) (candle-datetime (hystory-get-current-candle hys)))
                    (quick-log-and-finalize-request q rq))))))
           ((eql state :executed)
-           (unless (request-execution-date eq)
+           (unless (request-execution-date rq)
              (restart-case
                  (error (make-condition 'can-not-finalize :format-control "state of request is :executed but execution-date is not set"))
                (get-from-parameters ()

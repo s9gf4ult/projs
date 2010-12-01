@@ -182,11 +182,11 @@
                          ,@body))
                      (return nil))))))))
                            
-(defmacro declare-around-list-checker (class slot class-slot &body body)
+(defmacro declare-around-list-checker (class accessor class-slot &body body)
   (let ((val (gensym))
         (obj (gensym))
         (v (gensym)))
-    `(defmethod (setf ,slot) :around (,val (,obj ,class))
+    `(defmethod (setf ,accessor) :around (,val (,obj ,class))
        (declare (type list ,val))
        (dolist (,v ,val)
          (declare (type ,class-slot ,v)

@@ -26,15 +26,17 @@
 (defclass sample-counter ()
   ()
   (:metaclass counting-class))
+(defun fout (string &rest all-other)
+  (write-line (if all-other (format nil string all-other) (format nil string))))
 
 (defun test-counter ()
-  (format t "There is ~a instances now" (counting-class-count 'sample-counter))
-  (let ((a (loop for a from 1 to 1000 collect (make-instance 'sample-counter))))
-    (format t "We are in the let form, we have a list of ~a instances" (length a))
-    (format t "Class talk us that there is ~a instances" (counting-class-count 'sample-counter)))
-  (format t "We did exit from let form, there is ~a instances" (counting-class-count 'sample-counter))
+  (fout "There is ~a instances now" (counting-class-count 'sample-counter))
+  (let ((a (loop for a from 1 to 1000000 collect (make-instance 'sample-counter))))
+    (fout "We are in the let form, we have a list of ~a instances" (length a))
+    (fout "Class talk us that there is ~a instances" (counting-class-count 'sample-counter)))
+  (fout "We did exit from let form, there is ~a instances" (counting-class-count 'sample-counter))
   (tg:gc)
-  (format t "After GC there is ~a instances" (counting-class-count 'sample-counter)))
+  (fout "After GC there is ~a instances" (counting-class-count 'sample-counter)))
   
 
 

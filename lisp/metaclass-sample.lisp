@@ -14,7 +14,7 @@
 
 (defmethod make-instance :around ((class counting-class) &rest all-keys)
   (incf (counting-class-count class))
-  (let ((obj (if all-keys (call-next-method class all-keys) (call-next-method class))))
+  (let ((obj (call-next-method)))
     (tg:finalize obj #'(lambda () (decf (counting-class-count class))))))
 
 (defmethod closer-mop:validate-superclass ((class counting-class) (super standard-class))

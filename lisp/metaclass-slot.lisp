@@ -1,57 +1,56 @@
 (require 'closer-mop)
 
-(defclass new-direct-slot-class (closer-mop:standard-direct-slot-definition)
-  ((overburn :initarg :overburn
-             :initform nil
-             :accessor new-slot-class-overburn)))
+(defclass logging-class (closer-mop:standard-class)
+  ((logging :initarg :logging
+            :initform t
+            :reader logging-class-logging)
+   (logging-function :initarg :logging-function
+                     :initform #'print
+                     :accessor logging-class-logging-function)))
 
-(defclass new-effective-slot-class (closer-mop:standard-effective-slot-definition)
-  ((overburn :initarg :overburn
-             :initform nil
-             :accessor new-effective-slot-class-overburn)))
+(defclass lc-direct-slot-definition (closer-mop:standard-direct-slot-definition)
+  ((read-logging :initarg :read-logging
+                 :reader lc-direct-slot-definition-read-logging)
+   (write-logging :initarg :write-logging
+                  :reader lc-direct-slot-definition-write-logging)))
 
-(defclass new-class (closer-mop:standard-class)
-  ())
+(defclass lc-effective-slot-definition (closer-mop:standard-effective-slot-definition)
+  ((read-logging :initform nil
+                 :initarg :read-logging
+                 :accessor lc-effective-slot-definition-read-logging)
+   (write-logging :initform nil
+                  :initarg :write-logging
+                  :accessor lc-effective-slot-definition-write-logging)))
 
-(defclass new-root-class ()
-  ()
-  (:metaclass new-class))
-
-(defmethod closer-mop:compute-class-precedence-list :around ((class new-class))
-  (let ((ret (call-next-method)))
-    (if (member-if #'(lambda (a) (typep a 'new-class)) ret)
-        ret
-        (cons (find-class 'new-root-class) ret))))
-
-(defmethod closer-mop:direct-slot-definition-class :around ((class new-class) &key overburn)
-  (if overburn
-      (find-class 'new-direct-slot-class)
-      (call-next-method)))
-
-;; (defmethod closer-mop:effective-slot-definition-class ((class new-class) &rest keys)
-;;   (declare (ignore keys))
-;;   (find-class 'new-effective-slot-class))
-
-(defmethod closer-mop:compute-effective-slot-definition :around ((class new-class) name dslots)
-  (if (find-if #'(lambda (a) (typep a 'new-direct-slot-class)) dslots)
-      (find-class 'new-effective-slot-class)
-      (call-next-method)))
-      
-
-(defmethod closer-mop:validate-superclass ((class new-class) (super standard-class))
+(defmethod closer-mop:validate-superclass ((class logging-class) (super standard-class))
   t)
 
-(defmethod closer-mop:slot-value-using-class ((class new-class) instance (slotd new-effective-slot-class))
-  (declare (ignore instance class))
-  (* (new-effective-slot-class-overburn slotd) (call-next-method)))
+(defmethod closer-mop:direct-slot-definition-class ((class logging-class) &rest initargs)
+  (declare (ignore class initargs))
+  (find-class 'lc-direct-slot-definition))
 
-(defmethod closer-mop:slot-definition-allocation ((slotd new-effective-slot-class))
-  (declare (ignore slotd))
-  :instance)
+(defmethod closer-mop:effective-slot-definition-class ((class logging-class) &rest initargs)
+  (declare (ignore class initargs))
+  (find-class 'lc-effective-slot-definition))
 
-(defclass aa ()
-  ((a :initarg :a :initform 100)
-   (b :initarg :b :initform 200 :overburn 100500))
-  (:metaclass new-class))
+(defmethod closer-mop:compute-effective-slot-definition ((class logging-class) slot-name dslots)
+  (let ((slot (call-next-method)))
+    (setf (lc-effective-slot-definition-read-logging slot) (let ((fst (find-if #'(lambda (s) (and (typep s 'lc-direct-slot-definition) (slot-boundp s 'read-logging))) dslots)))
+                                                        (when fst
+                                                          (lc-direct-slot-definition-read-logging fst))))
+    (setf (lc-effective-slot-definition-write-logging slot) (let ((fst (find-if #'(lambda (s) (and (typep s 'lc-direct-slot-definition) (slot-boundp s 'write-logging))) dslots)))
+                                                              (when fst
+                                                                (lc-direct-slot-definition-write-logging fst))))
+    slot))
 
+(defmethod closer-mop:slot-value-using-class ((class logging-class) instance (eslot lc-effective-slot-definition))
+  (when (and (logging-class-logging class) (lc-effective-slot-definition-read-logging eslot) (functionp (logging-class-logging-function class)))
+    (funcall (logging-class-logging-function class) 
 
+                                                       
+(defclass new ()
+  ((a :write-logging t
+      :initform 10
+      :initarg :a
+      :accessor :new-a))
+  (:metaclass logging-class))

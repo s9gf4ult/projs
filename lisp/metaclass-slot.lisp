@@ -44,13 +44,19 @@
     slot))
 
 (defmethod closer-mop:slot-value-using-class ((class logging-class) instance (eslot lc-effective-slot-definition))
-  (when (and (logging-class-logging class) (lc-effective-slot-definition-read-logging eslot) (functionp (logging-class-logging-function class)))
-    (funcall (logging-class-logging-function class) 
+  (let ((ret (call-next-method)))
+    (when (and (logging-class-logging class) (lc-effective-slot-definition-read-logging eslot) (functionp (logging-class-logging-function class)))
+      (funcall (logging-class-logging-function class) ret))
+    ret))
 
                                                        
 (defclass new ()
   ((a :write-logging t
+      :read-logging t
       :initform 10
       :initarg :a
-      :accessor :new-a))
-  (:metaclass logging-class))
+      :accessor new-a))
+  (:metaclass logging-class
+   :logging nil
+  :logging-function #'(lambda (mes) (write-line (format nil "that was accessed ~a value" mes)))))
+              

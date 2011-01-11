@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <time.h>
 using namespace std;
 
 template<class T> class Matrix {
@@ -151,6 +152,12 @@ public:
 #ifdef DEBUG
     cout << "mulate by Matrix" << endl;
 #endif
+#ifdef PRINT_CLOCK
+		timespec tt;
+		clock_gettime(CLOCK_REALTIME, &tt);
+#endif
+
+
     if ((x_size * y_size) != 0 && (mulator->getysize() * mulator->getxsize()) != 0 && x_size == mulator->getysize()) {
       unsigned int maxthreads = max((unsigned int) 1, min(threads, y_size));
       unsigned int step = y_size / maxthreads;
@@ -199,6 +206,19 @@ public:
       
       thargs.clear();
       pthreads.clear();
+
+#ifdef PRINT_CLOCK
+			timespec ttt;
+			clock_gettime(CLOCK_REALTIME, &ttt);
+			long secs = ttt.tv_sec - tt.tv_sec;
+			long nsecs = ttt.tv_nsec - tt.tv_nsec;
+			if (nsecs < 0){
+				--secs;
+				nsecs += 999999999;
+			}
+			cout << "считали в " << threads << " потоков, за " << secs << " секунд и " << nsecs << " наносекунд" << endl;
+#endif
+
       return result;
       
     } else {
@@ -209,6 +229,8 @@ public:
            << "   mulator.getxsize() = " << mulator->getxsize() << endl
            << "   mulator.getysize() = " << mulator->getysize() << endl;
 #endif
+			
+			
       return NULL;
     }
   }

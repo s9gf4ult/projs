@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#define TT int
+#define TT double
 typedef Matrix<TT> DMat;
 
 TT mula(TT param)
@@ -32,17 +32,18 @@ void passit(DMat *const arg) {
 
 int main(int argc, char **argv) {
   TT arr[] = {3,3,3,3};
-  DMat *aa = new DMat(1000, 1000,(TT) 0);
-  DMat *bb = new DMat(1000, 1000, (TT) 0);
+  DMat *aa = new DMat(1000, 10000,(TT) 0);
+  DMat *bb = new DMat(10000, 1000, (TT) 0);
   bb->randomize();
   aa->randomize();
   DMat *cc = aa->mulate(bb,1);
   DMat *ccc = aa->mulate(bb,2);
-  DMat *cccc = aa->mulate(bb,100);
-  if ((*cc) == (*ccc) && (*ccc) == (*cccc)) {
+  DMat *cccc = aa->mulate(bb,10);
+  DMat *ccccc = aa->mulate(bb,20);
+  if ((*cc) == (*ccc) && (*ccc) == (*cccc) && (*ccccc) == (*cccc)) {
     cout << "Yes they a equal !!!!" << endl;
   } else {
-    cout << "fuck" << endl;
+    cout << "fuck !!!" << endl;
   }
   delete aa, bb;
                 

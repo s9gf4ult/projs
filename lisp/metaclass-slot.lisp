@@ -57,7 +57,6 @@
   (call-next-method)
   (when (and (logging-class-logging class) (lc-effective-slot-definition-write-logging eslot) (functionp (logging-class-logging-function class)))
     (funcall (logging-class-logging-function class) eslot nil val)))
-
                                                        
 (defclass new ()
   ((a :write-logging t
@@ -65,7 +64,8 @@
       :initform 10
       :initarg :a
       :accessor new-a))
-  (:metaclass logging-class
-   :logging-function #'(lambda (slot old-val &optional (new-val nil new-val?))
-                                    (write-line (format nil "<<<:::::==- ~a -- ~a -- ~a -==:::::>>>" (closer-mop:slot-definition-name slot) old-val new-val)))))
+  (:metaclass logging-class))
+
+(setf (slot-value (find-class 'new) 'logging-function) #'(lambda (slot old-val &optional new-val)
+                                    (write-line (format nil "<<<:::::==- ~a -- ~a -- ~a -==:::::>>>" (closer-mop:slot-definition-name slot) old-val new-val))))
               

@@ -68,4 +68,3 @@
 
 (setf (slot-value (find-class 'new) 'logging-function) #'(lambda (slot old-val &optional new-val)
                                     (write-line (format nil "<<<:::::==- ~a -- ~a -- ~a -==:::::>>>" (closer-mop:slot-definition-name slot) old-val new-val))))
-              

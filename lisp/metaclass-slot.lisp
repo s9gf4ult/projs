@@ -5,7 +5,11 @@
             :initform t
             :reader logging-class-logging)
    (logging-function :initarg :logging-function
-                     :initform #'print
+                     :initform #'(lambda (slot old-value &optional (new-value nil new-value?))
+                                   (let ((name (closer-mop:slot-definition-name slot)))
+                                     (write-line (if new-value?
+                                                     (format nil "slot ~a was ~a and now ~a" name old-value new-value)
+                                                     (format nil "slot ~a has value ~a" name old-value)))))
                      :accessor logging-class-logging-function)))
 
 (defclass lc-direct-slot-definition (closer-mop:standard-direct-slot-definition)
@@ -43,11 +47,16 @@
                                                                 (lc-direct-slot-definition-write-logging fst))))
     slot))
 
-(defmethod closer-mop:slot-value-using-class ((class logging-class) instance (eslot lc-effective-slot-definition))
+(defmethod closer-mop:slot-value-using-class :around ((class logging-class) instance (eslot lc-effective-slot-definition))
   (let ((ret (call-next-method)))
     (when (and (logging-class-logging class) (lc-effective-slot-definition-read-logging eslot) (functionp (logging-class-logging-function class)))
-      (funcall (logging-class-logging-function class) ret))
+      (funcall (logging-class-logging-function class) eslot ret))
     ret))
+
+(defmethod (setf closer-mop:slot-value-using-class) :around (val (class logging-class) instance (eslot lc-effective-slot-definition))
+  (call-next-method)
+  (when (and (logging-class-logging class) (lc-effective-slot-definition-write-logging eslot) (functionp (logging-class-logging-function class)))
+    (funcall (logging-class-logging-function class) eslot nil val)))
 
                                                        
 (defclass new ()
@@ -57,6 +66,6 @@
       :initarg :a
       :accessor new-a))
   (:metaclass logging-class
-   :logging nil
-  :logging-function #'(lambda (mes) (write-line (format nil "that was accessed ~a value" mes)))))
+   :logging-function #'(lambda (slot old-val &optional (new-val nil new-val?))
+                                    (write-line (format nil "<<<:::::==- ~a -- ~a -- ~a -==:::::>>>" (closer-mop:slot-definition-name slot) old-val new-val)))))
               

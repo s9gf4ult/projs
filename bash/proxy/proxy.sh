@@ -1,5 +1,5 @@
 #!/bin/bash
-MY_IP=172.16.10.155
+MY_IP=192.168.0.9
 PROXY_IP=172.16.10.151
 PORT=3128
 die(){
@@ -41,8 +41,8 @@ close(){
 }
 do_help(){
 	echo 'call ::
-	proxy open "IP" "IP" ...
-	proxy close "IP" "IP" ...
+	proxy open [host address] [network address]
+	proxy close [host address] [network address]
 	proxy close all
 	proxy show'
 }

@@ -2,7 +2,7 @@ start () {
 	modprobe kvm_intel || return 1
 	sleep 1
 	chown root:kvm /dev/kvm || return 2
-	chmod 0660 /dev/kmv
+	chmod 0660 /dev/kvm
 }
 stop () {
 	rmmod kvm_intel

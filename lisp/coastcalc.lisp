@@ -35,7 +35,53 @@
     `(:backstop ,back-stop-coast
                 :takeprofit-limit ,take-profit-coast)))
 
-;(defun universal-deal-compute (&key (direction nil direction?) (coast 
+(defun universal-deal-compute (direction open &key volume count backstop takeprofit backstop-diff takeprofit-diff (backstop-percent 0.02 backstop-percent?) (takeprofit-percent 0.03 takeprofit-percent?) (takeprofit-from-backstop-difff 1.5))
+  (cond
+    (volume
+     (setf count (if count
+                     (min count (truncate (/ volume open)))
+                     (truncate (/ volume open)))))
+    (count
+     (setf volume (* count open)))
+    (t (error "universal-argument-map need :count or :volume parameter")))
+  (flet ((compute-backstop ()
+           (when (not backstop)
+             (when (not backstop-diff)
+               (setf backstop-diff (/ (* volume backstop-percent) count)))
+             (setf backstop (if (eq 'l direction)
+                                (- open backstop-diff)
+                                (+ open backstop-diff)))))
+         (compute-takeprofit ()
+           (when (not takeprofit)
+             (when (not takeprofit-diff)
+               (setf takeprofit-diff (cond
+                                       (takeprofit-from-backstop-difff
+                                        (* backstop-diff takeprofit-from-backstop-difff))
+                                       (takeprofit-percent
+                                        (/ (* volume takeprofit-percent) count)))))
+             (setf takeprofit (if (eq 'l direction)
+                                  (+ open takeprofit-diff)
+                                  (- open takeprofit-diff))))))
+    (let ((back-first (or backstop backstop-diff backstop-percent?))
+          (profit-first (or takeprofit takeprofit-diff takeprofit-percent?)))
+      (cond
+        ((or back-first (and (not back-first) (not profit-first)))
+         (progn
+           (compute-backstop)
+           (compute-takeprofit)))
+        (profit-first
+         (progn
+           (compute-takeprofit)
+           (when (and takeprofit-from-backstop-difff (or takeprofit takeprofit-diff))
+             (when (not takeprofit-diff) (setf takeprofit-diff (if (eq 'l direction)
+                                                                   (- takeprofit open)
+                                                                   (+ open takeprofit))))
+             (setf backstop-diff (/ takeprofit-diff takeprofit-from-backstop-difff)))
+           (compute-backstop))))))
+  `(:open ,open :count ,count :volume ,volume :backstop ,backstop :takeprofit ,takeprofit))
+         
+                                        
+                        
                                  
     
                     

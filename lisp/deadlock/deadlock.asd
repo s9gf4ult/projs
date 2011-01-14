@@ -1,5 +1,5 @@
 (asdf:defsystem deadlock
-  :depends-on (:cl-ppcre :sqlite :alexandria :iterate)
+  :depends-on (:cl-ppcre :sqlite :alexandria :iterate :closer-mop)
   :components ((:file "packages")
                (:file "common" :depends-on ("packages"))
                (:file "conditions" :depends-on ("packages" "common"))

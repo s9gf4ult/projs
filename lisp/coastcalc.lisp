@@ -50,7 +50,13 @@
                (setf backstop-diff (/ (* volume backstop-percent) count)))
              (setf backstop (if (eq 'l direction)
                                 (- open backstop-diff)
-                                (+ open backstop-diff)))))
+                                (+ open backstop-diff))))
+           (setf backstop-diff
+                 (or backstop-diff
+                     (if (eq 'l direction)
+                         (- open backstop)
+                         (- backstop open)))))
+                                 
          (compute-takeprofit ()
            (when (not takeprofit)
              (when (not takeprofit-diff)
@@ -61,7 +67,12 @@
                                         (/ (* volume takeprofit-percent) count)))))
              (setf takeprofit (if (eq 'l direction)
                                   (+ open takeprofit-diff)
-                                  (- open takeprofit-diff))))))
+                                  (- open takeprofit-diff))))
+           (setf takeprofit-diff
+                 (or takeprofit-diff
+                     (if (eq 'l direction)
+                         (- takeprofit open)
+                         (- open takeprofit))))))
     (let ((back-first (or backstop backstop-diff backstop-percent?))
           (profit-first (or takeprofit takeprofit-diff takeprofit-percent?)))
       (cond

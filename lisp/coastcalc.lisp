@@ -125,23 +125,49 @@
                        (case direction
                          (:l (- open backstop-diff))
                          (:s (+ open backstop-diff)))))
+         
+         (lossless (case direction
+                     (:l (- (lossless-coast open count direction) open))
+                     (:s (- open (lossless-coast open count direction)))))
+         
          (takeprofit-stepback (/ backstop-diff 2))
-         (lossless (let ((c (/ (+ (* 2 0.54)
-                                  (* count open (case direction
-                                                  (:s (- 0.002 1))
-                                                  (:l (+ 0.002 1)))))
-                               (* count (case direction
-                                          (:s (* -1 (+ 1 0.002)))
-                                          (:l (- 1 0.002)))))))
-                     (case direction
-                       (:l (- c open))
-                       (:s (- open c)))))
+              
          (takeprofit (case direction
                        (:l (+ open takeprofit-stepback lossless))
                        (:s (- open takeprofit-stepback lossless)))))
     `(:open ,(float open) :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
-         
-                                      
-                     
-                                         
-    
+
+
+(defun lossless-coast (open count direction &key (fixed 0.54) (percentage 0.0004))
+  (/ (+ (* 2 fixed )
+        (* count open (case direction
+                        (:s (- percentage 1))
+                        (:l (+ percentage 1)))))
+     (* count (case direction
+                (:s (* -1 (+ 1 percentage)))
+                (:l (- 1 percentage))))))
+
+(defun avg (&rest args)
+  (let ((conc (reduce #'append (mapcar #'(lambda (a) (if (listp a) a (list a))) args))))
+    (/ (reduce #'+ conc)
+       (list-length conc))))
+
+(require 'lift)
+
+(lift:deftestsuite coastcalc ()
+  ())
+
+
+(lift:addtest (coastcalc) lossless-coast-test
+              (lift:ensure (let* ((fix (rationalize (random 0.5)))
+                                  (per (rationalize (random 0.01)))
+                                  (open (rationalize (random 500.0)))
+                                  (count (min 1 (truncate (random 1000))))
+                                  (close (lossless-coast open count :l :fixed fix :percentage per)))
+                             (= (+ (* 2 fix)
+                                   (* open per count)
+                                   (* close per count))
+                                (* count (- close open))))))
+
+(lift:addtest (coastcalc) 
+                   

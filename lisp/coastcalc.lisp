@@ -95,7 +95,7 @@
   (declare (type symbol direction)
            (type number open))
   (cond
-    ((member direction '(l :l :long :buy)) (setf direction :l))
+    ((member direction '(l :l :long :buy :b)) (setf direction :l))
     ((member direction '(s :s :short :sell)) (setf direction :s))
     (t 
      (error "micex-calculate needs direcion be the member of list (:l :long :buy :s :short :sell)")))
@@ -105,8 +105,8 @@
                     (truncate (/ volume open)))))
   (when count
     (setf count (truncate count))
-    (setf volume (or volume
-                     (* count open))))
+    (setf volume (* count open)))
+  
   (when (and min max)
     (unless (>= min open max)
       (error "the condition (>= min open max) is not true")))
@@ -116,8 +116,9 @@
                (> count 0)
                (> volume 0)
                (or (not min) (> min 0))
-               (or (not max) (> max 0)))
-    (error "there is some wrong value here open=~a, count=~a, volume=~a, min=~a, max=~a" open count volume min max))
+               (or (not max) (> max 0))
+               (or (not backstop) (> backstop 0)))
+    (error "there is some wrong value here open=~a, count=~a, volume=~a, min=~a, max=~a, backstop=~a" open count volume min max backstop))
                
   
   (let* ((backstop-diff (if backstop
@@ -150,6 +151,8 @@
 
 
 (defun lossless-coast (open count direction &key (fixed 0.54) (percentage 0.0004))
+  (declare (type number open count)
+           (type symbol direction))
   (unless (and (> count 0) (> open 0))
     (error "count and open must be greater theat 0"))
   (unless (member direction '(:l :s))
@@ -187,6 +190,24 @@
                         (case direction
                           (:s (- open close))
                           (:l (- close open))))))))
+
+(lift:addtest (coastcalc) lossless-coast-2
+              (let* ((open 100)
+                     (close (lossless-coast open 10 :l :fixed 0 :percentage 0)))
+                (lift:ensure-same open close)))
+
+(lift:addtest (coastcalc) lossless-coast-3
+              (let* ((open 423)
+                     (close (lossless-coast open 254 :s :fixed 0 :percentage 0)))
+                (lift:ensure-same open close)))
+
+(lift:addtest (coastcalc) lossless-coast-4
+              (lift:ensure
+               (< (- (lossless-coast 171 (truncate (/ 1600 171)) :l) 171) 3)))
+
+(lift:addtest (coastcalc) lossless-coast-5
+              (lift:ensure
+               (< (- 171 (lossless-coast 171 (truncate (/ 1600 171)) :s)) 3)))
                                        
 (macrolet ((ensure-errors (&rest pairs)
              `(progn
@@ -205,6 +226,5 @@
    (micex-calculate-5 (micex-calculate 100 :l :count 34 :min 34))
    (micex-calculate-6 (micex-calculate 150 :s :volume 100 :min 100 :max 200))
    (micex-calculate-7 (micex-calculate 150 :s :volume 200 :min 100 :max 110))
-   (micex-calculate-8 (micex-calculate 100 :l :volume 569 :min 200 :max 100))))
-                
-                                 
+   (micex-calculate-8 (micex-calculate 100 :l :volume 569 :min 200 :max 100))
+   (micex-calculate-9 (micex-calculate 100 :b :volume 150 :backstop -11))))

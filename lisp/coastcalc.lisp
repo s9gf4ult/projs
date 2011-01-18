@@ -101,9 +101,10 @@
      (error "micex-calculate needs direcion be the member of list (:l :long :buy :s :short :sell)")))
   (when volume
     (setf count (if count
-                    (min count (truncate (/ volume open)))
+                    (min (truncate count) (truncate (/ volume open)))
                     (truncate (/ volume open)))))
   (when count
+    (setf count (truncate count))
     (setf volume (or volume
                      (* count open))))
   (unless (and volume count)
@@ -116,7 +117,7 @@
                             (let ((safe (/ (* 0.02 volume) count)))
                               (cond
                                 ((and min max) (min safe
-                                                    (let ((a (- max min)))
+                                                    (let ((a (/ (- max min) 3)))
                                                       (if (> a 0) a
                                                           (error "min = ~a max = ~a this is incorrect" min max)))))
                                 ((and (not min) (not max)) safe)
@@ -135,7 +136,7 @@
          (takeprofit (case direction
                        (:l (+ open takeprofit-stepback lossless))
                        (:s (- open takeprofit-stepback lossless)))))
-    `(:open ,(float open) :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
+    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
 
 
 (defun lossless-coast (open count direction &key (fixed 0.54) (percentage 0.0004))
@@ -169,5 +170,4 @@
                                    (* close per count))
                                 (* count (- close open))))))
 
-(lift:addtest (coastcalc) 
-                   
+;(lift:addtest (coastcalc)

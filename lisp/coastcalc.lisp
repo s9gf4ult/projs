@@ -107,8 +107,18 @@
     (setf count (truncate count))
     (setf volume (or volume
                      (* count open))))
+  (when (and min max)
+    (unless (>= min open max)
+      (error "the condition (>= min open max) is not true")))
   (unless (and volume count)
     (error "you must set volume or count at least"))
+  (unless (and (> open 0)
+               (> count 0)
+               (> volume 0)
+               (or (not min) (> min 0))
+               (or (not max) (> max 0)))
+    (error "there is some wrong value here open=~a, count=~a, volume=~a, min=~a, max=~a" open count volume min max))
+               
   
   (let* ((backstop-diff (if backstop
                             (case direction
@@ -178,8 +188,23 @@
                           (:s (- open close))
                           (:l (- close open))))))))
                                        
-(lift:addtest (coastcalc) error-test-1
-              (lift:ensure-error (lossless-coast 0 10 :l)))
-
-(lift:addtest (coastcalc) error-test-2
-              (lift:ensure-error (lossless-coast 10 0 :l)))
+(macrolet ((ensure-errors (&rest pairs)
+             `(progn
+                ,@(loop for pair in pairs collect
+                       `(lift:addtest (coastcalc)
+                          ,(car pair)
+                          (lift:ensure-error ,(cadr pair)))))))
+  (ensure-errors
+   (lossless-coast-1 (lossless-coast 0 10 :l))
+   (lossless-coast-2 (lossless-coast 10 0 :l))
+   (lossless-coast-3 (lossless-coast 10 10 43))
+   (micex-calculate-1 (micex-calculate 0 :l :volume 100))
+   (micex-calculate-2 (micex-calculate 10 :noone :volume 34))
+   (micex-calculate-3 (micex-calculate 100 :long :volume -10))
+   (micex-calculate-4 (micex-calculate 1000 :l))
+   (micex-calculate-5 (micex-calculate 100 :l :count 34 :min 34))
+   (micex-calculate-6 (micex-calculate 150 :s :volume 100 :min 100 :max 200))
+   (micex-calculate-7 (micex-calculate 150 :s :volume 200 :min 100 :max 110))
+   (micex-calculate-8 (micex-calculate 100 :l :volume 569 :min 200 :max 100))))
+                
+                                 

@@ -188,7 +188,10 @@
    (calculate-commission-1 (calculate-commission :open 10 :close 11 :volume 1100))
    (calculate-commission-2 (calculate-commission :open 34 :count 23 :open-volume 16))
    (calculate-commission-3 (calculate-commission :open-volume 234 :close 13 :count 14))
-   (calculate-commission-4 (calculate-commission :count 10 :open 171 :close 173 :volume 45))))
+   (calculate-commission-4 (calculate-commission :count 10 :open 171 :close 173 :volume 45))
+   (calculate-commission-9 (calculate-commission :count -10 :open 34 :close 345))
+   (calculate-commission-10 (calculate-commission :count 34 :open -10 :close 234))
+   (calculate-commission-11 (calculate-commission :volume -2))))
 
 (lift:addtest (coastcalc)
   calculate-commission-5

@@ -20,76 +20,6 @@
     (let ((y-multi (expt (/ res mulated) (/ 1 years))))
       (* 100 (- y-multi 1)))))
     
-(defun compute-deal-parameters (coast count direction &key (back-stop-percent 0.02) (take-profit-percent 3/100 tpp?) (take-profit-from-backstop 1.5 tpfb?) volume)
-  (let* ((volume (or volume (* coast count)))
-         (bs-diff (/ (* back-stop-percent volume) count))
-         (back-stop-coast (if (eq 'l direction)
-                              (- coast bs-diff)
-                              (+ coast bs-diff)))
-         (tp-diff (cond
-                    ((or tpp? (and (not tpp?) (not tpfb?))) (/ (* volume take-profit-percent) count))
-                    (tpfb? (* bs-diff take-profit-from-backstop))))
-         (take-profit-coast (if (eq 'l direction)
-                                (+ coast tp-diff)
-                                (- coast tp-diff))))
-    `(:backstop ,back-stop-coast
-                :takeprofit-limit ,take-profit-coast)))
-
-(defun universal-deal-compute (direction open &key volume count backstop takeprofit backstop-diff takeprofit-diff (backstop-percent 0.02 backstop-percent?) (takeprofit-percent 0.03 takeprofit-percent?) (takeprofit-from-backstop-difff 1.5) get-lossless (commission :micex commission?) step-back)
-  (cond
-    (volume
-     (setf count (if count
-                     (min count (truncate (/ volume open)))
-                     (truncate (/ volume open)))))
-    (count
-     (setf volume (* count open)))
-    (t (error "universal-deal-compute need :count or :volume parameter")))
-  (flet ((compute-backstop ()
-           (when (not backstop)
-             (when (not backstop-diff)
-               (setf backstop-diff (/ (* volume backstop-percent) count)))
-             (setf backstop (if (eq 'l direction)
-                                (- open backstop-diff)
-                                (+ open backstop-diff))))
-           (setf backstop-diff
-                 (or backstop-diff
-                     (if (eq 'l direction)
-                         (- open backstop)
-                         (- backstop open)))))
-                                 
-         (compute-takeprofit ()
-           (when (not takeprofit)
-             (when (not takeprofit-diff)
-               (setf takeprofit-diff (cond
-                                       (takeprofit-from-backstop-difff
-                                        (* backstop-diff takeprofit-from-backstop-difff))
-                                       (takeprofit-percent
-                                        (/ (* volume takeprofit-percent) count)))))
-             (setf takeprofit (if (eq 'l direction)
-                                  (+ open takeprofit-diff)
-                                  (- open takeprofit-diff))))
-           (setf takeprofit-diff
-                 (or takeprofit-diff
-                     (if (eq 'l direction)
-                         (- takeprofit open)
-                         (- open takeprofit))))))
-    (let ((back-first (or backstop backstop-diff backstop-percent?))
-          (profit-first (or takeprofit takeprofit-diff takeprofit-percent?)))
-      (cond
-        ((or back-first (and (not back-first) (not profit-first)))
-         (progn
-           (compute-backstop)
-           (compute-takeprofit)))
-        (profit-first
-         (progn
-           (compute-takeprofit)
-           (when (and takeprofit-from-backstop-difff (or takeprofit takeprofit-diff))
-             (when (not takeprofit-diff) (setf takeprofit-diff (if (eq 'l direction)
-                                                                   (- takeprofit open)
-                                                                   (+ open takeprofit))))
-             (setf backstop-diff (/ takeprofit-diff takeprofit-from-backstop-difff)))
-           (compute-backstop))))))
-  `(:open ,open :count ,count :volume ,volume :backstop ,backstop :takeprofit ,takeprofit))
          
 (defun micex-calculate (open direction &key backstop volume count min max)
   (declare (type symbol direction)
@@ -107,9 +37,9 @@
     (setf count (truncate count))
     (setf volume (* count open)))
   
-  (when (and min max)
-    (unless (>= min open max)
-      (error "the condition (>= min open max) is not true")))
+  ;; (when (and min max)
+  ;;   (unless (<= min open max)
+  ;;     (error "the condition (>= min open max) is not true")))
   (unless (and volume count)
     (error "you must set volume or count at least"))
   (unless (and (> open 0)
@@ -147,9 +77,13 @@
          (takeprofit (case direction
                        (:l (+ open takeprofit-stepback lossless))
                        (:s (- open takeprofit-stepback lossless)))))
-    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
-
-
+    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback) :posible-loss ,(float (* count backstop-diff))
+            :posible-profit ,(float (let ((c (case direction
+                                               (:l (- (- takeprofit takeprofit-stepback) open))
+                                               (:s (- open (+ takeprofit takeprofit-stepback))))))
+                                      (* c count))))))
+                                                                                                                            
+                                                                          
 (defun lossless-coast (open count direction &key (fixed 0.54) (percentage 0.0004))
   (declare (type number open count)
            (type symbol direction))
@@ -169,6 +103,30 @@
   (let ((conc (reduce #'append (mapcar #'(lambda (a) (if (listp a) a (list a))) args))))
     (/ (reduce #'+ conc)
        (list-length conc))))
+
+(defun calculate-commission (&key open-volume volume count open close (fixed 0) (percentage 0) presets)
+  (when presets
+    (case presets
+      (:micex (setf fixed 0
+                    percentage (/ 0.054 100)))
+      (otherwise (error "I dont know what is the ~a in :presets" presets))))
+  (cond
+    ((and open-volume volume count open close) (error "you can not specify :count :open :close :open-volume and :volume at same call"))
+    ((and open-volume count) (error "you can not specify open-volume and count at same call"))
+    ((and volume count) (error "you can not specify volume and count at same call"))
+    ((and volume (or open close)) (error "you can not speciry volume and (or open close) at same call"))
+    ((and open-volume open close)
+     (progn
+       (setf count (truncate (/ open-volume open)))
+       (setf volume (* count (+ open close)))))
+    ((and count open close)
+     (setf volume (* count (+ open close))))
+    (volume t)
+    (t (error "you has specified strange options")))
+  (+ (* 2 fixed)
+     (* volume percentage)))
+  
+      
 
 (require 'lift)
 
@@ -225,6 +183,38 @@
    (micex-calculate-4 (micex-calculate 1000 :l))
    (micex-calculate-5 (micex-calculate 100 :l :count 34 :min 34))
    (micex-calculate-6 (micex-calculate 150 :s :volume 100 :min 100 :max 200))
-   (micex-calculate-7 (micex-calculate 150 :s :volume 200 :min 100 :max 110))
    (micex-calculate-8 (micex-calculate 100 :l :volume 569 :min 200 :max 100))
-   (micex-calculate-9 (micex-calculate 100 :b :volume 150 :backstop -11))))
+   (micex-calculate-9 (micex-calculate 100 :b :volume 150 :backstop -11))
+   (calculate-commission-1 (calculate-commission :open 10 :close 11 :volume 1100))
+   (calculate-commission-2 (calculate-commission :open 34 :count 23 :open-volume 16))
+   (calculate-commission-3 (calculate-commission :open-volume 234 :close 13 :count 14))
+   (calculate-commission-4 (calculate-commission :count 10 :open 171 :close 173 :volume 45))))
+
+(lift:addtest (coastcalc)
+  calculate-commission-5
+  (lift:ensure-same
+   0
+   (calculate-commission :count 0 :open 10 :close 34 :fixed 0 :percentage 23)))
+
+
+(lift:addtest (coastcalc)
+  calculate-commission-6
+  (lift:ensure-same
+   0
+   (calculate-commission :count 10 :open 3 :close 45 :fixed 0 :percentage 0)))
+
+(lift:addtest (coastcalc)
+  calculate-commission-7
+  (let ((a (rationalize (random 10.0))))
+    (lift:ensure-same
+     (* 2 a)
+     (calculate-commission :volume 234 :fixed a  :percentage 0))))
+
+(lift:addtest (coastcalc)
+  calculate-commission-8
+  (let ((a (rationalize (max 0.001 (random 1.0))))
+        (b (max 1 (rationalize (random 10000.0)))))
+    (lift:ensure-same
+     (* a b)
+     (calculate-commission :volume b :fixed 0 :percentage a))))
+                    

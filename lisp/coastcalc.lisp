@@ -123,6 +123,11 @@
      (setf volume (* count (+ open close))))
     (volume t)
     (t (error "you has specified strange options")))
+  (unless (and (>= volume 0) (or (not count) (>= count 0))
+               (or (not open-volume) (>= open-volume 0))
+               (or (not open) (>= open 0))
+               (or (not close) (>= close 0)))
+    (error "one of values is not > 0 volume=~a, count=~a, open-volume=~a, open=~a, close=~a" volume count open-volume open close))
   (+ (* 2 fixed)
      (* volume percentage)))
   

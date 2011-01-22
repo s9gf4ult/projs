@@ -24,11 +24,7 @@
 (defun micex-calculate (open direction &key backstop volume count min max)
   (declare (type symbol direction)
            (type number open))
-  (cond
-    ((member direction '(l :l :long :buy :b)) (setf direction :l))
-    ((member direction '(s :s :short :sell)) (setf direction :s))
-    (t 
-     (error "micex-calculate needs direcion be the member of list (:l :long :buy :s :short :sell)")))
+  (setf direction (when direction (normalize-direction direction)))
   (when volume
     (setf count (if count
                     (min (truncate count) (truncate (/ volume open)))
@@ -89,8 +85,7 @@
            (type symbol direction))
   (unless (and (> count 0) (> open 0))
     (error "count and open must be greater theat 0"))
-  (unless (member direction '(:l :s))
-    (error "direction must be :l or :s"))
+  (setf direction (when direction (normalize-direction direction)))
   (/ (+ (* 2 fixed )
         (* count open (case direction
                         (:s (- percentage 1))
@@ -130,9 +125,30 @@
     (error "one of values is not > 0 volume=~a, count=~a, open-volume=~a, open=~a, close=~a" volume count open-volume open close))
   (+ (* 2 fixed)
      (* volume percentage)))
-  
-      
 
+(defun normalize-direction (direction)
+  (case direction
+    ((:l :long :buy :b) :l)
+    ((:s :short :sell) :s)
+    (otherwise (error "direction can not be ~a") direction)))
+  
+(defun micex-calculate-net (&key buy sell open close direction count)
+  (setf direction (when direction (normalize-direction direction)))
+  (cond
+    ((and buy sell count (or open close direction)) (error "you can not give open close or direction with sell and buy parameters"))
+    ((and open close direction count (or buy sell)) (error "you can not give sell or buy parameters with open and close at same call"))
+    ((and open close direction count)
+     (case direction
+       (:l (setf buy open
+                 sell close))
+       (:s (setf buy close
+                 sell open))))
+    ((and buy sell count) t)
+    (t (error "not enought parameters")))
+  (- (* (- sell buy) count) (calculate-commission :volume (* count (+ buy sell)) :percentage (/ 0.054 100))))
+           
+
+   
 (require 'lift)
 
 (lift:deftestsuite coastcalc ()
@@ -196,7 +212,28 @@
    (calculate-commission-4 (calculate-commission :count 10 :open 171 :close 173 :volume 45))
    (calculate-commission-9 (calculate-commission :count -10 :open 34 :close 345))
    (calculate-commission-10 (calculate-commission :count 34 :open -10 :close 234))
-   (calculate-commission-11 (calculate-commission :volume -2))))
+   (calculate-commission-11 (calculate-commission :volume -2))
+   (micex-calculate-net-1 (micex-calculate-net :buy 10 :sell 11 :count 2 :direction :l))
+   (micex-calculate-net-2 (micex-calculate-net :buy 10 :sell 34))
+   (micex-calculate-net-3 (micex-calculate-net :open 34 :close 66 :count 2))
+   (micex-calculate-net-4 (micex-calculate-net :open 34 :sell 89 :count 4 :direction :l))
+   (micex-calculate-net-5 (micex-calculate-net :buy 34 :sell 35 :count 100 :direction 34))
+   (normalize-direction-1 (normalize-direction 23))))
+
+(lift:addtest (coastcalc)
+  micex-calculate-net-6
+  (lift:ensure-different (micex-calculate-net :buy 10 :sell 10 :count 3)
+                         0 :test #'>=))
+
+(lift:addtest (coastcalc)
+  ensure-lossless
+  (lift:ensure-random-cases 1000 ()
+    (let* ((open (rationalize (max 0.1 (random 100000.0))))
+           (count (truncate (max 1 (random 100000))))
+           (direction (if (> (random 1.0) 0.5) :l :s))
+           (close (lossless-coast open count direction)))
+      (= 0
+         (micex-calculate-net :open open :close close :count count :direction direction)))))
 
 (lift:addtest (coastcalc)
   calculate-commission-5
@@ -225,4 +262,16 @@
     (lift:ensure-same
      (* a b)
      (calculate-commission :volume b :fixed 0 :percentage a))))
-                    
+
+(lift:addtest (coastcalc)
+  complex-test-1
+  (lift:ensure-random-cases 1000 ()
+    (let* ((open (rationalize (max 0.1 (random 10000.0))))
+           (count (truncate (max 1 (random 1000))))
+           (direction (if (> (random 1.0) 0.5) :l :s))
+           (res (micex-calculate open direction :count count))
+           (close (case direction
+                    (:l (- (getf res :takeprofit) (getf res :takeprofit-stepback)))
+                    (:s (+ (getf res :takeprofit) (getf res :takeprofit-stepback))))))
+      (= 0 (micex-calculate-net :open open :close close :count count :direction direction)))))
+           

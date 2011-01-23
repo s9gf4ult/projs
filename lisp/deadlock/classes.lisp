@@ -27,8 +27,8 @@
   ((subaccount :initarg :subaccount :reader money-hold-subaccount :documentation "ссылка на субсчет в котором удержаны денежные средства")
    (money :initform 0 :initarg :money :reader money-hold-money :documentation "количество денег удержанных в данной сущности"))
   (:documentation "сущность олицетворяющая удержанные средства (ГО при открытии позиции удерживается)"))
-(defmethod initialize-instance :after ((obj money-hold) &rest initargs &key)
-  (with-accessors (money subaccount) obj
+(defmethod initialize-instance :after ((obj money-hold) &rest initargs)
+  (with-accessors ((money money) (subaccount subaccount)) obj
     (declare (type number money)
              (type subaccount subaccount))
     (withdraw-money subaccount money)

@@ -1,3 +1,10 @@
+(defparameter *micex-fixed-commission* 0)
+(defparameter *micex-percentage-commission* (rationalize (/ 0.054 100)))
+(defparameter *micex-stepback/backstop-amount* 1)
+(defparameter *micex-safe-loss-percent* (rationalize (/ 0.5 100))) ;пол роцента от сделки
+(defparameter *micex-stepback-multiplicator* 2)
+
+
 (defun genhashes (columns rows data)
   (let ((ret (make-hash-table)))
     (loop for row in rows and rowdata in data do
@@ -21,66 +28,45 @@
       (* 100 (- y-multi 1)))))
     
          
-(defun micex-calculate (open direction &key backstop volume count min max)
+(defun micex-calculate (open direction candle-size &key  volume count)
   (declare (type symbol direction)
-           (type number open))
-  (setf direction (when direction (normalize-direction direction)))
+           (type number open candle-size))
+  (setf direction (normalize-direction direction))
   (when volume
     (setf count (if count
                     (min (truncate count) (truncate (/ volume open)))
                     (truncate (/ volume open)))))
   (when count
     (setf count (truncate count))
-    (setf volume (* count open)))
+    (setf volume (rationalize (* count open))))
   
-  ;; (when (and min max)
-  ;;   (unless (<= min open max)
-  ;;     (error "the condition (>= min open max) is not true")))
+  
   (unless (and volume count)
     (error "you must set volume or count at least"))
   (unless (and (> open 0)
                (> count 0)
                (> volume 0)
-               (or (not min) (> min 0))
-               (or (not max) (> max 0))
-               (or (not backstop) (> backstop 0)))
-    (error "there is some wrong value here open=~a, count=~a, volume=~a, min=~a, max=~a, backstop=~a" open count volume min max backstop))
-               
+               (> candle-size 0))
+    (error "there is some wrong value here open=~a, count=~a, volume=~a, candle-size=~a" open count volume candle-size))
+  (setf candle-size (rationalize candle-size))
   
-  (let* ((backstop-diff (if backstop
-                            (case direction
-                              (:l (/ (- open backstop) count))
-                              (:s (/ (- backstop open) count)))
-                            (let ((safe (/ (* 0.02 volume) count)))
-                              (cond
-                                ((and min max) (min safe
-                                                    (let ((a (/ (- max min) 3)))
-                                                      (if (> a 0) a
-                                                          (error "min = ~a max = ~a this is incorrect" min max)))))
-                                ((and (not min) (not max)) safe)
-                                (t (error "you must set min and max both or no one"))))))
-         (backstop (or backstop
-                       (case direction
-                         (:l (- open backstop-diff))
-                         (:s (+ open backstop-diff)))))
+  (let* ((lossless (case direction
+                     (:l (- (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*) open))
+                     (:s (- open (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))))
          
-         (lossless (case direction
-                     (:l (- (lossless-coast open count direction :fixed 0 :percentage (rationalize (/ 0.057 100))) open))
-                     (:s (- open (lossless-coast open count direction :fixed 0 :percentage (rationalize (/ 0.057 100)))))))
-         
-         (takeprofit-stepback (/ backstop-diff 2))
+         (takeprofit-stepback (* *micex-stepback-multiplicator* candle-size))
               
          (takeprofit (case direction
                        (:l (+ open takeprofit-stepback lossless))
-                       (:s (- open takeprofit-stepback lossless)))))
-    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback) :posible-loss ,(float (* count backstop-diff))
-            :posible-profit ,(float (let ((c (case direction
-                                               (:l (- (- takeprofit takeprofit-stepback) open))
-                                               (:s (- open (+ takeprofit takeprofit-stepback))))))
-                                      (* c count))))))
+                       (:s (- open takeprofit-stepback lossless))))
+         (backstop-diff (/ takeprofit-stepback *micex-stepback/backstop-amount*))
+         (backstop (case direction
+                     (:l (- open backstop-diff))
+                     (:s (+ open backstop-diff)))))
+    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
                                                                                                                             
                                                                           
-(defun lossless-coast (open count direction &key (fixed 0.54) (percentage 0.0004))
+(defun lossless-coast (open count direction &key (fixed 0) (percentage 0))
   (declare (type number open count)
            (type symbol direction))
   (unless (and (> count 0) (> open 0))
@@ -145,7 +131,7 @@
                  sell open))))
     ((and buy sell count) t)
     (t (error "not enought parameters")))
-  (- (* (- sell buy) count) (calculate-commission :volume (* count (+ buy sell)) :percentage (/ 0.054 100))))
+  (- (* (- sell buy) count) (calculate-commission :volume (* count (+ buy sell)) :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))
            
 
    

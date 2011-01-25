@@ -89,3 +89,17 @@
                "select t1.create_date, count(*) as count from prescriptions t1, doctors t2, polyclinics t3 where t1.doctor_id = t2.id and t2.polyclinic_id = t3.id and ("
                (format nil "~{~a~^ or ~}" (loop for a in days collect (format nil "t1.create_date = '~a'" a)))
                ") group by t1.create_date;"))
+
+(defun gen-max-for-field (table-name field-names)
+  (loop for field from (car field-names) to (cadr field-names) collect
+       (format nil "select * from ~a where FIELD_~a = (select max(FIELD_~a) from ~a) and FIELD_~a is not null and FIELD_~a <> 0;"
+               table-name field field table-name field field)))
+
+(defun write-list-to-file (filename list)
+  (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :overwrite)
+    (loop for line in list do
+         (write-line line fout))))
+
+(defun select-all-max (table-name field-names)
+  (format nil "select ~{~a ~} from ~a;" (loop for name from (car field-names) to (cadr field-names) collect
+                                            (format nil "max(FIELD_~a)" name)) table-name))

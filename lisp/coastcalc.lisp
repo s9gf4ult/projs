@@ -269,16 +269,32 @@
      (* a b)
      (calculate-commission :volume b :fixed 0 :percentage a))))
 
+;проверяем что закрытие позици по цене тэйкпрофит минус отступ дает нулевой нет
 (lift:addtest (coastcalc)
   complex-test-1
   (lift:ensure-random-cases 1000 ()
     (let* ((open (rationalize (max 0.1 (random 10000.0))))
            (count (truncate (max 1 (random 1000))))
            (direction (if (> (random 1.0) 0.5) :l :s))
-           (candle-size (rationalize (max 0.1 (random 100.0))))
+           (candle-size (rationalize (max (/ open count 10000000) (random (float (/ (* open *micex-stepback/backstop-amount*) 2 *micex-stepback-multiplicator*))))))
            (res (micex-calculate open direction candle-size :count count))
            (close (case direction
                     (:l (- (getf res :takeprofit) (getf res :takeprofit-stepback)))
                     (:s (+ (getf res :takeprofit) (getf res :takeprofit-stepback))))))
       (= 0 (micex-calculate-net :open open :close close :count count :direction direction)))))
-           
+
+;проверяем что просадка нета по бэкстопу что выдает функция не превышает *micex-safe-loss-percent* от объема торговли
+(lift:addtest (coastcalc)
+  micex-calculate-7
+  (lift:ensure-random-cases 1000 ()
+    (let* ((open (rationalize (max 0.1 (random 1000.0))))
+           (count (max 1 (truncate (random 1000))))
+           (direction (if (> (random 1.0) 0.5) :l :s))
+           (size (rationalize (max (/ open count 1000000) (random (float (/ (* open *micex-stepback/backstop-amount*) 2 *micex-stepback-multiplicator*)))))))
+      (let* ((res (micex-calculate open direction size :count count))
+             (net (micex-calculate-net :open open :close (getf res :backstop) :direction direction :count count))
+             (los (* count open *micex-safe-loss-percent*)))
+        (and
+         (<= (- net) los )
+         (<= net 0))))))
+          

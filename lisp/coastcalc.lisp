@@ -1,7 +1,7 @@
 (defparameter *micex-fixed-commission* 0)
 (defparameter *micex-percentage-commission* (rationalize (/ 0.054 100)))
 (defparameter *micex-stepback/backstop-amount* 1)
-(defparameter *micex-safe-loss-percent* (rationalize (/ 0.5 100))) ;пол роцента от сделки
+(defparameter *micex-safe-loss-percent* (rationalize (/ 2 100))) ;два роцента от сделки
 (defparameter *micex-stepback-multiplicator* 2)
 
 
@@ -28,7 +28,7 @@
       (* 100 (- y-multi 1)))))
     
          
-(defun micex-calculate (open direction candle-size &key  volume count)
+(defun micex-calculate (open direction candle-size &rest args &key  volume count)
   (declare (type symbol direction)
            (type number open candle-size))
   (setf direction (normalize-direction direction))
@@ -49,22 +49,38 @@
                (> candle-size 0))
     (error "there is some wrong value here open=~a, count=~a, volume=~a, candle-size=~a" open count volume candle-size))
   (setf candle-size (rationalize candle-size))
-  
-  (let* ((lossless (case direction
-                     (:l (- (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*) open))
-                     (:s (- open (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))))
-         
-         (takeprofit-stepback (* *micex-stepback-multiplicator* candle-size))
-              
-         (takeprofit (case direction
-                       (:l (+ open takeprofit-stepback lossless))
-                       (:s (- open takeprofit-stepback lossless))))
-         (backstop-diff (/ takeprofit-stepback *micex-stepback/backstop-amount*))
-         (backstop (case direction
-                     (:l (- open backstop-diff))
-                     (:s (+ open backstop-diff)))))
-    `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
-                                                                                                                            
+
+  (symbol-macrolet ((takeprof (case direction
+                                (:l (+ open takeprofit-stepback lossless))
+                                (:s (- open takeprofit-stepback lossless))))
+                    (bckstp (case direction
+                              (:l (- open backstop-diff))
+                              (:s (+ open backstop-diff))))
+                    (result `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
+
+    (let* ((lossless (case direction
+                       (:l (- (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*) open))
+                       (:s (- open (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))))
+           
+           (takeprofit-stepback (* *micex-stepback-multiplicator* candle-size))
+           (takeprofit takeprof)
+           (backstop-diff (/ takeprofit-stepback *micex-stepback/backstop-amount*))
+           (backstop bckstp))
+      
+      (let ((ls (micex-calculate-net :open open :close backstop :direction direction :count count))
+            (vl (* *micex-safe-loss-percent* volume)))
+        (if (< ls vl)
+            result
+            (let* ((backstop-diff (/ (* *micex-safe-loss-percent* volume) count))
+                   (backstop (let ((safe-coast (lossless-coast open 14 direction :percentage *micex-percentage-commission*)))
+                               (case direction
+                                 (:l (- safe-coast backstop-diff))
+                                 (:s (+ safe-coast backstop-diff)))))
+                   (takeprofit-stepback (* *micex-stepback/backstop-amount* backstop-diff))
+                   (takeprofit takeprof))
+              result))))))
+            
+                                                                              
                                                                           
 (defun lossless-coast (open count direction &key (fixed 0) (percentage 0))
   (declare (type number open count)
@@ -117,12 +133,12 @@
     ((:l :long :buy :b) :l)
     ((:s :short :sell) :s)
     (otherwise (error "direction can not be ~a") direction)))
-  
-(defun micex-calculate-net (&key buy sell open close direction count)
+
+(defun calculate-gross (&key buy sell open close direction count)
   (setf direction (when direction (normalize-direction direction)))
   (cond
     ((and buy sell count (or open close direction)) (error "you can not give open close or direction with sell and buy parameters"))
-    ((and open close direction count (or buy sell)) (error "you can not give sell or buy parameters with open and close at same call"))
+    ((and open close direction count (or buy sell)) (error "you can not give sell or buy parameters with open and close at same call-"))
     ((and open close direction count)
      (case direction
        (:l (setf buy open
@@ -131,7 +147,14 @@
                  sell open))))
     ((and buy sell count) t)
     (t (error "not enought parameters")))
-  (- (* (- sell buy) count) (calculate-commission :volume (* count (+ buy sell)) :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))
+  (* (- sell buy) count))
+  
+(defun micex-calculate-net (&rest args &key buy sell open close direction count)
+  (- (apply #'calculate-gross args)
+     (calculate-commission :volume (* count (cond
+                                              ((and open close) (+ open close))
+                                              ((and buy sell) (+ buy sell))))
+                           :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))
            
 
    

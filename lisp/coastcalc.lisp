@@ -157,7 +157,11 @@
                                               ((and open close) (+ open close))
                                               ((and buy sell) (+ buy sell))))
                            :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*)))
-           
+
+(defun micex-calculate-net-percent (&rest args &key buy sell open close direction count)
+  (* (/ (apply #'micex-calculate-net args) (* count (cond
+                                                      ((and buy sell) (+ buy sell))
+                                                      ((and open close) (+ open close))))) 100))
 
    
 (require 'lift)

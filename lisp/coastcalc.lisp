@@ -104,8 +104,8 @@
 (defun calculate-commission (&key open-volume volume count open close (fixed 0) (percentage 0) presets)
   (when presets
     (case presets
-      (:micex (setf fixed 0
-                    percentage (/ 0.054 100)))
+      (:micex (setf fixed *micex-fixed-commission*
+                    percentage *micex-percentage-commission*))
       (otherwise (error "I dont know what is the ~a in :presets" presets))))
   (cond
     ((and open-volume volume count open close) (error "you can not specify :count :open :close :open-volume and :volume at same call"))
@@ -125,8 +125,10 @@
                (or (not open) (>= open 0))
                (or (not close) (>= close 0)))
     (error "one of values is not > 0 volume=~a, count=~a, open-volume=~a, open=~a, close=~a" volume count open-volume open close))
-  (+ (* 2 fixed)
-     (* volume percentage)))
+  (if (> volume 0)
+      (+ (* 2 fixed)
+         (* volume percentage))
+      0))
 
 (defun normalize-direction (direction)
   (case direction
@@ -226,11 +228,15 @@
    (micex-calculate-net-5 (micex-calculate-net :buy 34 :sell 35 :count 100 :direction 34))
    (normalize-direction-1 (normalize-direction 23))))
 
+;; проверка положительности очевидно положительной сделки
 (lift:addtest (coastcalc)
   micex-calculate-net-6
-  (lift:ensure-different (micex-calculate-net :buy 10 :sell 10 :count 3)
+  (lift:ensure-different (let ((*micex-fixed-commission* 0)
+                               (*micex-percentage-commission* (/ 0.054 100)))
+                           (micex-calculate-net :buy 10 :sell 10 :count 3))
                          0 :test #'>=))
 
+;; проверка функции цены безубытка и функции вычисления нет. Нет должен быть равен нулю в цене безубытка
 (lift:addtest (coastcalc)
   ensure-lossless
   (lift:ensure-random-cases 1000 ()
@@ -241,19 +247,28 @@
       (= 0
          (micex-calculate-net :open open :close close :count count :direction direction)))))
 
+;; очевидный тест что коммиссия равна нулю при нулевом объеме и нулевой фиксированной части
 (lift:addtest (coastcalc)
   calculate-commission-5
   (lift:ensure-same
    0
    (calculate-commission :count 0 :open 10 :close 34 :fixed 0 :percentage 23)))
 
+;; очевидный тест на то что коммиссия равна нулю при нулевом объеме
+(lift:addtest (coastcalc)
+  calculate-commission-10
+  (lift:ensure-same
+   0
+   (calculate-commission :count 0 :open 10 :close 11 :fixed 1.0 :percentage 0.02)))
 
+;; очевидный тест на то что коммиссия равна нулю при нулевых частях
 (lift:addtest (coastcalc)
   calculate-commission-6
   (lift:ensure-same
    0
    (calculate-commission :count 10 :open 3 :close 45 :fixed 0 :percentage 0)))
 
+;;очевидный тест на то, что коммиссия при нулевой процентной части равна двойной фиксированной части
 (lift:addtest (coastcalc)
   calculate-commission-7
   (let ((a (rationalize (random 10.0))))
@@ -261,6 +276,7 @@
      (* 2 a)
      (calculate-commission :volume 234 :fixed a  :percentage 0))))
 
+;;очевидный тест на то, что коммиссия при нулевой фиксированной части равна объем на проценты
 (lift:addtest (coastcalc)
   calculate-commission-8
   (let ((a (rationalize (max 0.001 (random 1.0))))
@@ -269,7 +285,7 @@
      (* a b)
      (calculate-commission :volume b :fixed 0 :percentage a))))
 
-;проверяем что закрытие позици по цене тэйкпрофит минус отступ дает нулевой нет
+;;проверяем что закрытие позици по цене тэйкпрофит минус отступ дает нулевой нет
 (lift:addtest (coastcalc)
   complex-test-1
   (lift:ensure-random-cases 1000 ()
@@ -283,7 +299,7 @@
                     (:s (+ (getf res :takeprofit) (getf res :takeprofit-stepback))))))
       (= 0 (micex-calculate-net :open open :close close :count count :direction direction)))))
 
-;проверяем что просадка нета по бэкстопу что выдает функция не превышает *micex-safe-loss-percent* от объема торговли
+;;проверяем что просадка нета по бэкстопу что выдает функция не превышает *micex-safe-loss-percent* от объема торговли
 (lift:addtest (coastcalc)
   micex-calculate-7
   (lift:ensure-random-cases 1000 ()

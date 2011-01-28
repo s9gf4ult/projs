@@ -102,4 +102,7 @@
 
 (defun select-all-max (table-name field-names)
   (format nil "select ~{~a ~} from ~a;" (loop for name from (car field-names) to (cadr field-names) collect
-                                            (format nil "max(FIELD_~a)" name)) table-name))
+                                             (format nil "max(FIELD_~a)" name)) table-name))
+
+(defun massive-update (table-name fields)
+  (format nil "update ~a set ~{~a~^, ~}" table-name (mapcar (lambda (a) (format nil "~a = ~a" a a)) fields)))

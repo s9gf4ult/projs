@@ -2,7 +2,7 @@
 (defparameter *micex-percentage-commission* (rationalize (/ 0.054 100)))
 (defparameter *micex-stepback/backstop-amount* 1)
 (defparameter *micex-safe-loss-percent* (rationalize (/ 2 100))) ;два роцента от сделки
-(defparameter *micex-stepback-multiplicator* 2)
+(defparameter *micex-stepback-multiplicator* 1)
 
 
 (defun genhashes (columns rows data)
@@ -56,7 +56,7 @@
                     (bckstp (case direction
                               (:l (- open backstop-diff))
                               (:s (+ open backstop-diff))))
-                    (result `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback))))
+                    (result `(:open ,(float open) :count ,count :backstop ,(float backstop) :takeprofit ,(float takeprofit) :takeprofit-stepback ,(float takeprofit-stepback) :backstop-loss ,(float (micex-calculate-net :open open :close backstop :count count :direction direction)))))
 
     (let* ((lossless (case direction
                        (:l (- (lossless-coast open count direction :fixed *micex-fixed-commission* :percentage *micex-percentage-commission*) open))
@@ -317,4 +317,3 @@
         (and
          (<= (- net) los )
          (<= net 0))))))
-          

@@ -17,9 +17,20 @@
             <property name="position">150</property>
             <property name="position_set">True</property>
             <child>
-              <widget class="GtkTreeView" id="treeview_parent">
+              <widget class="GtkScrolledWindow" id="scrolledwindow1">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="hscrollbar_policy">automatic</property>
+                <property name="vscrollbar_policy">automatic</property>
+                <child>
+                  <widget class="GtkTreeView" id="treeview_parent">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="search_column">1</property>
+                    <property name="enable_grid_lines">horizontal</property>
+                    <property name="enable_tree_lines">True</property>
+                  </widget>
+                </child>
               </widget>
               <packing>
                 <property name="resize">False</property>
@@ -27,9 +38,17 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkTreeView" id="treeview_child">
+              <widget class="GtkScrolledWindow" id="scrolledwindow2">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="hscrollbar_policy">automatic</property>
+                <property name="vscrollbar_policy">automatic</property>
+                <child>
+                  <widget class="GtkTreeView" id="treeview_child">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                  </widget>
+                </child>
               </widget>
               <packing>
                 <property name="resize">True</property>
@@ -66,6 +85,8 @@
                 <property name="receives_default">True</property>
               </widget>
               <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
                 <property name="position">1</property>
               </packing>
             </child>

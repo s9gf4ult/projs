@@ -18,7 +18,7 @@ class just_do_it:
         self.delete_child = self.glade.get_widget('pbutton_delete_parent')
         self.delete_child.connect('clicked', self.on_child_delete)
         self.delete_parent = self.glade.get_widget('pbutton_delete_child')
-        self.delete_parent.connect('clicked', self.on_parent_delete, self)
+        self.delete_parent.connect('clicked', self.on_parent_delete)
         self.commit = self.glade.get_widget('pbutton_commit')
         self.commit.connect('clicked', self.on_commit)
         self.rollback = self.glade.get_widget('pbutton_rollback')
@@ -32,19 +32,19 @@ class just_do_it:
         self.parent_view.set_model(self.parent_list)
         
 
-    def on_open(button, something):
+    def on_open(self, widget, data=None):
         pass
 
-    def on_rollback(button, something):
+    def on_rollback(self, widget, data=None):
         pass
 
-    def on_parent_delete(button,sf, self):
-        self.parent_list.append(('hehe',))
+    def on_parent_delete(self, widget, data=None):
+        self.parent_list.append(['jajaj'])
 
-    def on_commit(button, something):
+    def on_commit(self, widget, data=None):
         pass
 
-    def on_child_delete(button, something):
+    def on_child_delete(self, widget, data=None):
         pass
         
     def show(self):

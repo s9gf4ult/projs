@@ -27,8 +27,8 @@ class just_do_it:
         self.open.connect('clicked', self.on_open)
         self.parent_view = self.glade.get_widget('treeview_parent')
         self.child_view = self.glade.get_widget('treeview_child')
-        self.parent_list = gtk.ListStore(gobject.TYPE_STRING)
-        self.parent_view.insert_column(gtk.TreeViewColumn(u'hee', gtk.CellRendererText()), -1)
+        self.parent_list = gtk.ListStore(str)
+        self.parent_view.insert_column(gtk.TreeViewColumn(u'hee'), -1)
         self.parent_view.set_model(self.parent_list)
         
 

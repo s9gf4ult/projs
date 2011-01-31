@@ -18,7 +18,6 @@
             <property name="can_focus">True</property>
             <property name="orientation">vertical</property>
             <property name="position">150</property>
-            <property name="position_set">True</property>
             <child>
               <widget class="GtkScrolledWindow" id="scrolledwindow1">
                 <property name="visible">True</property>

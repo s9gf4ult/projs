@@ -6,6 +6,7 @@ try:
     import gtk
     import gtk.glade
     import gobject
+    import sqlite3
 except:
     print("error in loading gtk !!!")
     exit(1)
@@ -27,14 +28,17 @@ class just_do_it:
         self.open.connect('clicked', self.on_open)
         self.parent_view = self.glade.get_widget('treeview_parent')
         self.child_view = self.glade.get_widget('treeview_child')
-        self.parent_list = gtk.ListStore(str)
-        self.parent_view.insert_column(gtk.TreeViewColumn(u'hee'), -1)
-        self.parent_view.set_model(self.parent_list)
         
 
     def on_open(self, widget, data=None):
-        pass
-
+        dialog = gtk.FileChooserDialog(title="Open File", action=gtk.FILE_CHOOSER_ACTION_OPEN, parent=self.main_window,
+                                       buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        if dialog.run() == gtk.RESPONSE_OK:
+            filename=dialog.get_filename()
+            self.database = sqlite3.connect(filename)
+            
+        dialog.destroy()
+        
     def on_rollback(self, widget, data=None):
         pass
 
@@ -45,7 +49,8 @@ class just_do_it:
         pass
 
     def on_child_delete(self, widget, data=None):
-        pass
+        (x,iterator) = self.parent_view.get_selection().get_selected()
+        self.parent_list.remove(iterator)
         
     def show(self):
         self.main_window.show_all()

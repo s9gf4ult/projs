@@ -44,7 +44,7 @@ class just_do_it:
             dialog.destroy()
             self.handler = kladr_handler(filename)
             try:
-                self.check_database()
+                self.handler.check_database()
             except:
                 mdialog = gtk.MessageDialog(parent=self.main_window, flags=gtk.DIALOG_MODAL, buttons=gtk.BUTTONS_OK, type=gtk.MESSAGE_ERROR)
                 mdialog.props.text="this file is not sqlite3 databse or does not contain Kladr"

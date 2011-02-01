@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
-# -*- encoding:utf-8 -*-
+# -*- coding: utf-8 -*-
 
 try:
     import gtk
     import gtk.glade
     import gobject
-    import sqlite3
 except:
     print("error in loading gtk !!!")
+    exit(1)
+
+try:
+    from kladr_handler import kladr_handler
+except:
+    print("can not load kladr_handler")
     exit(1)
 
 class just_do_it:
@@ -33,11 +38,28 @@ class just_do_it:
     def on_open(self, widget, data=None):
         dialog = gtk.FileChooserDialog(title="Open File", action=gtk.FILE_CHOOSER_ACTION_OPEN, parent=self.main_window,
                                        buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
-        if dialog.run() == gtk.RESPONSE_OK:
+        response=dialog.run()
+        if response == gtk.RESPONSE_OK:
             filename=dialog.get_filename()
-            self.database = sqlite3.connect(filename)
-            
+            dialog.destroy()
+            self.handler = kladr_handler(filename)
+            try:
+                self.check_database()
+            except:
+                mdialog = gtk.MessageDialog(parent=self.main_window, flags=gtk.DIALOG_MODAL, buttons=gtk.BUTTONS_OK, type=gtk.MESSAGE_ERROR)
+                mdialog.text="this file is not sqlite3 or do not contain Kladr"
+                mdialog.run()
+                mdialog.destroy()
+                return
+
+            self.parent_list = self.handler.get_parent_list()
+            self.child_list = self.handler.get_child_list()
+            self.parent_view.set_model(self.parent_list)
+            self.child_view.set_model(self.child_list)
+                
         dialog.destroy()
+            
+            
         
     def on_rollback(self, widget, data=None):
         pass

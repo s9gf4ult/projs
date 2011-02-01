@@ -47,7 +47,7 @@ class just_do_it:
                 self.check_database()
             except:
                 mdialog = gtk.MessageDialog(parent=self.main_window, flags=gtk.DIALOG_MODAL, buttons=gtk.BUTTONS_OK, type=gtk.MESSAGE_ERROR)
-                mdialog.text="this file is not sqlite3 or do not contain Kladr"
+                mdialog.props.text="this file is not sqlite3 databse or does not contain Kladr"
                 mdialog.run()
                 mdialog.destroy()
                 return

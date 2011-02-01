@@ -41,7 +41,8 @@ class kladr_handler:
         street_code integer,
         actuality_code integer not null,
         ocatd varchar,
-        index varchar,
+        indexd varchar);
+        
         
 
     def get_parent_list():

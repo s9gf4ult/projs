@@ -41,7 +41,23 @@ class kladr_handler:
         street_code integer,
         actuality_code integer not null,
         ocatd varchar,
-        indexd varchar);
+        indexd varchar,
+        unique(code),
+        unique(city_code, place_code, street_code, actuality_code),
+        foreign key (parent_id) references kladr_objects(id) on delete cascade,
+        foreign key (kladr_type) references kladr_type(id) on delete cascade);
+        insert into kladr_type (name, scname) select distinct socrname, scname from socrbase;
+        insert into kladr_objects (name, kladr_type, code, region_code, district_code, city_code, place_code, actuality_code, ocatd, indexd)
+        select k.name, t.id, k.code,
+        cast(substr(k.code, 1, 2) as integer),
+        cast(substr(k.code, 3, 3) as integer),
+        cast(substr(k.code, 6, 3) as integer),
+        cast(substr(k.code, 9, 3) as integer),
+        cast(substr(k.code, 12, 2) as integer),
+        k.ocatd, k.index
+        from kladr k inner join kladr_types t on k.socr = t.scname;
+
+        """)
         
         
 

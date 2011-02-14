@@ -16,13 +16,19 @@ class main_ui():
         self.segfault = a.get_object("gen_seg")
         self.choose_file = a.get_object("choose_file")
         self.buffer = a.get_object("buffer")
+        self.comma = a.get_object("comma_separator")
         self.window.connect("destroy", gtk.main_quit)
         self.choose_file.connect("file-set", self.file_set)
         self.segfault.connect("clicked", self.clicked, self._gen_seg)
         self.axce1.connect("clicked", self.clicked, self._gen_axcel)
 
     def _gen_seg(self):
-        return "segfault\tseg\tsegfaulting in progress"
+        ret = u''
+        for pos in self.deals.connection.execute("select ticket, direction, open_coast, close_coast, count, broker_comm + stock_comm, pl_gross, pl_net from positions order by close_datetime, open_datetime"):
+            ret += u'{0}\n'.format(reduce(lambda a, b: u'{0}\t{1}'.format(a, b), pos))
+        if self.comma.props.active:
+            ret = ret.replace(".", ",")
+        return ret
 
     def _gen_axcel(self):
         return "axcel"
@@ -81,7 +87,41 @@ class deals_proc():
     def __init__(self, coats):
         self.ready = False
         self.connection = sqlite3.connect(":memory:")
-        self.connection.execute("create table deals(id integer primary key not null, datetime real, security_type text, security_name text, grn_code text, price real, quantity integer, volume real, deal_sign integer, broker_comm real, broker_comm_nds real, stock_comm real, stock_comm_nds real)")
+        self.connection.execute("pragma foreign_keys=on")
+        self.connection.execute("""create table positions(
+        id integer primary key not null,
+        ticket,
+        direction integer,
+        open_datetime real,
+        close_datetime real,
+        open_coast real,
+        close_coast real,
+        count integer,
+        open_volume real,
+        close_volume real,
+        broker_comm real,
+        broker_comm_nds real,
+        stock_comm real,
+        stock_comm_nds real,
+        pl_gross real,
+        pl_net real)""")
+
+        self.connection.execute("""create table deals(
+        id integer primary key not null,
+        datetime real,
+        security_type text,
+        security_name text,
+        grn_code text,
+        price real,
+        quantity integer,
+        volume real,
+        deal_sign integer,
+        broker_comm real,
+        broker_comm_nds real,
+        stock_comm real,
+        stock_comm_nds real,
+        position_id integer,
+        foreign key (position_id) references positions(id) on delete set null)""")
         for coat in coats.common_deal:
             x = [mx.DateTime.DateTime(*map(int, re.split("[-T:]+", coat.attributes['deal_time'].value))).ticks()]
             x.extend(map(lambda name: coat.attributes[name].value, ('security_type', 'security_name', 'grn_code')))
@@ -102,33 +142,48 @@ class deals_proc():
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",x)
 
     def check_balance(self):
-        for ticket in map(lambda a: a[0], self.connection.execute("select distinct security_name from deals").fetchall()):
+        for (ticket,) in self.connection.execute("select distinct security_name from deals"):
             buy = self.connection.execute("select sum(quantity) from deals where deal_sign = ? and security_name = ?", (-1, ticket)).fetchall()[0][0] or 0
             sell = self.connection.execute("select sum(quantity) from deals where deal_sign = ? and security_name = ?", (1, ticket)).fetchall()[0][0] or 0
             if buy != sell:
                 raise Exception(u'В отчете несбалансированноый набор сделок по бумаге {0}. Куплено - продано = {1}'.format(ticket, buy - sell))
             
     def make_positions(self):
-        self.connection.execute("""create table positions(
-        id integer primary key not null,
-        open_datetime real,
-        close_datetime real,
-        open_coast real,
-        close_coast real,
-        count integer,
-        open_volume real,
-        close_volume real,
-        broker_comm real,
-        broker_comm_nds real,
-        stock_comm real,
-        stock_comm_nds real,
-        pl_gross real,
-        pl_net real)""")
+        for (ticket,) in self.connection.execute("select distinct security_name from deals where position_id is null"):
+            # сгурппируем парные сделки с одинаковым количеством бумажек на покупку - продажу
+            for (count,) in self.connection.execute("select distinct quantity from deals where position_id is null and security_name = ?", (ticket,)):
+                for (open_sign, close_sign) in [(-1, 1), (1, -1)]:
+                    for (open_id, open_datetime, open_price, open_volume, open_broker_comm, open_broker_comm_nds, open_stock_comm, open_stock_comm_nds) in self.connection.execute("select id, datetime, price ,volume, broker_comm, broker_comm_nds, stock_comm, stock_comm_nds from deals where position_id is null and security_name = ? and quantity = ? and deal_sign = ? order by datetime", (ticket, count, open_sign)):
+                        if 0 == self.connection.execute("select count(*) from deals where position_id is null and security_name = ? and quantity = ? and deal_sign = ? and datetime > ?", (ticket, count, close_sign, open_datetime)).fetchone()[0]:
+                            break
+                        (close_id, close_datetime, close_price, close_volume, close_broker_comm, close_broker_comm_nds, close_stock_comm, close_stock_comm_nds) = self.connection.execute("select id, datetime, price, volume, broker_comm, broker_comm_nds, stock_comm, stock_comm_nds from deals where position_id is null and security_name = ? and quantity = ? and deal_sign = ? and datetime > ? order by datetime",(ticket, count, close_sign, open_datetime)).fetchone()
+                        pos_id = self.connection.execute("""insert into positions (
+                        ticket, direction, open_datetime, close_datetime,
+                        open_coast, close_coast,
+                        count,
+                        open_volume, close_volume,
+                        broker_comm, broker_comm_nds,
+                        stock_comm, stock_comm_nds,
+                        pl_gross, pl_net) values (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                                         (ticket, open_sign, open_datetime, close_datetime,
+                                                          open_price, close_price,
+                                                          count,
+                                                          open_volume, close_volume,
+                                                          open_broker_comm + close_broker_comm, open_broker_comm_nds + close_broker_comm_nds,
+                                                          open_stock_comm + close_stock_comm, open_stock_comm_nds + close_stock_comm_nds,
+                                                          (open_volume - close_volume) * open_sign,
+                                                          ((open_volume - close_volume) * open_sign) - (open_broker_comm + close_broker_comm + open_stock_comm + close_stock_comm))).lastrowid
+                        self.connection.execute("update deals set position_id = ? where id = ? or id = ?", (pos_id, open_id, close_id))
+                        
+                        
+                    
+                
+                
+        (pc,) = self.connection.execute("select count(*) from deals where position_id is null").fetchone()
+        if 0 != pc:
+            raise Exception(u'Не получилось расписать по позициям {0} сделок'.format(pc))
         
-
-
-        
-#        for ticket in map(lambda a: a[0], self.connection.execute("select distinct security_name from deals").fetchall())
         self.ready = True
 
 if __name__ == "__main__":

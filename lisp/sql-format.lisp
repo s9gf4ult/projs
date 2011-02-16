@@ -106,3 +106,6 @@
 
 (defun massive-update (table-name fields)
   (format nil "update ~a set ~{~a~^, ~}" table-name (mapcar (lambda (a) (format nil "~a = ~a" a a)) fields)))
+
+(defun copy-insert (tablename sdate edate fields)
+  (list (format nil "insert into ~a select refguid, idmu, rowno, '~a', '~a', ~a from ~a where idmu = 88 and sdate >= '~a' and edate <= '~a'" tablename (second sdate) (second edate) (format nil "~{FIELD_~a~^, ~}" (loop for a from 1 to fields collect a)) tablename (first sdate) (first edate))))

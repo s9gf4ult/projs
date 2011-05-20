@@ -6,9 +6,10 @@ stream должен быть потоком"
                      (progn
                        (setf closef t)
                        (open "/home/razor/tmp/get.txt" :direction :output :if-exists :overwrite :if-does-not-exist :create)))))
-    (loop for line in lines do
-         (write-line line stream))
-    (when closef (close stream))))
+    (unwind-protect
+         (loop for line in lines do
+              (write-line line stream))
+      (when closef (close stream)))))
 
 (defun reduce-string (reductor strings)
   "склеивает список строк в одну, между строками вставляет reductor"

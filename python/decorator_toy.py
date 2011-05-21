@@ -70,13 +70,86 @@ class file_stream(object):
         print("receiving the data")
         return "data"
 
+class method_must_do_decorator(object):
+    """
+    Attributes:
+    
+    """
+    def __init__(self, attr, method_to_execute):
+        """
+        Arguments:
+        - `attr`:
+        - `method_to_execute`:
+        """
+        self._attr = attr
+        self._method_to_execute = method_to_execute
+        
+    def __call__(self, func):
+        """
+        Arguments:
+        - `func`:
+        """
+        def ret(*args, **kargs):
+            assert(hasattr(args[0], self._attr))
+            if getattr(args[0], self._attr):
+                self._method_to_execute(args[0])
+                setattr(args[0], self._attr, False)
+            return func(*args, **kargs)
+        ret.__doc__ = func.__doc__
+        return ret
+            
+class some_strange_object(object):
+    """
+    Attributes:
+    _need_action = False
+    """
+    ##############
+    # Attributes #
+    ##############
+    _need_action = False
+    
+    ###########
+    # Methods #
+    ###########
+    
+    def do_something_safe(self, ):
+        """
+        """
+        print("doing something safe")
+
+    def do_something_insafe(self, ):
+        """
+        """
+        print("doing something insafe")
+        self._need_action = True
+
+    def fix(self, ):
+        """
+        """
+        print("fixing insafe things")
+
+    @method_must_do_decorator("_need_action", fix)
+    def do_important_action(self, ):
+        """
+        """
+        print("doing important action")
+
 
 if __name__ == '__main__':
-    a = file_stream()
-    a.send("1010")
-    x = a.receive()
+    # a = file_stream()
+    # a.send("1010")
+    # x = a.receive()
     
     
-    b = packing_decorator(100)(file_stream())
-    b.send("<<<<data>>>>")
-    b.receive()
+    # b = packing_decorator(100)(file_stream())
+    # b.send("<<<<data>>>>")
+    # b.receive()
+    
+    c = some_strange_object()
+    c.do_important_action()
+    c.do_something_safe()
+    c.do_important_action()
+    c.do_something_insafe()
+    c.do_important_action()
+    c.do_important_action()
+    

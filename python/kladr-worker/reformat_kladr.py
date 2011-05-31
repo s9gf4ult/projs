@@ -20,8 +20,16 @@ class kladr(object):
 
         
 
+def showusage():
+    """
+    """
+    print("""
+reformat_kladr.py filename command [parameters]""")
+
 
         
 if __name__ == '__main__':
     import sys
-    print(sys.argv[0])
+    if len(sys.argv) <= 1:
+        showusage()
+        

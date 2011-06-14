@@ -1,2 +1,4 @@
 (defpackage :kladr
-  (:use :cl :iter :clsql-user))
+  (:use :cl :iter :sqlite)
+  (:export :kladr-open-database
+           :kladr-close-database))

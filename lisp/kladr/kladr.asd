@@ -1,4 +1,4 @@
 (asdf:defsystem kladr
-  :depends-on (:clsql :iterate)
+  :depends-on (:sqlite :iterate)
   :components ((:file "packages")
                (:file "kladr" :depends-on ("packages"))))

@@ -1,7 +1,5 @@
 (in-package :kladr)
 
-(use-package 'clsql-user)
-
 (defun open-kladr-database (filename)
   (connect (list filename) :database-type :sqlite3 :if-exists :new)
   (enable-sql-reader-syntax))

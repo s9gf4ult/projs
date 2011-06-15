@@ -8,8 +8,8 @@
           (error "database already opened")
           (setf *db* (sqlite:connect filename)))
     (disconnect ()
-      (close-kladr-database)
-      (open-kladr-database filename))
+      (kladr-close-database)
+      (kladr-open-database filename))
     (abort () nil)))
 
 (defun kladr-close-database ()

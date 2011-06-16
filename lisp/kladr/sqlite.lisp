@@ -35,9 +35,10 @@
 
 (defun create-table (db name fields &optional constraints temporary)
   (restart-case
-      (if (> (execute-one-row-m-v db "select count(*) from sqlite_master where type = ? and name = ?" "table" name) 0)
+      (if (> (execute-one-row-m-v db "select count(*) from sqlite_master where type = ? and name = ?" "table" (if (symbolp name) (format nil "~a" name) name)) 0)
           (error "There is the table with name '~a' already" name)
-          (execute-non-query db (format nil "create table ~a(~{~a~^, ~})"
+          (execute-non-query db (format nil "create ~a table ~a(~{~a~^, ~})"
+                                        (if temporary "temporary" "")
                                         name
                                         (append
                                          (loop for x in fields collect (format nil "~{~a~^ ~}" x))
@@ -51,7 +52,7 @@
       nil)))
 
 (defun drop-index-all (db)
-  (iter (for name in (mapcar #'car (execute-to-list db "select name from sqlite_master where type = 'index'")))
+  (iter (for name in (mapcar #'car (execute-to-list db "select name from sqlite_master where type = 'index' and name not like 'sqlite_autoindex%'")))
         (execute-non-query db (format nil "drop index ~a" name))))
 
 (defun create-index (db table-name field-names)

@@ -6,5 +6,7 @@
            :kladr-create-short-names
            :kladr-with-transaction
            :kladr-make-hierarchy
-           :draw-hierarchy-tree))
+           :draw-hierarchy-tree
+           :kladr-make-me-happy
+           :draw-hierarchy-tree-monothread))
   

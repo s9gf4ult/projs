@@ -72,6 +72,7 @@ select st.name, s.id, st.code, st.gninmb, st.uno, st.ocatd, (substr(st.code, 1, 
      ,@body))
 
 (defun kladr-make-hierarchy (&optional filter)
+  (declare (ignore filter))
   (sqlite::create-table *db* 'kladr_hierarchy '((id integer primary key not null)
                                                 (parent integer not null)
                                                 (child integer not null))
@@ -82,17 +83,27 @@ select st.name, s.id, st.code, st.gninmb, st.uno, st.ocatd, (substr(st.code, 1, 
                      "create trigger if not exists clear_hieararchy before insert on kladr_hierarchy for each row begin
 delete from kladr_hierarchy where child = new.child;
 end")
-  (let ((fields '(region_code distinct_code city_code town_code street_code actuality_code))
-        (defaults '((= 0) (= 0) (= 0) (= 0) (is null) (= 0))))
-    (iter (for (id rcode) in-sqlite-query "select id, region_code from kladr_objects where region_code <> 0 and distinct_code = 0 and city_code = 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db*) ;итерируем по регионам
+    (iter (for (id rcode) in-sqlite-query "select id, region_code from kladr_objects where region_code <> 0 and distinct_code = 0 and city_code = 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db*) ;итерируем по областям
           (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code <> 0 and city_code = 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode))
-                (kassign id cid))    ;привязываем регионы к областям
-          (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = 0 and city_code <> 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode))
-                (kassign id cid)))       ;привязываем города обласного значения к областям
-          ))
+                (kassign id cid)))    ;привязываем регионы к областям
+          ;; (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = 0 and city_code <> 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode))
+          ;;       (kassign id cid)))       ;привязываем города обласного значения к областям
+    (iter (for (id rcode dcode) in-sqlite-query "select id, region_code, distinct_code from kladr_objects where region_code <> 0 and distinct_code <> 0 and city_code = 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db*) ;итерируем по регионам
+          (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code <> 0 and town_code = 0 and street_code is null and actuality_code = 0 order by name" on-database *db* with-parameters (rcode dcode))
+                (kassign id cid)))      ;привязываем года к регионам
+          ;; (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code = 0 and town_code <> 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode dcode))
+          ;;       (kassign id cid)))       ;привязываем населенные пункты к регионам
+          )
 
+(defun kladr-make-me-happy()
+  (handler-bind
+      ((simple-error #'(lambda (e)
+                             (let ((r (find-restart 'drop-table)))
+                               (when r (invoke-restart r))))))
+    (kladr-create-objects)
+    (kladr-make-hierarchy)))
     
-  
+
 (defun kassign (parent-id child-id)
   (execute-non-query *db* "insert into kladr_hierarchy(parent, child) values (?, ?)" parent-id child-id))
 
@@ -100,6 +111,74 @@ end")
   "Draw tree of kladr objects"
   (with-main-loop
     (let-ui (gtk-window :title "Kladr tree"
+                        :height-request 400
+                        :width-request 600
+                        :position :center
+                        :var window
+                        (scrolled-window
+                         (tree-view :var view)))
+      (let ((store (make-instance 'tree-store :column-types '("gint" "gchararray" "gchararray")))
+            threads)
+        (flet ((build-root ()
+                 (iter (for (id tp nm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id where exists(select h.* from kladr_hierarchy h where h.parent = k.id) and not exists(select hh.* from kladr_hierarchy hh where hh.child = k.id) order by t.name, k.name" on-database *db*)
+                       (for x from 0)
+                       (for pr = (within-main-loop-and-wait (tree-store-insert-with-values store nil x id tp nm)))
+                       (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters (id))
+                             (for y from 0)
+                             (within-main-loop-and-wait
+                               (tree-store-insert-with-values store pr y cid ctp cnm))))))
+          (push (bordeaux-threads:make-thread #'build-root) threads))
+        (setf (tree-view-model view) store)
+        (let ((column (make-instance 'tree-view-column :title "Type"))
+              (renderer (make-instance 'cell-renderer-text)))
+          (tree-view-column-pack-start column renderer)
+          (tree-view-column-add-attribute column renderer "text" 1)
+          (tree-view-append-column view column))
+        (let ((column (make-instance 'tree-view-column :title "Name"))
+              (renderer (make-instance 'cell-renderer-text)))
+          (tree-view-column-pack-start column renderer)
+          (tree-view-column-add-attribute column renderer "text" 2)
+          (tree-view-append-column view column))
+        (gobject:connect-signal view "row-expanded"
+                                (let (expanded)
+                                #'(lambda (tree it path)
+                                    (declare (ignore tree path))
+                                    (let ((cid (tree-model-value store it 0)))
+                                      (unless (member cid expanded)
+                                        (let ((child (tree-model-iter-first-child store it)))
+                                          (when child
+                                            (flet ((build-child ()
+                                                     (iter
+                                                       (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters ((within-main-loop-and-wait (tree-model-value store child 0))))
+                                                             (for pos from 0)
+                                                             (within-main-loop 
+                                                               (tree-store-insert-with-values store child pos cid ctp cnm)))
+                                                       (while
+                                                           (within-main-loop-and-wait
+                                                             (tree-model-iter-next store child))))))
+                                              ;(build-child))))
+                                              (push (bordeaux-threads:make-thread #'build-child) threads))))
+                                        (push cid expanded))))))
+        (gobject:connect-signal window "delete-event"
+                                #'(lambda (widget event)
+                                    (declare (ignore widget event))
+                                    (iter (for thread in threads)
+                                          (if (bordeaux-threads:thread-alive-p thread)
+                                              (bordeaux-threads:destroy-thread thread)))
+                                    (gtk-main-quit)
+                                    nil))
+        )
+       
+      (widget-show window))))
+
+
+(defun draw-hierarchy-tree-monothread ()
+  "Draw tree of kladr objects"
+  (with-main-loop
+    (let-ui (gtk-window :title "Kladr tree"
+                        :height-request 400
+                        :width-request 600
+                        :position :center
                         :var window
                         (scrolled-window
                          (tree-view :var view)))
@@ -107,7 +186,7 @@ end")
         (iter (for (id tp nm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id where exists(select h.* from kladr_hierarchy h where h.parent = k.id) and not exists(select hh.* from kladr_hierarchy hh where hh.child = k.id) order by t.name, k.name" on-database *db*)
               (for x from 0)
               (for pr = (tree-store-insert-with-values store nil x id tp nm))
-              (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ?" on-database *db* with-parameters (id))
+              (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters (id))
                     (for y from 0)
                     (tree-store-insert-with-values store pr y cid ctp cnm)))
         (setf (tree-view-model view) store)
@@ -123,17 +202,19 @@ end")
           (tree-view-append-column view column))
         (gobject:connect-signal view "row-expanded"
                                 (let (expanded)
-                                  #'(lambda (tw ti pt)
-                                      (declare (ignore tw))
-                                      (unless (member pt expanded)
-                                        (push pt expanded)
-                                        (let ((fst (tree-model-iter-first-child store ti)))
-                                          (when fst
+                                #'(lambda (tree it path)
+                                    (declare (ignore tree path))
+                                    (let ((cid (tree-model-value store it 0)))
+                                      (unless (member cid expanded)
+                                        (let ((child (tree-model-iter-first-child store it)))
+                                          (when child
                                             (iter
-                                              (let ((parent-id (tree-model-value store fst 0)))
-                                                (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ?" on-database *db* with-parameters (parent-id))
-                                                      (for ind from 0)
-                                                      (tree-store-insert-with-values store fst ind cid ctp cnm)))
-                                              (while (setf fst (tree-model-iter-next store fst)))))))))))
-                                              
+                                              (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters ((tree-model-value store child 0)))
+                                                    (for pos from 0)
+                                                    (tree-store-insert-with-values store child pos cid ctp cnm))
+                                              (while
+                                                  (tree-model-iter-next store child)))))
+                                        (push cid expanded))))))
+        )
+       
       (widget-show window))))

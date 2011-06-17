@@ -122,11 +122,17 @@ end")
         (flet ((build-root ()
                  (iter (for (id tp nm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id where exists(select h.* from kladr_hierarchy h where h.parent = k.id) and not exists(select hh.* from kladr_hierarchy hh where hh.child = k.id) order by t.name, k.name" on-database *db*)
                        (for x from 0)
-                       (for pr = (within-main-loop-and-wait (tree-store-insert-with-values store nil x id tp nm)))
+                       (for pr = (within-main-loop-and-wait
+                                   (widget-freeze-child-notify view)
+                                   (prog1
+                                       (tree-store-insert-with-values store nil x id tp nm)
+                                     (widget-thaw-child-notify view))))
                        (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters (id))
                              (for y from 0)
                              (within-main-loop-and-wait
-                               (tree-store-insert-with-values store pr y cid ctp cnm))))))
+                               (widget-freeze-child-notify view)
+                               (tree-store-insert-with-values store pr y cid ctp cnm)
+                               (widget-thaw-child-notify view))))))
           (push (bordeaux-threads:make-thread #'build-root) threads))
         (setf (tree-view-model view) store)
         (let ((column (make-instance 'tree-view-column :title "Type"))
@@ -151,11 +157,16 @@ end")
                                                      (iter
                                                        (iter (for (cid ctp cnm) in-sqlite-query "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name" on-database *db* with-parameters ((within-main-loop-and-wait (tree-model-value store child 0))))
                                                              (for pos from 0)
-                                                             (within-main-loop 
-                                                               (tree-store-insert-with-values store child pos cid ctp cnm)))
+                                                             (within-main-loop-and-wait
+                                                               (widget-freeze-child-notify view)
+                                                               (tree-store-insert-with-values store child pos cid ctp cnm)
+                                                               (widget-thaw-child-notify view)))
                                                        (while
                                                            (within-main-loop-and-wait
-                                                             (tree-model-iter-next store child))))))
+                                                             (widget-freeze-child-notify view)
+                                                             (prog1
+                                                                 (tree-model-iter-next store child)
+                                                               (widget-thaw-child-notify view)))))))
                                               ;(build-child))))
                                               (push (bordeaux-threads:make-thread #'build-child) threads))))
                                         (push cid expanded))))))

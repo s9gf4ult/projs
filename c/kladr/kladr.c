@@ -12,6 +12,7 @@ typedef struct {
   sqlite3 *connection;
   GtkTreeModel *model;
   GtkTreeView *view;
+  GArray *expanded;
 } ModelAndConnection;
 
 typedef struct {
@@ -109,6 +110,10 @@ void build_children(GtkTreeView *view, GtkTreeIter *iter, GtkTreePath *path, gpo
   TreeParent *data = g_malloc(sizeof(TreeParent));
   data->parent = gtk_tree_iter_copy(iter);
   data->model_and_connection = (ModelAndConnection *)user_data;
+  /*int parent_id;
+  gtk_tree_model_get(data->model_and_connection->model,
+                     iter, 0, &parent_id, -1);
+                     if */
   if (NULL == g_thread_create(&child_builder_thread, data, FALSE, NULL)) {
     g_printerr("Can not create thread");
   }
@@ -206,9 +211,11 @@ void build_and_run(char *filename)
   if (NULL == data) {
     printf("Can not allocate memory");
   }
+  
   data->connection = connection;
   data->model = model;
   data->view = GTK_TREE_VIEW(view);
+  data->expanded = g_array_new(TRUE, FLASE, sizeof(guint));
 
   g_signal_connect(G_OBJECT(view), "row-expanded", G_CALLBACK(build_children), data);
   g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(on_window_close), data);

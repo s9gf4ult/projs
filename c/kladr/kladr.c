@@ -37,36 +37,68 @@ GtkTreeIter *append_value(GtkTreeStore *store, GtkTreeIter *parent, int val0, gc
 }
 
 gpointer child_builder_thread(gpointer user_data)
-{
-  TreeParent *data = (TreeParent *)user_data;
-  gdk_threads_enter();
-  gtk_widget_freeze_child_notify(GTK_WIDGET(data->model_and_connection->view));
   
-  GValue rvalue;
-  gtk_tree_model_get_value(GTK_TREE_MODEL(data->model_and_connection->model),
-                           data->parent,
-                           0, &rvalue);
-
+{
+  gdk_threads_enter();
+  TreeParent *data = (TreeParent *)user_data;
+  GtkTreeIter first_child;
+  gboolean proceed = gtk_tree_model_iter_children(GTK_TREE_MODEL(data->model_and_connection->model),
+                                                  &first_child,
+                                                  data->parent);
+  gdk_threads_leave();
+  if (! proceed) {
+    gdk_threads_enter();
+    gtk_tree_iter_free(data->parent);
+    g_free(data);
+    gdk_threads_leave();
+    return NULL;
+  }
+  
   char *childs = "select k.id, t.name, k.name from kladr_objects k inner join short_names t on k.short_id = t.id inner join kladr_hierarchy h on h.child = k.id where h.parent = ? order by t.name, k.name";
   sqlite3_stmt * chstmt;
   if (SQLITE_OK != sqlite3_prepare(data->model_and_connection->connection, childs, -1, &chstmt, NULL)) {
+    gdk_threads_enter();
+    gtk_tree_iter_free(data->parent);
+    g_free(data);
+    gdk_threads_leave();
     g_printerr("Can not create statement %s", childs);
     return NULL;
   }
-
-  sqlite3_bind_int(chstmt, 1, g_value_get_int(&rvalue));
-  while (SQLITE_ROW == sqlite3_step(chstmt)) {
-    GtkTreeIter *child = append_value(GTK_TREE_STORE(data->model_and_connection->model),
-                                      data->parent,
-                                      sqlite3_column_int(chstmt, 0),
-                                      g_strdup(sqlite3_column_text(chstmt, 1)),
-                                      g_strdup(sqlite3_column_text(chstmt, 2)));
-  }
-  sqlite3_finalize(chstmt);
+  gboolean cont = FALSE;
+  do {
+    gdk_threads_enter();
+    int parent_id;
+    gtk_tree_model_get(GTK_TREE_MODEL(data->model_and_connection->model),
+                       &first_child,
+                       0, &parent_id, -1);
+    gdk_threads_leave();
+    sqlite3_bind_int(chstmt, 1, parent_id);
+    while (SQLITE_ROW == sqlite3_step(chstmt)) {
+      gdk_threads_enter();
+      int val0 = sqlite3_column_int(chstmt, 0);
+      gchar *val1 = g_strdup(sqlite3_column_text(chstmt, 1));
+      gchar *val2 = g_strdup(sqlite3_column_text(chstmt, 2));
+      GtkTreeIter *child = append_value(GTK_TREE_STORE(data->model_and_connection->model),
+                                        &first_child,
+                                        val0,
+                                        val1,
+                                        val2);
+      g_free(val1); g_free(val2);
+      gtk_tree_iter_free(child);
+      gdk_threads_leave();
+    }
+    sqlite3_reset(chstmt);
+    sqlite3_clear_bindings(chstmt);
+    gdk_threads_enter();
+    cont = gtk_tree_model_iter_next(GTK_TREE_MODEL(data->model_and_connection->model),
+                                             &first_child);
+    gdk_threads_leave();
+  } while (TRUE == cont);
     
-  gtk_widget_thaw_child_notify(GTK_WIDGET(data->model_and_connection->view));
-  gdk_threads_leave();
+  gdk_threads_enter();
+  gtk_tree_iter_free(data->parent);
   g_free(user_data);
+  gdk_threads_leave();
   return NULL;
 };
 
@@ -75,7 +107,7 @@ gpointer child_builder_thread(gpointer user_data)
 void build_children(GtkTreeView *view, GtkTreeIter *iter, GtkTreePath *path, gpointer user_data)
 {
   TreeParent *data = g_malloc(sizeof(TreeParent));
-  data->parent = iter;
+  data->parent = gtk_tree_iter_copy(iter);
   data->model_and_connection = (ModelAndConnection *)user_data;
   if (NULL == g_thread_create(&child_builder_thread, data, FALSE, NULL)) {
     g_printerr("Can not create thread");
@@ -178,7 +210,7 @@ void build_and_run(char *filename)
   data->model = model;
   data->view = GTK_TREE_VIEW(view);
 
-  g_signal_connect(G_OBJECT(view), "test-expand-row", G_CALLBACK(build_children), data);
+  g_signal_connect(G_OBJECT(view), "row-expanded", G_CALLBACK(build_children), data);
   g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(on_window_close), data);
   gtk_widget_show_all(GTK_WIDGET(window));
 

@@ -1,5 +1,5 @@
 (defpackage :kladr
-  (:use :cl :iter :sqlite :gtk)
+  (:use :cl :iter :sqlite :gtk :alexandria)
   (:export :kladr-open-database
            :kladr-close-database
            :kladr-create-objects

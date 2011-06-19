@@ -90,9 +90,9 @@ end")
           ;;       (kassign id cid)))       ;привязываем города обласного значения к областям
     (iter (for (id rcode dcode) in-sqlite-query "select id, region_code, distinct_code from kladr_objects where region_code <> 0 and distinct_code <> 0 and city_code = 0 and town_code = 0 and street_code is null and actuality_code = 0" on-database *db*) ;итерируем по регионам
           (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code <> 0 and town_code = 0 and street_code is null and actuality_code = 0 order by name" on-database *db* with-parameters (rcode dcode))
-                (kassign id cid)))      ;привязываем года к регионам
-          ;; (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code = 0 and town_code <> 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode dcode))
-          ;;       (kassign id cid)))       ;привязываем населенные пункты к регионам
+                (kassign id cid))      ;привязываем года к регионам
+          (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code = 0 and town_code <> 0 and street_code is null and actuality_code = 0" on-database *db* with-parameters (rcode dcode))
+                (kassign id cid)))       ;привязываем населенные пункты к регионам
           )
 
 (defun kladr-make-me-happy()
@@ -144,7 +144,7 @@ end")
           (tree-view-append-column view column))
         (gobject:connect-signal view "row-expanded"
                                 (let (expanded)
-                                #'(lambda (tree it path)
+                                  (named-lambda row-expanded-handler (tree it path)
                                     (declare (ignore tree path))
                                     (let ((cid (tree-model-value store it 0)))
                                       (unless (member cid expanded)

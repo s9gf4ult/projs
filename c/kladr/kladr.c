@@ -180,6 +180,74 @@ void run_building_root(gpointer user_data)
   }
 };
 
+void construct_and_pack(GtkWidget **window, GtkWidget **view, GtkTreeModel **model, GtkWidget **delete_button, GtkWidget **delete_same_button, GtkWidget **commit_button, GtkWidget **rollback_button) {
+  g_assert(NULL != window);
+  g_assert(NULL != view);
+  g_assert(NULL != delete_button);
+  g_assert(NULL != delete_same_button);
+  GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(win), "Kladr tree");
+  gtk_window_resize(GTK_WINDOW(win), 600, 400);
+  GtkWidget *vbox = GTK_WIDGET(gtk_vbox_new(FALSE, 0));
+  gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+  GtkWidget *scrolled_window = GTK_WIDGET(gtk_scrolled_window_new(NULL, NULL));
+  gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(scrolled_window), TRUE, TRUE, 0);
+  GtkWidget *tree_view = GTK_WIDGET(gtk_tree_view_new());
+  gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
+  GtkWidget *hbox = GTK_WIDGET(gtk_hbox_new(FALSE, 0));
+  gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+  GtkWidget *del_button = GTK_WIDGET(gtk_button_new());
+  gtk_button_set_label(GTK_BUTTON(del_button), "Delete subtree");
+  GtkWidget *del_same_button = GTK_WIDGET(gtk_button_new());
+  gtk_button_set_label(GTK_BUTTON(del_same_button), "Delete same from this level");
+  GtkWidget *commit = GTK_WIDGET(gtk_button_new());
+  gtk_button_set_label(GTK_BUTTON(commit), "Commit");
+  GtkWidget *rollback = GTK_WIDGET(gtk_button_new());
+  gtk_button_set_label(GTK_BUTTON(rollback), "Rollback");
+  gtk_box_pack_start(GTK_BOX(hbox), del_button, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox), del_same_button, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox), commit, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox), rollback, FALSE, FALSE, 0);
+
+  GtkTreeModel *m = GTK_TREE_MODEL(gtk_tree_store_new(3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING));
+  gtk_tree_view_set_model(GTK_TREE_VIEW(tree_view), m);
+
+  GtkTreeViewColumn *col1 = gtk_tree_view_column_new();
+  GtkTreeViewColumn *col2 = gtk_tree_view_column_new();
+  GtkCellRenderer *ren1 = gtk_cell_renderer_text_new();
+  GtkCellRenderer *ren2 = gtk_cell_renderer_text_new();
+  gtk_tree_view_column_pack_start(col1, ren1, TRUE);
+  gtk_tree_view_column_add_attribute(col1, ren1, "text", 1);
+  gtk_tree_view_column_pack_start(col2, ren2, TRUE);
+  gtk_tree_view_column_add_attribute(col2, ren2, "text", 2);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), col1);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), col2);
+
+  (*window) = win;
+  (*view) = tree_view;
+  (*model) = m;
+  (*delete_button) = del_button;
+  (*delete_same_button) = del_same_button;
+  (*commit_button) = commit;
+  (*rollback_button) = rollback;
+  return;
+}
+
+void on_delete_subtree_clicked(GtkButton *button, gpointer user_data) {
+  ModelAndConnection *data = (ModelAndConnection*)user_data;
+  GtkTreeSelection *selection = gtk_tree_view_get_selection(data->view);
+  GtkTreeIter selected_iter;
+  gboolean selected = gtk_tree_selection_get_selected(selection, NULL, &selected_iter);
+  if (TRUE == selected) {
+    guint parent_id;
+    gtk_tree_model_get(data->model, &selected_iter, 0, &parent_id, -1);
+    gtk_tree_store_remove(GTK_TREE_STORE(data->model), &selected_iter);
+    /* sqlite3_stmt *stmt; */
+    /* sqlite3_prepare(data->connection, "delete from  */
+  }
+
+}
+
 
 void build_and_run(char *filename)
 {
@@ -189,23 +257,10 @@ void build_and_run(char *filename)
     return;
   }
   g_print("Connection set");
-  GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
-  GtkWidget *view = gtk_tree_view_new();
-  gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(sw));
-  gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
-  GtkTreeModel *model = GTK_TREE_MODEL(gtk_tree_store_new(3, G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING));
-  gtk_tree_view_set_model(GTK_TREE_VIEW(view), model);
-  GtkTreeViewColumn *col1 = gtk_tree_view_column_new();
-  GtkTreeViewColumn *col2 = gtk_tree_view_column_new();
-  GtkCellRenderer *ren1 = gtk_cell_renderer_text_new();
-  GtkCellRenderer *ren2 = gtk_cell_renderer_text_new();
-  gtk_tree_view_column_pack_start(col1, ren1, TRUE);
-  gtk_tree_view_column_add_attribute(col1, ren1, "text", 1);
-  gtk_tree_view_column_pack_start(col2, ren2, TRUE);
-  gtk_tree_view_column_add_attribute(col2, ren2, "text", 2);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(view), col1);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(view), col2);
+  
+  GtkWidget *window, *view, *delete_button, *delete_same_button, *commit_button, *rollback_button;
+  GtkTreeModel *model;
+  construct_and_pack(&window, &view, &model, &delete_button, &delete_same_button, &commit_button, &rollback_button);
 
   ModelAndConnection *data = malloc(sizeof(ModelAndConnection));
   if (NULL == data) {
@@ -215,13 +270,22 @@ void build_and_run(char *filename)
   data->connection = connection;
   data->model = model;
   data->view = GTK_TREE_VIEW(view);
-  data->expanded = g_array_new(TRUE, FLASE, sizeof(guint));
+  data->expanded = g_array_new(TRUE, FALSE, sizeof(guint));
 
   g_signal_connect(G_OBJECT(view), "row-expanded", G_CALLBACK(build_children), data);
   g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(on_window_close), data);
+  g_signal_connect(G_OBJECT(delete_button), "clicked",
+                   G_CALLBACK(on_delete_subtree_clicked), data);
+
+  
+  gtk_window_resize(GTK_WINDOW(window), 500, 400);
+  
+  
   gtk_widget_show_all(GTK_WIDGET(window));
 
   run_building_root(data);
+
+  
 
 };
 

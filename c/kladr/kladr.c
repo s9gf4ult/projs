@@ -20,6 +20,11 @@ typedef struct {
   GtkTreeIter *parent;
 } TreeParent;
 
+typedef struct {
+  GQueue *queue;
+  sqlite3_stmt *statement;
+} QueueAndStatement;
+
 gboolean on_window_close(GtkWidget *window, GdkEvent *event, gpointer user_data)
 {
   ModelAndConnection *data = (ModelAndConnection *)user_data;
@@ -239,14 +244,127 @@ void on_delete_subtree_clicked(GtkButton *button, gpointer user_data) {
   GtkTreeIter selected_iter;
   gboolean selected = gtk_tree_selection_get_selected(selection, NULL, &selected_iter);
   if (TRUE == selected) {
+    sqlite3_stmt *get_childs;
+    int prep = sqlite3_prepare(data->connection, "select child from kladr_hierarchy where parent = ?", -1, &get_childs, NULL);
+    if (SQLITE_OK != prep) {
+      g_printerr("Can not prepare statement");
+      return;
+    }
+    sqlite3_stmt *remove_h;
+    prep = sqlite3_prepare(data->connection, "delete from kladr_hierarchy where parent = ?", -1, &remove_h, NULL);
+    if (SQLITE_OK != prep) {
+      sqlite3_finalize(get_childs);
+      g_printerr("Can not prepare statement");
+      return;
+    }
+
+    sqlite3_stmt *begin;        /* statement to start transaction */
+    prep = sqlite3_prepare(data->connection, "begin", -1, &begin, NULL);
+    if (SQLITE_OK != prep) {
+      sqlite3_finalize(get_childs);
+      sqlite3_finalize(remove_h);
+      g_printerr("Can not prepare 'bebin' statement");
+      return;
+    }
+
+    sqlite3_step(begin);        /* ensure transaction started */
+    
     guint parent_id;
     gtk_tree_model_get(data->model, &selected_iter, 0, &parent_id, -1);
     gtk_tree_store_remove(GTK_TREE_STORE(data->model), &selected_iter);
-    /* sqlite3_stmt *stmt; */
-    /* sqlite3_prepare(data->connection, "delete from  */
+
+    guint *first_parent = g_malloc(sizeof(guint));
+    (*first_parent) = parent_id;
+    GQueue *childs = g_queue_new();
+    g_queue_push_tail(childs, first_parent);
+    
+    //now enter deleting loop
+    do {
+      
+      //first collect all the childs
+      void foreach_get_childs(gpointer data, gpointer user_data) /* collecting callback */
+      {
+        guint *pid = (guint*)data;
+        QueueAndStatement *queue_and_statement = (QueueAndStatement*)user_data;
+        guint *cid;
+        sqlite3_bind_int(queue_and_statement->statement, 1, *pid);
+        while (SQLITE_ROW == sqlite3_step(queue_and_statement->statement)) {
+          cid = g_malloc(sizeof(guint));
+          *cid = sqlite3_column_int(queue_and_statement->statement, 0);
+          g_queue_push_tail(queue_and_statement->queue, cid);
+        }
+        sqlite3_reset(queue_and_statement->statement);
+        sqlite3_clear_bindings(queue_and_statement->statement);
+        return;
+      }
+      QueueAndStatement *pass_data = g_malloc(sizeof(QueueAndStatement));
+      pass_data->queue = g_queue_new(); /* here we will have all the childs of our `childs` */
+      pass_data->statement = get_childs;
+      g_queue_foreach(childs, &foreach_get_childs, pass_data);
+
+      //now remove from the database records
+      void foreach_execute_remove(gpointer data, gpointer user_data) /* remover callback */
+      {
+        guint *pid = (guint*)data;
+        sqlite3_stmt *remstat = (sqlite3_stmt*)user_data;
+        sqlite3_bind_int(remstat, 1, *pid);
+        sqlite3_step(remstat);
+        sqlite3_reset(remstat);
+        sqlite3_clear_bindings(remstat);
+        return;
+      }
+      g_queue_foreach(childs, &foreach_execute_remove, remove_h);
+
+      void foreach_g_free(gpointer data, gpointer user_data) /* free all guint's malloc'ed from collecting callback */
+      {
+        g_free(data);
+        return;
+      }
+      g_queue_foreach(childs, &foreach_g_free, NULL);
+      g_queue_free(childs);     /* free structure memory */
+    
+      childs = pass_data->queue; /* now bring up childs to parents */
+      g_free(pass_data);         /* free dinamically allocated structure */
+    
+    
+    } while (childs->length >0); /* until we can collect any childs */
+
+    sqlite3_finalize(remove_h);
+    sqlite3_finalize(get_childs);
+    sqlite3_finalize(begin);
+    
+  }
+    
+}
+
+void on_commit_clicked(GtkButton *button, gpointer *user_data) {
+  ModelAndConnection *data = (ModelAndConnection*) user_data;
+  sqlite3_stmt *commit;
+  int ret = sqlite3_prepare(data->connection, "commit", -1, &commit, NULL);
+  if (SQLITE_OK != ret) {
+    g_printerr("Can not prepare 'commit' statement");
+    return;
+  }
+  sqlite3_step(commit);         /* do commit */
+  sqlite3_finalize(commit);
+  return;
+};
+
+void on_rollback_clicked(GtkButton *button, gpointer *user_data) {
+  ModelAndConnection *data = (ModelAndConnection *) user_data;
+  sqlite3_stmt *rollback;
+  int ret = sqlite3_prepare(data->connection, "rollback", -1, &rollback, NULL);
+  if (SQLITE_OK != ret) {
+    g_printerr("Can not prepare statement 'rollback'");
+    return;
   }
 
-}
+  sqlite3_step(rollback);
+  sqlite3_finalize(rollback);
+  data->model = GTK_TREE_MODEL(gtk_tree_store_new(3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING));
+  gtk_tree_view_set_model(data->view, GTK_TREE_MODEL(data->model));
+  run_building_root(user_data);
+};
 
 
 void build_and_run(char *filename)
@@ -276,6 +394,10 @@ void build_and_run(char *filename)
   g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(on_window_close), data);
   g_signal_connect(G_OBJECT(delete_button), "clicked",
                    G_CALLBACK(on_delete_subtree_clicked), data);
+  g_signal_connect(G_OBJECT(commit_button), "clicked",
+                   G_CALLBACK(on_commit_clicked), data);
+  g_signal_connect(G_OBJECT(rollback_button), "clicked",
+                   G_CALLBACK(on_rollback_clicked), data);
 
   
   gtk_window_resize(GTK_WINDOW(window), 500, 400);

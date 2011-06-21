@@ -1,5 +1,5 @@
 (defpackage :kladr
-  (:use :cl :iter :sqlite :gtk :alexandria)
+  (:use :cl :iter :sqlite :gtk :alexandria :uuid)
   (:export :kladr-open-database
            :kladr-close-database
            :kladr-create-objects
@@ -8,5 +8,5 @@
            :kladr-make-hierarchy
            :draw-hierarchy-tree
            :kladr-make-me-happy
-           :draw-hierarchy-tree-monothread))
-  
+           :kladr-shrink-root-level
+           :kladr-drop-all-created))

@@ -84,12 +84,11 @@ select st.name, s.id, st.code, st.gninmb, st.uno, st.ocatd, (substr(st.code, 1, 
   (let* ((names (mapcar #'car field-value))
          (quest (mapcar #'(lambda (a)
                             (declare (ignore a)) "?") names))
-         (values (mapcar #'second field-value)))
+         (values (mapcar #'second field-value))
+         (query (format nil "insert into ~a(~{~a~^, ~}) values (~{~a~^, ~})" tablename names quest)))
     (apply  #'execute-non-query `(,*db*
-                                  ,(format nil "insert into ~a(~{~a~^, ~}) values (~{~a~^, ~})" tablename names quest)
+                                  ,query
                                   ,@values))))
-                       
-                                    
                             
 
 (defun kladr-make-hierarchy (&optional filter)
@@ -128,7 +127,7 @@ end")
             (let ((cid (progn
                          (execute-insert "kladr_objects" `(("name" "Населенные пункты")
                                                            ("short_id" ,*spec-id*)
-                                                           ("code" ,(uuid:print-bytes (uuid:make-v1-uuid)))
+                                                           ("code" ,(uuid:print-bytes nil (uuid:make-v1-uuid)))
                                                            ("region_code" ,rcode)
                                                            ("distinct_code" ,dcode)
                                                            ("city_code" ,ccode)
@@ -136,14 +135,14 @@ end")
                                                            ("street_code" -1)
                                                            ("actuality_code" 0)))
                          (last-insert-rowid *db*))))
-              (kassign id cid)
-              (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is null" cid id)))
+              (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is null)" cid id)
+              (kassign id cid)))
 
           (when (> (execute-one-row-m-v *db* "select count(k.id) from kladr_objects k inner join kladr_hierarchy h on k.id = h.child where h.parent = ? and k.street_code is not null" id) 0)
             (let ((cid (progn
                          (execute-insert "kladr_objects" `(("name" "Улицы переулки и пр.")
                                                            ("short_id" ,*spec-id*)
-                                                           ("code" ,(uuid:print-bytes (uuid:make-v1-uuid)))
+                                                           ("code" ,(uuid:print-bytes nil (uuid:make-v1-uuid)))
                                                            ("region_code" ,rcode)
                                                            ("distinct_code" ,dcode)
                                                            ("city_code" ,ccode)
@@ -151,11 +150,9 @@ end")
                                                            ("street_code" -1)
                                                            ("actuality_code" 0)))
                          (last-insert-rowid *db*))))
-              (kassign id cid)
-              (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is not null" cid id))))
-          
-          
-            
+              (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is not null and k.street_code <> -1)" cid id)
+              (kassign id cid))))
+                            
             
           ;; (iter (for (tid tname) in-sqlite-query (andfilter "select distinct t.id, t.name from short_names t inner join kladr_objects k1 on k1.short_id = t.id inner join kladr_hierarchy h on h.child = k1.id where h.parent = ?") on-database *db* with-parameters (id))
           ;;       (let* ((nns '(name short_id code region_code distinct_code city_code town_code street_code actuality_code))

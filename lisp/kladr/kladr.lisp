@@ -126,6 +126,7 @@ end")
                (kassign id cid)))       ;привязываем улицы к населенным пунктам
           ))
 
+
 (defun kladr-make-me-happy()
   (handler-bind
       ((simple-error #'(lambda (e)
@@ -140,6 +141,7 @@ end")
 
 (defun kladr-shrink-root-level (&optional (table-name "kladr_hierarchy"))
   (execute-non-query *db* (format nil "delete from ~a~:* where parent in (select k.id from kladr_objects k where exists(select h.* from ~a~:* h where h.parent = k.id) and not exists(select hh.* from ~a hh where hh.child = k.id))" table-name)))
+
 
 (defmacro within-multithread (&body body)
   `(within-main-loop-and-wait
@@ -237,8 +239,14 @@ end")
                         :width-request 600
                         :position :center
                         :var window
+                       (v-box 
                         (scrolled-window
-                         (tree-view :var view)))
+                         (tree-view :var view))
+                        (h-box
+                         (button :label "Save to file" :var save-button) :expand nil
+                         ) :expand nil))
+      
+                         
       (flet ((from-table (query)
                (format nil query table-name)))
         (let ((store (make-instance 'tree-store :column-types '("gint" "gchararray" "gchararray"))))
@@ -274,7 +282,59 @@ end")
                                                   (while
                                                       (tree-model-iter-next store child)))))
                                             (push cid expanded))))))
+          (gobject:g-signal-connect save-button "clicked"
+                                    #'(lambda (button)
+                                        (declare (ignore button))
+                                        (let ((file-name (gtk-query-file-name-to-save)))
+                                          (when file-name
+                                            (save-to-xml file-name)))))
           ))
       
       (widget-show window))))
 
+(defun gtk-query-file-name-to-save ()
+  (let ((dialog (make-instance 'file-chooser-dialog :action :save :title "Save to XML file")))
+    (dialog-add-button dialog "gtk-cancel" :cancel)
+    (dialog-add-button dialog "gtk-save" :ok)
+    (let ((resp (dialog-run dialog)))
+      (unwind-protect
+           (when (equal resp :ok)
+             (file-chooser-filename dialog))
+        (object-destroy dialog)))))
+
+(defun make-element(name &optional attributes)
+  (let ((ret (xtree:make-element name)))
+    (iter (for (name value) in attributes)
+          (setf (xtree:attribute-value ret name) value))
+    ret))
+
+
+(defun save-to-xml (filename &optional (pretty-print t))
+  (let* ((doc (xtree:make-document))
+         (root (xtree:append-child doc (make-element "УниверсальныйСправочник" '(("Группа" "Учреждения")
+                                                                                 ("Код" "Кладр")
+                                                                                 ("Наименование" "Кладр")
+                                                                                 ("Иерархический" "Да")
+                                                                                 ("РежимВыбораЗаписей" "Все")))))
+         (desc (xtree:append-child root (make-element "Описание")))
+         (actl (xtree:append-child root (make-element "ПериодДействия" '(("Начало" "")
+                                                                         ("Конец" "31.12.9999 0:00:00")))))
+         (assign (xtree:append-child root (make-element "ПривязкаУчреждений")))
+         (attrs (xtree:append-child root (make-element "Атрибуты")))
+         (records (xtree:append-child root (make-element "Записи"))))
+    (iter (for (id) in-sqlite-query "select k.id from kladr_objects k where exists (select h.* from kladr_hierarchy h where h.parent = k.id) and not exists (select hh.* from kladr_hierarchy hh where hh.child = k.id)" on-database *db*)
+          (xtree:append-child records (make-element-tree id)))
+    (with-open-file (fout filename :direction :output :if-does-not-exist :create :if-exists :supersede)
+      (xtree:serialize doc fout :pretty-print pretty-print))))
+
+(defun make-element-tree (element-id)
+  (multiple-value-bind (code name)
+      (execute-one-row-m-v *db* "select k.name, t.name from kladr_objects k inner join short_names t on k.short_id = t.id where k.id = ?" element-id)
+    (let ((ret (make-element "Запись" `(("Код" ,code)
+                                        ("Наименование" ,(format nil "~a ~a" name code))))))
+      (iter (for (id) in-sqlite-query "select k.id from kladr_objects k inner join kladr_hierarchy h on k.id = h.child where h.parent = ?" on-database *db* with-parameters (element-id))
+            (xtree:append-child ret (make-element-tree id)))
+      ret)))
+
+(defun calculate-ununique-names-count()
+  (execute-one-row-m-v *db* "select count(name) from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects) n inner join kladr_objects k on k.name = n.name group by n.name) where count > 1"))

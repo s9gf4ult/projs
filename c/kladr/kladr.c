@@ -32,7 +32,7 @@ gboolean on_window_close(GtkWidget *window, GdkEvent *event, gpointer user_data)
   free(data);
   gtk_main_quit();
   return FALSE;
-};
+}
 
 GtkTreeIter *append_value(GtkTreeStore *store, GtkTreeIter *parent, int val0, gchar *val1, gchar *val2)
 {
@@ -82,8 +82,8 @@ gpointer child_builder_thread(gpointer user_data)
     while (SQLITE_ROW == sqlite3_step(chstmt)) {
       gdk_threads_enter();
       int val0 = sqlite3_column_int(chstmt, 0);
-      gchar *val1 = g_strdup(sqlite3_column_text(chstmt, 1));
-      gchar *val2 = g_strdup(sqlite3_column_text(chstmt, 2));
+      gchar *val1 = g_strdup((gchar*)sqlite3_column_text(chstmt, 1));
+      gchar *val2 = g_strdup((gchar*)sqlite3_column_text(chstmt, 2));
       GtkTreeIter *child = append_value(GTK_TREE_STORE(data->model_and_connection->model),
                                         &first_child,
                                         val0,
@@ -148,8 +148,8 @@ gpointer root_builder_thread(gpointer user_data)
     //gtk_widget_freeze_child_notify(GTK_WIDGET(data->view));
     GtkTreeIter *parent =  append_value(GTK_TREE_STORE(data->model), NULL,
                                         root_id,
-                                        g_strdup(sqlite3_column_text(root_stmt, 1)),
-                                        g_strdup(sqlite3_column_text(root_stmt, 2)));
+                                        g_strdup((gchar*)sqlite3_column_text(root_stmt, 1)),
+                                        g_strdup((gchar*)sqlite3_column_text(root_stmt, 2)));
     //gtk_widget_thaw_child_notify(GTK_WIDGET(data->view));
     gdk_threads_leave();
     
@@ -159,8 +159,8 @@ gpointer root_builder_thread(gpointer user_data)
       //gtk_widget_freeze_child_notify(GTK_WIDGET(data->view));
       GtkTreeIter *child = append_value(GTK_TREE_STORE(data->model), parent,
                                         sqlite3_column_int(child_stmt, 0),
-                                        g_strdup(sqlite3_column_text(child_stmt, 1)),
-                                        g_strdup(sqlite3_column_text(child_stmt, 2)));
+                                        g_strdup((gchar*)sqlite3_column_text(child_stmt, 1)),
+                                        g_strdup((gchar*)sqlite3_column_text(child_stmt, 2)));
       //gtk_widget_thaw_child_notify(GTK_WIDGET(data->view));
       gtk_tree_iter_free(child);
       gdk_flush();

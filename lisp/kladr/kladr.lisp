@@ -140,13 +140,25 @@ end")
           ))
 
 (defun try-make-unique-names ()
-  (iter (for (name) in-sqlite-query "select name from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name group by n.name) where count > 1" on-database *db*)
+  (iter (for (name) in-sqlite-query "select name from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name where k.actuality_code = 0 group by n.name) where count > 1" on-database *db*)
         (iter (for (cid cname) in-sqlite-query "select id, name from kladr_objects where name = ? and actuality_code = 0" on-database *db* with-parameters (name))
               (let ((pname (execute-one-row-m-v *db* "select k.name from kladr_objects k inner join kladr_hierarchy h on h.parent = k.id inner join kladr_objects kk on h.child = kk.id where kk.id = ?" cid)))
                 (when pname
                   (execute-non-query *db* "update kladr_objects set name = ? where id = ?"
                                      (format nil "~a (~a)" cname pname)
+                                     cid)))))
+  
+  (iter (for (name) in-sqlite-query "select name from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name where k.actuality_code = 0 group by n.name) where count > 1" on-database *db*)
+        (iter (for (cid origname) in-sqlite-query "select k.id, o.name from kladr_objects k inner join kladr o on k.code = o.code where k.name = ?" on-database *db* with-parameters (name))
+              (multiple-value-bind (pname tname) (execute-one-row-m-v *db* "select k.name, t.scname from kladr_objects k inner join kladr_hierarchy h on h.parent = k.id inner join kladr_objects kk on h.child = kk.id inner join short_names t on t.id = kk.short_id where kk.id = ?" cid)
+                (when (and pname tname)
+                  (execute-non-query *db* "update kladr_objects set name = ? where id = ?"
+                                     (format nil "~a (~a в ~a)" origname tname pname)
                                      cid))))))
+        
+          
+        
+  
   
 
 (defun unsplit-cityis ()
@@ -165,22 +177,22 @@ end")
                                                          ("actuality_code" 0)))
                        (last-insert-rowid *db*))))
             (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is null)" cid id)
-            (kassign id cid)))
+            (kassign id cid))
 
-        (when (> (execute-one-row-m-v *db* "select count(k.id) from kladr_objects k inner join kladr_hierarchy h on k.id = h.child where h.parent = ? and k.street_code is not null" id) 0)
-          (let ((cid (progn
-                       (execute-insert "kladr_objects" `(("name" "Улицы переулки и пр.")
-                                                         ("short_id" ,*spec-id*)
-                                                         ("code" ,(uuid:print-bytes nil (uuid:make-v1-uuid)))
-                                                         ("region_code" ,rcode)
-                                                         ("distinct_code" ,dcode)
-                                                         ("city_code" ,ccode)
-                                                         ("town_code" 0)
-                                                         ("street_code" -1)
-                                                         ("actuality_code" 0)))
-                       (last-insert-rowid *db*))))
-            (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is not null and k.street_code <> -1)" cid id)
-            (kassign id cid)))))
+          (when (> (execute-one-row-m-v *db* "select count(k.id) from kladr_objects k inner join kladr_hierarchy h on k.id = h.child where h.parent = ? and k.street_code is not null" id) 0)
+            (let ((cid (progn
+                         (execute-insert "kladr_objects" `(("name" "Улицы переулки и пр.")
+                                                           ("short_id" ,*spec-id*)
+                                                           ("code" ,(uuid:print-bytes nil (uuid:make-v1-uuid)))
+                                                           ("region_code" ,rcode)
+                                                           ("distinct_code" ,dcode)
+                                                           ("city_code" ,ccode)
+                                                           ("town_code" 0)
+                                                           ("street_code" -1)
+                                                           ("actuality_code" 0)))
+                         (last-insert-rowid *db*))))
+              (execute-non-query *db* "update kladr_hierarchy set parent = ? where id in (select h.id from kladr_hierarchy h inner join kladr_objects k on k.id = h.child where h.parent = ? and k.street_code is not null and k.street_code <> -1)" cid id)
+              (kassign id cid))))))
 
 
    
@@ -316,5 +328,6 @@ end")
       ret)))
 
 (defun calculate-ununique-names-count()
-  (execute-to-list *db* "select name, count from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects) n inner join kladr_objects k on k.name = n.name group by n.name) where count > 1 order by count desc"))
+  (execute-to-list *db* "select name, count from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name where k.actuality_code = 0 group by n.name) where count > 1 order by count desc"))
+
 

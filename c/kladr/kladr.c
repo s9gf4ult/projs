@@ -8,11 +8,24 @@
 #include <string.h>
 
 
+/**
+   Структура педерается во все обработчики нажатий кнопок и так далее.
+   Хранит все основные элементы
+*/
 typedef struct {
   sqlite3 *connection;
   GtkTreeModel *model;
   GtkTreeView *view;
-  GArray *expanded;
+  
+  /**
+     Список элементов которые уже раскрыли.
+     @todo
+     Здаействовать это список,
+     подумать как сделать так чтобы при совершении rollback и перестроении модели
+     этот список оставался актуальным
+  */
+  GArray *expanded; 
+                       
 } ModelAndConnection;
 
 typedef struct {
@@ -20,12 +33,30 @@ typedef struct {
   GtkTreeIter *parent;
 } TreeParent;
 
+
 typedef struct {
   GQueue *queue;
   sqlite3_stmt *statement;
 } QueueAndStatement;
 
-gboolean on_window_close(GtkWidget *window, GdkEvent *event, gpointer user_data)
+gboolean on_window_close(GtkWidget *window ///The window executed signal
+                         , GdkEvent *event ///The signal
+                         , gpointer user_data /**
+                                                 The universal answer.
+                                                 Must be cumputed by formula
+                                                 \f[
+                                                 |I_2|=\left| \int_{0}^T \psi(t) 
+                                                 \left\{ 
+                                                 u(a,t)-
+                                                 \int_{\gamma(t)}^a 
+                                                 \frac{d\theta}{k(\theta,t)}
+                                                 \int_{a}^\theta c(\xi)u_t(\xi,t)\,d\xi
+                                                 \right\} dt
+                                                 \right|
+                                                 \f]
+                                              */
+                                                 
+                         )
 {
   ModelAndConnection *data = (ModelAndConnection *)user_data;
   sqlite3_close(data->connection);
@@ -42,6 +73,16 @@ GtkTreeIter *append_value(GtkTreeStore *store, GtkTreeIter *parent, int val0, gc
   return gtk_tree_iter_copy(&set);
 }
 
+/**
+   \brief Построитель дочерних элементов.
+   
+   Функция выполняется в отдельном потоке, читает из базы дочерние элементы дочерних элементов раскрытого элемента модели.
+   \bug
+   Если сделать коммит или роллбек пока выполяется заполнение дочерних элементов программа может сегфолтнутся, при этом валятся Gtk ассершены по поводу того что итератор мол не рабочий
+   
+   \retrun Всегда должен возвращать NULL
+*/
+   
 gpointer child_builder_thread(gpointer user_data)
   
 {
@@ -185,7 +226,18 @@ void run_building_root(gpointer user_data)
   }
 };
 
-void construct_and_pack(GtkWidget **window, GtkWidget **view, GtkTreeModel **model, GtkWidget **delete_button, GtkWidget **delete_same_button, GtkWidget **commit_button, GtkWidget **rollback_button) {
+void construct_and_pack(GtkWidget **window ///Сюда вернет указтель на новое окно
+                        , GtkWidget **view ///Суда вернет указатель на GtkTreeView
+                        , GtkTreeModel **model ///Суда вернет указатель на GtkTreeModel которую он связет с вьюхой
+                        , GtkWidget **delete_button ///Сюда вернет на GtkButton при нажатии на которую должно удалятся дерево
+                        , GtkWidget **delete_same_button ///Сюда вернет указатель на GtkButton по нажатии на котору должны удалится элементы того же типа из уровня выделенного элемента
+                        , GtkWidget **commit_button ///вернет уазатель накнопку коммита
+                        , GtkWidget **rollback_button ///Вернет указатель на кнопку Rollback
+                        )
+/**
+   Создает виджеты, пакует, настраивает их. Обработчики событий к виджетам не привязывает.
+*/
+{
   g_assert(NULL != window);
   g_assert(NULL != view);
   g_assert(NULL != delete_button);
@@ -367,7 +419,8 @@ void on_rollback_clicked(GtkButton *button, gpointer *user_data) {
 };
 
 
-void build_and_run(char *filename)
+void build_and_run(char *filename /** Файло для открытия скулайтиком */
+                   )
 {
   sqlite3 *connection;
   if (sqlite3_open(filename, /*@out@*/ &connection) != SQLITE_OK) {
@@ -411,7 +464,16 @@ void build_and_run(char *filename)
 
 };
 
-int main(int argc, char **argv) {
+int main(int argc /** count of bla bla */,
+         char **argv /** the blah blah */
+         )
+{
+  /**
+     Гллагне функцие что делает все
+     
+     \arg \c argc Глаге количество аргументов
+     \arg \c argv Массив массивов символов
+  */
   if (argc == 2) {
     g_thread_init(NULL);
     gdk_threads_init();

@@ -79,6 +79,9 @@ GtkTreeIter *append_value(GtkTreeStore *store, GtkTreeIter *parent, int val0, gc
    Функция выполняется в отдельном потоке, читает из базы дочерние элементы дочерних элементов раскрытого элемента модели.
    \bug
    Если сделать коммит или роллбек пока выполяется заполнение дочерних элементов программа может сегфолтнутся, при этом валятся Gtk ассершены по поводу того что итератор мол не рабочий
+
+   \todo
+   аналогично с root_builder_thread
    
    \retrun Всегда должен возвращать NULL
 */
@@ -167,7 +170,12 @@ void build_children(GtkTreeView *view, GtkTreeIter *iter, GtkTreePath *path, gpo
 };
 
 
+/**
+   \brief Функия работающая в отдельном потоке. Заполняет корневые элементы
 
+   \todo
+   Переделать ее с использованием \c g_idle_add чтобы интерфейс не тормозил когда добавляются элементы
+*/
 gpointer root_builder_thread(gpointer user_data)
 {
   ModelAndConnection *data = (ModelAndConnection *)user_data;

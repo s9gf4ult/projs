@@ -57,7 +57,10 @@ from kladr k inner join short_names s on k.socr = s.scname"
                                     '(name short_id code gninmb uno ocatd status region_code distinct_code city_code town_code actuality_code)))
     (execute-non-query *db* (format nil "insert into kladr_objects(~{~a~^, ~})
 select st.name, s.id, st.code, st.gninmb, st.uno, st.ocatd, (substr(st.code, 1, 2) + 0), (substr(st.code, 3, 3) + 0), (substr(st.code, 6, 3) + 0), (substr(st.code, 9, 3) + 0), (substr(st.code, 12, 4) + 0), (substr(st.code, 16, 2) + 0) from street st inner join short_names s on st.socr = s.scname"
-                                    '(name short_id code gninmb uno ocatd region_code distinct_code city_code town_code street_code actuality_code)))))
+                                    '(name short_id code gninmb uno ocatd region_code distinct_code city_code town_code street_code actuality_code)))
+    (sqlite::create-index *db* 'kladr '(code))
+    (sqlite::create-index *db* 'street '(code))
+    (sqlite::create-index *db* 'kladr_objects '(code))))
 
 (defun kladr-drop-all-created ()
   (execute-non-query *db* "drop table kladr_hierarchy")
@@ -124,16 +127,6 @@ end")
                 (kassign id cid)))       ;привязываем улицы к городам
 
                             
-            
-          ;; (iter (for (tid tname) in-sqlite-query (andfilter "select distinct t.id, t.name from short_names t inner join kladr_objects k1 on k1.short_id = t.id inner join kladr_hierarchy h on h.child = k1.id where h.parent = ?") on-database *db* with-parameters (id))
-          ;;       (let* ((nns '(name short_id code region_code distinct_code city_code town_code street_code actuality_code))
-          ;;              (chid (progn
-          ;;                      (execute-non-query *db* (format nil "insert into kladr_objects(~{~a~^, ~}) values (~{~a~^, ~})" nns (mapcar #'(lambda (a)
-          ;;                                                                                                                                      (declare (ignore a)) "?") nns)) tname *spec-id* (print-bytes nil (make-v1-uuid)) rcode dcode ccode 0 -1 0)
-          ;;                      (last-insert-rowid *db*))))
-          ;;         (kassign id chid)
-          ;;         (execute-non-query *db* "update kladr_hierarchy set parent = ? where child in (select k1.id from kladr_objects k1 inner join kladr_hierarchy h on h.child = k1.id where h.parent = ? and k1.short_id = ?)" chid id tid))))
-                
     (iter (for (id rcode dcode ccode tcode) in-sqlite-query (andfilter "select id, region_code, distinct_code, city_code, town_code from kladr_objects where region_code <> 0 and town_code <> 0 and street_code is null and actuality_code = 0") on-database *db*) ;итерируем по населенным пунктам
           (iter (for (cid) in-sqlite-query "select id from kladr_objects where region_code = ? and distinct_code = ? and city_code = ? and town_code = ? and street_code <> 0 and actuality_code = 0" on-database *db* with-parameters (rcode dcode ccode tcode))
                (kassign id cid)))       ;привязываем улицы к населенным пунктам
@@ -150,6 +143,13 @@ end")
   
   (iter (for (name) in-sqlite-query "select name from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name where k.actuality_code = 0 group by n.name) where count > 1" on-database *db*)
         (iter (for (cid origname) in-sqlite-query "select k.id, o.name from kladr_objects k inner join kladr o on k.code = o.code where k.name = ?" on-database *db* with-parameters (name))
+              (multiple-value-bind (pname tname) (execute-one-row-m-v *db* "select k.name, t.scname from kladr_objects k inner join kladr_hierarchy h on h.parent = k.id inner join kladr_objects kk on h.child = kk.id inner join short_names t on t.id = kk.short_id where kk.id = ?" cid)
+                (when (and pname tname)
+                  (execute-non-query *db* "update kladr_objects set name = ? where id = ?"
+                                     (format nil "~a (~a в ~a)" origname tname pname)
+                                     cid))))
+        
+        (iter (for (cid origname) in-sqlite-query "select k.id, o.name from kladr_objects k inner join street o on k.code = o.code where k.name = ?" on-database *db* with-parameters (name))
               (multiple-value-bind (pname tname) (execute-one-row-m-v *db* "select k.name, t.scname from kladr_objects k inner join kladr_hierarchy h on h.parent = k.id inner join kladr_objects kk on h.child = kk.id inner join short_names t on t.id = kk.short_id where kk.id = ?" cid)
                 (when (and pname tname)
                   (execute-non-query *db* "update kladr_objects set name = ? where id = ?"

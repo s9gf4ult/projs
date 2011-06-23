@@ -34,8 +34,13 @@ typedef struct {
 } TreeParent;
 
 
+/**
+   Структура для запоминания элементов которые выбираются запросом
+*/
 typedef struct {
+  ///Очередь результатов запроса
   GQueue *queue;
+  ///Готовый стейтмент с забинденными параметрами
   sqlite3_stmt *statement;
 } QueueAndStatement;
 

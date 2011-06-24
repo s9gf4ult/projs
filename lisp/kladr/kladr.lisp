@@ -330,4 +330,83 @@ end")
 (defun calculate-ununique-names-count()
   (execute-to-list *db* "select name, count from (select n.name as name, count(k.id) as count from (select distinct name from kladr_objects where actuality_code = 0) n inner join kladr_objects k on k.name = n.name where k.actuality_code = 0 group by n.name) where count > 1 order by count desc"))
 
+(defun format-line (line &rest args)
+  (write-line (apply #'format `(nil ,line ,@args))))
 
+(defun when-do-continue ()
+  (let ((ans (string-downcase (read-line))))
+    (cond
+      ((member ans '("y" "yes" "да" "д") :test #'equal) t)
+      ((member ans '("n" "no" "нет" "н") :test #'equal) nil)
+      (t
+       (progn
+         (format-line "Не понимаю что такое ~a говори нормально" ans)
+         (when-do-continue))))))
+
+(defun get-number-in-range (from to)
+  (let* ((got-string (read-line))
+         (got-integer (let ((r (handler-case
+                                   (parse-integer got-string)
+                                 (simple-condition (c)
+                                   (declare (ignore c))
+                                   nil))))
+                            
+                        (if (numberp r)
+                            r
+                            (progn
+                              (format-line "Не могу преобразовать в число вот это ~a" got-string)
+                              (get-number-in-range from to))))))
+    (if (<= from got-integer to)
+        got-integer
+        (progn
+          (format-line "Число должно быть в диапазоне от ~a до ~a включилетьно" from to)
+          (get-number-in-range from to)))))
+
+(defun run-manual-fix ()
+  (let* ((nunique (mapcar #'car (calculate-ununique-names-count)))
+         (count (list-length nunique)))
+    (format-line "Тут ~a не уникальных имен, править в ручную будем ?" count)
+    (when (when-do-continue)
+      (unwind-protect
+           (progn
+             (execute-non-query *db* "begin")
+             (iter main-iteration
+                   (for nuname in nunique)
+                   (let* ((exists (iter (for (id name type-name parent-name parent-type-name) in-sqlite-query "select k.id, k.name, t.name, kk.name, tt.name from kladr_objects k inner join kladr_hierarchy h on k.id = h.child inner join kladr_objects kk on kk.id = h.parent inner join short_names t on t.id = k.short_id inner join short_names tt on tt.id = kk.short_id where k.name = ?" on-database *db* with-parameters (nuname))
+                                       (collect (list id name type-name parent-name parent-type-name))))
+                          (count-exists (list-length exists)))
+                     (when (or (< count-exists 10)
+                               (progn (format-line "Для имени ~a найдено ~a обектов. Править ручками будем ?" nuname count-exists)
+                                      (when-do-continue)))
+                       (iter 
+                         (while exists)
+                         (iter (for (id name type-name parent-name parent-type-name) in exists)
+                               (for x from 1)
+                               (format-line "~a. (~a ~a) -> (~a ~a)" x type-name name parent-type-name parent-name))
+                         (format-line "~a. Пропустить" (+ count-exists 1))
+                         (format-line "~a. Выход" (+ count-exists 2))
+                         (let ((edit-number (get-number-in-range 1 (+ count-exists 2))))
+                           (cond 
+                             ((equal edit-number (+ count-exists 1)) (return))
+                             ((equal edit-number (+ count-exists 2)) (return-from main-iteration))
+                             (t (let ((eeitem (prog1
+                                                  (elt exists (- edit-number 1))
+                                                (setf exists (remove-from-list exists (- edit-number 1)))
+                                                (setf count-exists (list-length exists)))))
+                                  (let ((new-name (read-line)))
+                                    (execute-non-query *db* "update kladr_objects set name = ? where id = ?" new-name (car eeitem))))))))))))
+        
+        (write-line "Commit ?")
+        (if (when-do-continue)
+            (execute-non-query *db* "commit")
+            (execute-non-query *db* "rollback"))))))
+
+(defun remove-from-list (list index)
+  "Destructively remove from list element by index"
+  (let ((index (max 0 (min (list-length list) index))))
+    (concatenate 'list (subseq list 0 index) (subseq list (+ index 1)))))
+                                   
+                    
+              
+            
+    

@@ -60,3 +60,26 @@ qsort _ [] = []
 qsort fn (x:xs) = (qsort fn lesser) ++ [x] ++ (qsort fn bigger)
                   where lesser = filter (fn x) xs
                         bigger = filter (not . fn x) xs
+
+collatz x = th: collatz th
+            where th | even x = x `div` 2
+                     | otherwise = (x*3)+1
+
+uniqueseq [a] = [a]
+uniqueseq (x:xs) = x : (takeWhile (/= x) ( uniqueseq xs))
+
+enumerate x = en' 0 x
+              where en' _ [] = []
+                    en' n (y:ys) = (n, y) : en' (n+1) ys
+
+foldl' _ p [] = p
+foldl' fn p (x:xs) = foldl' fn (fn p x) xs
+
+foldr' _ p [] = p
+foldr' fn p (x:xs) = fn x (foldr' fn p xs)
+
+avg a b = (a+b)/2
+
+
+-- main = print $ show $ enumerate $ [length $ uniqueseq $ collatz a | a <- [1..10000]]
+-- main = print $ show $ (foldl avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3) == (foldr avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3)

@@ -1,4 +1,6 @@
 
+import qualified Data.List
+
 data Shape t = Circle t (t, t)
              | Square (t,t) (t, t)
              | Triangle (t, t) (t, t) (t, t)
@@ -80,6 +82,22 @@ foldr' fn p (x:xs) = fn x (foldr' fn p xs)
 
 avg a b = (a+b)/2
 
+findseq x = solve 2
+            where solve l
+                     | l > (length $ take l x) = []
+                     | (length $ fsq $ take l x) > 0 = fsq $ take l x
+                     | otherwise = solve (l + 1)
+                  fsq tl = ffsq 1 tl
+                  ffsq n tt
+                     | n*2 > length tt = []
+                     | back n tt == subback n tt = back n tt
+                     | otherwise = ffsq (n+1) tt
+                  back u uu = drop (length uu - u) uu
+                  subback o oo = take o $ drop (length oo - (2*o)) oo
+                
+                      
 
+
+main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ enumerate $ [length $ uniqueseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ (foldl avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3) == (foldr avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3)

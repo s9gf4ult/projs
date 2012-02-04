@@ -60,9 +60,9 @@ zip' (x:xs) (y:ys) = (x, y) : (zip' xs ys)
 
 qsort _ [] = []
 qsort fn (x:xs) = (qsort fn lesser) ++ [x] ++ (qsort fn bigger)
-                  where lesser = filter (fn x) xs
-                        bigger = filter (not . fn x) xs
+                  where (lesser, bigger) = Data.List.partition (fn x) xs
 
+collatz :: (Integral a) => a -> [a]
 collatz x = th: collatz th
             where th | even x = x `div` 2
                      | otherwise = (x*3)+1
@@ -82,6 +82,11 @@ foldr' fn p (x:xs) = fn x (foldr' fn p xs)
 
 avg a b = (a+b)/2
 
+length' x = ln 0 x
+            where ln n [] = n
+                  ln n (y:ys) = ln (n+1) ys
+
+findseq :: (Eq a) => [a] -> [a]
 findseq x = solve 2
             where solve l
                      | l > (length $ take l x) = []
@@ -94,8 +99,10 @@ findseq x = solve 2
                      | otherwise = ffsq (n+1) tt
                   back u uu = drop (length uu - u) uu
                   subback o oo = take o $ drop (length oo - (2*o)) oo
-                
-                      
+
+mulEven :: (Integral a) => a -> a -> Maybe a
+mulEven x y | (even x) && (even y) = Just (x*y)
+            | otherwise = Nothing
 
 
 main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]

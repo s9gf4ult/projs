@@ -5,7 +5,17 @@ data Shape t = Circle t (t, t)
              | Square (t,t) (t, t)
              | Triangle (t, t) (t, t) (t, t)
              | Polygon [(t, t)]
-             deriving Show
+             deriving (Show, Eq, Read, Ord)
+
+data EitherList a b = EEmpty    -- Список элементов дух любых типов !
+                    | ELeft a (EitherList a b)
+                    | ERight b (EitherList a b)
+                    deriving (Show)
+
+eitherSplit x = eith ([], []) x
+                where eith ac EEmpty = ac
+                      eith (ac1, ac2) (ELeft a aa) = eith ((a:ac1), ac2) aa
+                      eith (ac1, ac2) (ERight a aa) = eith (ac1, (a:ac2)) aa
 
 
 area (Circle r _) = 3.14 * (r ^ 2 )
@@ -104,7 +114,37 @@ mulEven :: (Integral a) => a -> a -> Maybe a
 mulEven x y | (even x) && (even y) = Just (x*y)
             | otherwise = Nothing
 
+data BTree a = BEmpty
+             | Node a (BTree a) (BTree a)
+             deriving (Show)
 
-main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
+instance Functor BTree where
+         fmap _ BEmpty = BEmpty
+         fmap fn (Node a l r) = Node (fn a) (fmap fn l) (fmap fn r)
+
+singleton x = Node x BEmpty BEmpty
+
+findBtree x BEmpty = Nothing
+findBtree x (Node a l r) | x == a = Just a
+                         | x > a = findBtree x r
+                         | otherwise = findBtree x l
+
+class Tofu t where
+      tofu :: b a -> t a b
+
+data Frank a b = Frank (b a) deriving (Show)
+
+instance Tofu Frank where
+         tofu a = Frank a
+
+
+insertBtree x BEmpty = singleton x
+insertBtree x (Node a l r) | x == a = Node x l r
+                           | x > a = Node a l $ insertBtree x r
+                           | otherwise = Node a (insertBtree x l) r
+
+
+main = getLine >>= return . show . (foldr (:) [1]) . takeWhile (/= 1) . collatz . read >>= putStrLn
+-- main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ enumerate $ [length $ uniqueseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ (foldl avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3) == (foldr avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3)

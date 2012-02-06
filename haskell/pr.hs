@@ -77,6 +77,14 @@ collatz x = th: collatz th
             where th | even x = x `div` 2
                      | otherwise = (x*3)+1
 
+accerman m n = acc' 1 m n
+               where
+               acc' a 0 n = (a, n+1)
+               acc' a m 0 = acc' (a+1) (m-1) 1
+               acc' a m n = let aa = acc' (a+1) m (n-1)
+                            in acc' ((fst aa) + 1) (m-1) (snd aa)
+
+
 uniqueseq [a] = [a]
 uniqueseq (x:xs) = x : (takeWhile (/= x) ( uniqueseq xs))
 
@@ -144,7 +152,10 @@ insertBtree x (Node a l r) | x == a = Node x l r
                            | otherwise = Node a (insertBtree x l) r
 
 
-main = getLine >>= return . show . (foldr (:) [1]) . takeWhile (/= 1) . collatz . read >>= putStrLn
+-- main = getLine >>= return . show . (foldr (:) [1]) . takeWhile (/= 1) . collatz . read >>= putStrLn
 -- main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ enumerate $ [length $ uniqueseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ (foldl avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3) == (foldr avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3)
+main = do m <- getLine
+          n <- getLine
+          putStrLn $ show $ accerman (read m) (read n)

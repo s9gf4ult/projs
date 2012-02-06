@@ -1,5 +1,6 @@
 
 import qualified Data.List
+import qualified Data.Char as Char
 
 data Shape t = Circle t (t, t)
              | Square (t,t) (t, t)
@@ -156,6 +157,21 @@ insertBtree x (Node a l r) | x == a = Node x l r
 -- main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ enumerate $ [length $ uniqueseq $ collatz a | a <- [1..10000]]
 -- main = print $ show $ (foldl avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3) == (foldr avg (0 :: Rational) $ map fromInteger $ take 100500 $ collatz 3)
-main = do m <- getLine
-          n <- getLine
-          putStrLn $ show $ accerman (read m) (read n)
+-- main = do m <- getLine
+--           n <- getLine
+--           putStrLn $ show $ accerman (read m) (read n)
+
+main = do putStrLn "Give some input"
+          l <- getLine
+          if l == "bye" then putStrLn "bye !"
+          else do putStrLn $ map Char.toUpper l
+                  main
+
+
+
+
+
+
+
+
+

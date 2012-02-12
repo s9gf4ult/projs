@@ -1,6 +1,7 @@
 
 import qualified Data.List
 import qualified Data.Char as Char
+import System.Random
 
 data Shape t = Circle t (t, t)
              | Square (t,t) (t, t)
@@ -152,6 +153,42 @@ insertBtree x (Node a l r) | x == a = Node x l r
                            | x > a = Node a l $ insertBtree x r
                            | otherwise = Node a (insertBtree x l) r
 
+stackCalc x = calc [] x
+              where calc acum [] = head acum
+                    calc (ac1:ac2:acs) (y:ys) | y == "+" = calc ((ac1+ac2):acs) ys
+                                              | y == "-" = calc ((ac1-ac2):acs) ys
+                                              | y == "*" = calc ((ac1*ac2):acs) ys
+                                              | y == "/" = calc ((ac1/ac2):acs) ys
+                    calc acum (y:ys) = calc ((read y):acum) ys
+
+stackCalcFoldl x = foldl foldfn [] x
+                   where foldfn rt st | st == "+" = (((rt !! 0) + (rt !! 1)):(tail $ tail rt))
+                                      | st == "-" = (((rt !! 0) - (rt !! 1)):(tail $ tail rt))
+                                      | st == "*" = (((rt !! 0) * (rt !! 1)):(tail $ tail rt))
+                                      | st == "/" = (((rt !! 0) / (rt !! 1)):(tail $ tail rt))
+                                      | otherwise = ((read st):rt)
+
+stackCalcFoldl' x = foldl foldfn [] x
+                    where foldfn (a:b:bs) "*" = (a+b):bs
+                          foldfn (a:b:bs) "/" = (a/b):bs
+                          foldfn (a:b:bs) "+" = (a+b):bs
+                          foldfn (a:b:bs) "-" = (a-b):bs
+                          foldfn ac smth = (read smth):ac
+
+data Direction = Goleft | Goright | Forward deriving Show
+data Position = Top | Bottom deriving Show
+
+-- pathVariants :: [(a, a, a)] -> (a, [Direction])
+pathVariants x = pvs (0, []) Bottom x
+                 where pvs (len, paths) _ [] = (len, reverse paths)
+                       pvs (len, paths) Bottom ((a, b, c):ps) | c <= (a+b) = pvs (len+c, (Forward:paths)) Bottom ps
+                                                              | otherwise = pvs (len+a+b, (Forward:Goleft:paths)) Top ps
+                       pvs (len, paths) Top ((a, b, c):ps) | a <= (b+c) = pvs (len+a, (Forward:paths)) Top ps
+                                                           | otherwise = pvs (len+b+c, (Forward:Goright:paths)) Bottom ps
+
+getRandoms from to = do
+                     a <- newStdGen
+                     ((randomRs (from, to) a !! 0, randomRs (from, to) a !! 1, randomRs (from, to) a !! 2):(getRandoms from) to)
 
 -- main = getLine >>= return . show . (foldr (:) [1]) . takeWhile (/= 1) . collatz . read >>= putStrLn
 -- main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]

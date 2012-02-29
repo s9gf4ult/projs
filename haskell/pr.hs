@@ -284,16 +284,18 @@ jellybean m = banana id m
 apple :: (Misty m) => m a -> m (a -> b) -> m b
 apple ma mf = banana (\f ->  (furry' f ma)) mf
  
--- -- Exercise 14
--- -- Relative Difficulty: 6
--- moppy :: (Misty m) => [a] -> (a -> m b) -> m [b]
--- moppy as amb = banana (??) (??)
+-- Exercise 14
+-- Relative Difficulty: 6
+moppy :: (Misty m) => [a] -> (a -> m b) -> m [b]
+moppy as amb = foldr cf (unicorn []) $ map amb as
+               -- cf :: m b -> m [b] -> m [b]
+               where cf mb mbs = apple mbs (furry' (:) mb)
  
--- -- Exercise 15
--- -- Relative Difficulty: 6
--- -- (bonus: use moppy)
--- sausage :: (Misty m) => [m a] -> m [a]
--- sausage = error "todo"
+-- Exercise 15
+-- Relative Difficulty: 6
+-- (bonus: use moppy)
+sausage :: (Misty m) => [m a] -> m [a]
+sausage mas = moppy mas id 
  
 -- -- Exercise 16
 -- -- Relative Difficulty: 6

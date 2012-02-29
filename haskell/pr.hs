@@ -2,6 +2,8 @@
 import qualified Data.List
 import qualified Data.Char as Char
 import System.Random
+import Control.Applicative
+import Control.Monad.Writer
 
 data Shape t = Circle t (t, t)
              | Square (t,t) (t, t)
@@ -19,6 +21,7 @@ eitherSplit x = eith ([], []) x
                       eith (ac1, ac2) (ELeft a aa) = eith ((a:ac1), ac2) aa
                       eith (ac1, ac2) (ERight a aa) = eith (ac1, (a:ac2)) aa
 
+join' a = a >>= id
 
 area (Circle r _) = 3.14 * (r ^ 2 )
 area (Square (x1, y1) (x2, y2)) = abs ((x1 - x2) * (y1 - y2))
@@ -186,9 +189,9 @@ pathVariants x = pvs (0, []) Bottom x
                        pvs (len, paths) Top ((a, b, c):ps) | a <= (b+c) = pvs (len+a, (Forward:paths)) Top ps
                                                            | otherwise = pvs (len+b+c, (Forward:Goright:paths)) Bottom ps
 
-getRandoms from to = do
-                     a <- newStdGen
-                     ((randomRs (from, to) a !! 0, randomRs (from, to) a !! 1, randomRs (from, to) a !! 2):(getRandoms from) to)
+-- getRandoms from to = do
+--                      a <- newStdGen
+--                      ((randomRs (from, to) a !! 0, randomRs (from, to) a !! 1, randomRs (from, to) a !! 2):(getRandoms from) to)
 
 -- main = getLine >>= return . show . (foldr (:) [1]) . takeWhile (/= 1) . collatz . read >>= putStrLn
 -- main = print $ show $ Data.List.nub [findseq $ collatz a | a <- [1..10000]]
@@ -203,7 +206,6 @@ main = do putStrLn "Give some input"
           if l == "bye" then putStrLn "bye !"
           else do putStrLn $ map Char.toUpper l
                   main
-
 
 
 

@@ -297,32 +297,34 @@ moppy as amb = foldr cf (unicorn []) $ map amb as
 sausage :: (Misty m) => [m a] -> m [a]
 sausage mas = moppy mas id 
  
--- -- Exercise 16
--- -- Relative Difficulty: 6
--- -- (bonus: use apple + furry')
--- banana2 :: (Misty m) => (a -> b -> c) -> m a -> m b -> m c
--- banana2 = error "todo"
+-- Exercise 16
+-- Relative Difficulty: 6
+-- (bonus: use apple + furry')
+banana2 :: (Misty m) => (a -> b -> c) -> m a -> m b -> m c
+banana2 f ma mb = apple mb (furry' f ma)
  
--- -- Exercise 17
--- -- Relative Difficulty: 6
--- -- (bonus: use apple + banana2)
--- banana3 :: (Misty m) => (a -> b -> c -> d) -> m a -> m b -> m c -> m d
--- banana3 = error "todo"
+-- Exercise 17
+-- Relative Difficulty: 6
+-- (bonus: use apple + banana2)
+banana3 :: (Misty m) => (a -> b -> c -> d) -> m a -> m b -> m c -> m d
+banana3 f ma mb mc = apple mc (apple mb (furry' f ma))
  
--- -- Exercise 18
--- -- Relative Difficulty: 6
--- -- (bonus: use apple + banana3)
--- banana4 :: (Misty m) => (a -> b -> c -> d -> e) -> m a -> m b -> m c -> m d -> m e
--- banana4 = error "todo"
+-- Exercise 18
+-- Relative Difficulty: 6
+-- (bonus: use apple + banana3)
+banana4 :: (Misty m) => (a -> b -> c -> d -> e) -> m a -> m b -> m c -> m d -> m e
+banana4 f ma mb mc md = apple md (apple mc (apple mb (furry' f ma)))
  
--- newtype State s a = State {
---   state :: (s -> (s, a))
--- }
+newtype State s a = State {
+  state :: (s -> (s, a))
+}
  
 -- -- Exercise 19
 -- -- Relative Difficulty: 9
 -- instance Fluffy (State s) where
---   furry = error "todo"
+-- -- furry :: (a -> b) -> ma -> mb
+--   furry f (State s) = State (\x -> (x, (x, b)))
+--                       where b 
  
 -- -- Exercise 20
 -- -- Relative Difficulty: 10

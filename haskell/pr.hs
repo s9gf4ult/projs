@@ -1,7 +1,7 @@
 
 import qualified Data.List
 import qualified Data.Char as Char
-import Control.Monad.State
+-- import Control.Monad.State
 import System.Random
 import Control.Applicative
 import Control.Monad.Writer
@@ -118,14 +118,14 @@ length' x = ln 0 x
 findseq :: (Eq a) => [a] -> [a]
 findseq x = solve 2
             where solve l
-                     | l > (length $ take l x) = []
-                     | (length $ fsq $ take l x) > 0 = fsq $ take l x
-                     | otherwise = solve (l + 1)
+                    | l > (length $ take l x) = []
+                    | (length $ fsq $ take l x) > 0 = fsq $ take l x
+                    | otherwise = solve (l + 1)
                   fsq tl = ffsq 1 tl
                   ffsq n tt
-                     | n*2 > length tt = []
-                     | back n tt == subback n tt = back n tt
-                     | otherwise = ffsq (n+1) tt
+                    | n*2 > length tt = []
+                    | back n tt == subback n tt = back n tt
+                    | otherwise = ffsq (n+1) tt
                   back u uu = drop (length uu - u) uu
                   subback o oo = take o $ drop (length oo - (2*o)) oo
 
@@ -214,7 +214,7 @@ instance Fluffy Maybe where
 -- Relative Difficulty: 5
 instance Fluffy ((->) t) where
   furry f x = \a -> f (x a)
- 
+
 newtype EitherLeft b a = EitherLeft (Either a b) deriving Show
 newtype EitherRight a b = EitherRight (Either a b) deriving Show
   
@@ -319,18 +319,22 @@ newtype State s a = State {
   state :: (s -> (s, a))
 }
  
--- -- Exercise 19
--- -- Relative Difficulty: 9
--- instance Fluffy (State s) where
--- -- furry :: (a -> b) -> ma -> mb
---   furry f (State s) = State (\x -> (x, (x, b)))
---                       where b 
+-- Exercise 19
+-- Relative Difficulty: 9
+instance Fluffy (State s) where
+-- furry :: (a -> b) -> ma -> mb
+--       :: (a -> b) -> (State (\s -> (s, a))) -> (State (\s -> (s, b)))
+  furry f (State s) = State (\x -> let (ss, aa) = s x
+                                       in (ss, (f aa)))
  
--- -- Exercise 20
--- -- Relative Difficulty: 10
--- instance Misty (State s) where
---   banana = error "todo"
---   unicorn = error "todo"
+-- Exercise 20
+-- Relative Difficulty: 10
+instance Misty (State s) where
+-- banana:: (a -> m b) -> m a -> m b
+--       :: (a -> (State (s -> (s, b)))) -> (State (s -> (s, a))) -> (State (s -> (s, b)))
+  banana f (State s) = jellybean (State (\x -> let (ss, aa) = s x
+                                                   in (x, (f aa))))
+  unicorn a = State (\s -> (s, a))
                                                            
 -- getRandoms from to = do
 --                      a <- newStdGen

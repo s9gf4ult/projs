@@ -47,6 +47,8 @@ dosomething lsize rsize = do
   a <- fillleft lsize
   b <- leftright lsize rsize
   return $ mappend a b
+
+
             
 -- inv :: Monad m => StateT [a] m ()
 -- inv = do

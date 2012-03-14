@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad.State
+import Control.Monad.Writer
 import Data.Monoid
 
 push :: Monad m => a -> StateT [a] m ()
@@ -18,37 +19,48 @@ data Operation a = FillLeft a
                  | LeftRight a
                  | RightLeft a deriving Show
 
-emptyleft, emptyright :: (Monad m, Num a) => StateT (a, a) m (Endo [Operation a])
-emptyleft = StateT $ \(l, r) -> return((Endo (EmptyLeft l:)), (0, r))
+emptyleft, emptyright :: (Monad m, Num a) => StateT (Endo ([Operation a]), (a, a)) m ()
+emptyleft = StateT $ \(en, (l, r)) -> return((), (mappend en $ Endo (EmptyLeft l:), (0, r)))
+                                
 
-emptyright = StateT $ \(l, r) -> return((Endo (EmptyRight r:)), (l, 0))
+emptyright = StateT $ \(en, (l, r)) -> return((), (mappend en $ Endo (EmptyRight r:), (l, 0)))
 
-fillleft, fillright :: (Monad m, Num a, Ord a) => a -> StateT (a, a) m (Endo [Operation a])
+fillleft, fillright :: (Monad m, Num a, Ord a) => a -> StateT (Endo [Operation a], (a, a)) m ()
 fillleft lsize = StateT $ alpha
-                 where alpha (l, r) | l >= lsize = return(Endo id, (l, r))
-                                    | otherwise = return(Endo (FillLeft (lsize - l):), (lsize, r))
+                 where alpha (en, (l, r)) | l >= lsize = return((), (en, (l, r)))
+                                          | otherwise = return((), (mappend en $ Endo (FillLeft (lsize - l):), (lsize, r)))
 
 fillright rsize = StateT $ alpha
-                  where alpha (l, r) | r >= rsize = return(Endo id, (l, r))
-                                     | otherwise = return(Endo (FillRight (rsize - r):), (l, rsize))
+                  where alpha (en, (l, r)) | r >= rsize = return((), (en, (l, r)))
+                                           | otherwise = return((), (mappend en $ Endo (FillRight (rsize - r):), (l, rsize)))
 
-leftright, rightleft :: (Monad m, Num a, Ord a) => a -> a -> StateT (a, a) m (Endo [Operation a])
-leftright lsize rsize = StateT $ black
-                        where black (l, r) | r >= rsize = return (Endo id, (l, r))
-                                           | (rsize - r) <= l = return(Endo (LeftRight (rsize - r):), (l - (rsize - r), rsize))
-                                           | otherwise = return(Endo (LeftRight l:), (0, r + l))
+leftright, rightleft :: (Monad m, Num a, Ord a) => a -> StateT (Endo [Operation a], (a, a)) m ()
+leftright rsize = StateT $ black
+  where black s@(en, (l, r)) | r >= rsize = return ((), s)
+                             | (rsize - r) <= l = return((), (mappend en $ Endo (LeftRight (rsize - r):), (l - (rsize - r), rsize)))
+                             | otherwise = return((), (mappend en $ Endo (LeftRight l:), (0, r + l)))
 
-rightleft lsize rsize = StateT $ black
-                        where black (l, r) | l >= lsize = return (Endo id, (l, r))
-                                           | (lsize - l) <= r = return(Endo (RightLeft (lsize - l):), (lsize, r - (lsize - l)))
-                                           | otherwise = return(Endo (RightLeft r:), (l + r, 0))
+rightleft lsize = StateT $ black
+  where black s@(en, (l, r)) | l >= lsize = return ((), s)
+                             | (lsize - l) <= r = return((), (mappend en $ Endo (RightLeft (lsize - l):), (lsize, r - (lsize - l))))
+                             | otherwise = return((), (mappend en $ Endo (RightLeft r:), (l + r, 0)))
 
+                              
 dosomething lsize rsize = do
-  a <- fillleft lsize
-  b <- leftright lsize rsize
-  return $ mappend a b
+  fillleft lsize
+  leftright  rsize
+  fillleft lsize
+  fillright rsize
+  emptyright
+  leftright rsize
 
+-- blah :: (Monad m) => a -> WriterT (Endo [a]) m a
+-- blah val = WriterT $ return(val, Endo (val:))
 
+-- someblah a b = do
+--   blah a
+--   blah b
+--   return ()
             
 -- inv :: Monad m => StateT [a] m ()
 -- inv = do

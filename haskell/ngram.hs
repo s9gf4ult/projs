@@ -2,9 +2,10 @@
 module NGramm where
 
 import System.Random
-import Control.Arrow
+import Control.Arrow ((&&&))
 import Control.Monad
 import Data.List
+import Data.Text (pack, unpack, replace)
 
 -- average :: Fractional a => [a] -> a
 -- average l = sum l / (fromIntegral $ length l)
@@ -73,6 +74,9 @@ a <|> b = Rule (unwrapRule (rule a) ++ unwrapRule (rule b))
 instance AsAtom Atom where
   atom a = [a]
 
+instance AsAtom [Atom] where
+  atom = id
+
 instance AsAtom String where
   atom a = [AtomS a]
 
@@ -109,12 +113,52 @@ data Substitution = Substitution
                       substTo   :: String
                     }
 
-  
 
--- instance AsAtom Atom where
---   atom a = [a]
+substitute :: String -> Substitution -> String
+substitute str (Substitution from to) = unpack $ replace (pack from) (pack to) (pack str)
 
--- instance AsRule Atom where
---   atom (AtomR r) = r
---   atom (AtomS s) = 
+
+getRandomElement :: (Random a, Num a, Ord a) => [(a, b)] -> IO (Maybe b)
+getRandomElement [] = return Nothing
+getRandomElement xs = do
+  el <- randomRIO (0, probSum xs)
+  return $ Just $ snd $ head $ filter (\((l, g), ret) -> el >= l && el <= g) lowHighList
+  where
+    -- probSum :: (Ord a, Num a) => [(a, b)] -> a
+    probSum = sum . map fst
+
+    -- lowHighList :: (Random a, Num a, Ord a) => [((a, a), b)]
+    lowHighList = map (((\x -> (probSum x) - (last $ map fst x)) &&& probSum) &&& (last . map snd)) $
+                   tail $ inits xs
+
+generate :: Rule -> [Substitution] -> IO ()
+generate r subs = do fs <- flattenRule r
+                     putStrLn $ foldl substitute fs subs
+
   
+flattenRule :: Rule -> IO String
+flattenRule (Rule repls) = do elt <- getRandomElement $ map (replProbability &&& replSequence) repls
+                              liftM concat $ mapM id $ map flattenAtom $ fromM elt
+                                where fromM Nothing = []
+                                      fromM (Just x) = x
+
+flattenAtom :: Atom -> IO String
+flattenAtom (AtomS s) = return  s
+flattenAtom (AtomR r) = flattenRule r
+
+autograph  = rule $ variant1
+
+variant1   = rule $ sequence1 <+> (20 <:> "" <|> 80 <:> sequence2) <+>
+             (80 <:> "" <|> 20 <:> ("продолжайте участвовать в конкурсах. " <|> "участвуйте в дальнейших конкурсах. ")) <+> (90 <:> "" <|> 10 <:> "ура!")
+
+sequence1  = rule $ respect <+> appeal <+> name <+> " " <+> fromAuthor <+> wish
+respect    = rule $ "" <|> "многоуважаемому " <|> "уважаемому "
+appeal     = rule $ "" <|> colleague
+colleague  = rule $ (30 <:> "коллеге " <|> 30 <:> "товарищу " <|> 30 <:> "соратнику " <|> 10 <:> "камраду ") <+>
+                    ("" <|> "по " <+> ("цеху " <|> "поприщу ") <+> fp)
+fp         = rule $ "программирования " <|> "ФП " <|> "функционального программирования "
+name       = rule $ "%1"
+fromAuthor = rule $ "" <|> "от автора "
+wish       = rule $ "на добрую память" <+> (". " <|> "и с наилучшими пожеланиями. ")
+
+sequence2  = rule $ ("" <|> "желаю ") <+> ("успехов " <|> "удачи ") <+> ("на профессиональном поприще. " <|> "в области программирования. ")

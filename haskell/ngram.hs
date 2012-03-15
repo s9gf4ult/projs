@@ -4,15 +4,17 @@ module NGramm where
 import System.Random
 import Control.Arrow ((&&&))
 import Control.Monad
-import Data.List
+import Data.List (inits, tails)
 import Data.Text (pack, unpack, replace)
+import qualified Data.Map as M
+import Data.Monoid
 
 -- average :: Fractional a => [a] -> a
 -- average l = sum l / (fromIntegral $ length l)
   
--- getRandomElement :: [a] -> IO a
--- getRandomElement l = do i <- randomRIO (0, length l - 1)
---                         return $ l !! i
+getJustRandomElement :: [a] -> IO a
+getJustRandomElement l = do i <- randomRIO (0, length l - 1)
+                            return $ l !! i
 
 -- getRandomElementWithProbabilities :: (Ord b, Num b, Random b) => [(a, b)] -> IO a
 -- getRandomElementWithProbabilities l = (head . goodList) `liftM` randomRIO (1, sumProbs l)
@@ -62,6 +64,8 @@ class AsRule r where
 infixl 3 <+>
 (<+>) :: (AsAtom a, AsAtom b) => a -> b -> [Atom]
 (<+>) a b = atom a ++ atom b
+
+
 
 infix 2 <:>
 (<:>) :: AsAtom a => Int -> a -> Replacement
@@ -162,3 +166,23 @@ fromAuthor = rule $ "" <|> "от автора "
 wish       = rule $ "на добрую память" <+> (". " <|> "и с наилучшими пожеланиями. ")
 
 sequence2  = rule $ ("" <|> "желаю ") <+> ("успехов " <|> "удачи ") <+> ("на профессиональном поприще. " <|> "в области программирования. ")
+
+
+makeNgram :: (Ord a,Num b) => Int -> [a] -> M.Map [a] b
+makeNgram n str = foldr foldf M.empty $ map (take n)
+                  $ take (length str + 1 - n)
+                  $ tails str
+  where
+    foldf s m = M.insertWith (+) s 1 m
+
+ruleFromNgram :: (AsAtom a) => M.Map a Int -> Rule
+ruleFromNgram m = foldr (<|>) (Rule []) $ map (\(a, b) -> b <:> a) $ M.toList m
+
+replicateRule :: Int -> Rule -> [Atom]
+replicateRule n r = foldr (<+>) [] $ replicate n r
+
+generateText :: Int -> Int -> String -> IO String
+generateText len amount s = flattenRule (rule $ replicateRule amount $ ruleFromNgram $ makeNgram len s)
+
+
+sample m n = generateText m n "Работает же она так. Она выбирает из словаря только те элементы, начало (init) которых совпадает с последними символами генерируемой строки, полученной с предыдущего шага генерации. Размер сравниваемых строк одинаков, так что должно быть точное совпадение по символам. Далее этот отфильтрованный словарь преобразуется в список пар, из которого при помощи рассмотренной ранее функции getRandomElementWithProbabilities выбирается с учётом вероятностей один элемент. Далее из этого элемента берётся последний символ, который и становится той самой «последней буквой», возвращаемой функцией"

@@ -358,8 +358,55 @@ instance Misty (State s) where
 main = getLine >>= return . map (Char.toUpper) >>= putStrLn
 
 
+newtype (Monad m) => MaybeT m a = MaybeT { runMaybeT :: m (Maybe a) }
 
+instance (Monad m) => Monad (MaybeT m) where
+  return = MaybeT . return . return
+  v >>= f = MaybeT $ do val <- runMaybeT v
+                        case val of
+                          Nothing -> return Nothing
+                          Just valx -> runMaybeT $ f valx 
 
+getEven, getOdd :: (Random a, Integral a) => (a, a) -> MaybeT IO a
+getEven el = MaybeT $ do v <- randomRIO el
+                         if even v
+                           then return $ Just v
+                           else return Nothing
 
+getOdd el = MaybeT $ do val <- randomRIO el
+                        if odd val
+                          then return $ Just val
+                          else return Nothing
 
+squareM :: (Random a, Integral a, Num a) => a -> a -> MaybeT IO a
+squareM low hi = do x <- getOdd (low, hi)
+                    y <- getOdd (low, hi)
+                    return $ x * y
 
+newtype (Monad m) => ListT m a =
+  ListT { runListT :: m [a] }
+
+instance (Monad m) => Monad (ListT m) where
+  return = ListT . return . return
+  v >>= f = ListT $ do val <- runListT v
+                       mapM (runListT . f) val >>= return . concat
+
+factor :: (Num a, Integral a) => a -> [a]
+factor a = rundisp 2 a
+  where
+    rundisp d val | d > val = []
+                  | d == val = [d]
+                  | val `mod` d == 0 = (d:rundisp 2 (val `div` d))
+                  | otherwise = rundisp (d + 1) val
+
+factorMaybe :: (Num a, Integral a) => a -> ListT Maybe a
+factorMaybe val = ListT $ case factor val of
+  [val] -> Nothing
+  _ -> Just $ factor val
+
+findCommonFactors :: (Num a, Integral a) => a -> a -> ListT Maybe a
+findCommonFactors one two  = do a <- factorMaybe one
+                                b <- factorMaybe two
+                                if a == b
+                                  then return 1
+                                  else return $ a * b

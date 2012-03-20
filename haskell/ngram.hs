@@ -209,15 +209,25 @@ generateHText len amount str = do ngram <- makeHNgram len str
 
 sample m n = generateText m n "Работает же она так. Она выбирает из словаря только те элементы, начало (init) которых совпадает с последними символами генерируемой строки, полученной с предыдущего шага генерации. Размер сравниваемых строк одинаков, так что должно быть точное совпадение по символам. Далее этот отфильтрованный словарь преобразуется в список пар, из которого при помощи рассмотренной ранее функции getRandomElementWithProbabilities выбирается с учётом вероятностей один элемент. Далее из этого элемента берётся последний символ, который и становится той самой «последней буквой», возвращаемой функцией"
 
+-- main = do
+--   a <- getArgs
+--   if length a /= 3
+--     then usage
+--     else do let len = read $ a !! 0
+--             let amount = read $ a !! 1
+--             cont <- readFile $ a !! 2
+--             result <- generateHText len amount cont
+--             putStrLn result
+
+
 main = do
   a <- getArgs
-  if length a /= 3
+  if length a /= 2
     then usage
     else do let len = read $ a !! 0
-            let amount = read $ a !! 1
-            cont <- readFile $ a !! 2
-            result <- generateHText len amount cont
-            putStrLn result
+            content <- readFile $ a !! 1
+            putStrLn $ show $ makeNgram len content
+             
               
 
 usage :: IO ()

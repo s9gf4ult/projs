@@ -17,7 +17,6 @@ main = runMaybeT $ do
             let amount = read $ args !! 1
             hfile <- lift $ openFile (args !! 2) ReadMode
             cont <- lift $ hGetContents hfile
-            -- cont `deepseq` lift $ hClose hfile
             out <- generateSeq amount $ (makeNgram len cont :: M.Map String Int)
             lift $ putStrLn out
 

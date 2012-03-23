@@ -39,15 +39,15 @@ mutateNgram ng = foldl foldf M.empty mlist
 
 generateSeq :: (Random b, Ord b, Num b) => Int -> M.Map [a] b -> MaybeT IO [a]
 generateSeq amount ng = do
-  let mlist = lowHighList $ M.toList $ mutateNgram ng
-  let msum  = (snd . fst . last) mlist
-  gen <- lift newStdGen
-  let rnds = take amount $ randomRs (0, msum) gen
-  a <- MaybeT . return $ mapM (\x -> getRandomElement x mlist) rnds
-  
-  
-  -- let mlist = lowHighList $ map (snd &&& fst) $ M.toList ng
-  -- let fsum = (snd . fst . last) mlist
+  -- let mlist = lowHighList $ M.toList $ mutateNgram ng
+  -- let msum  = (snd . fst . last) mlist
   -- gen <- lift newStdGen
-  -- let rnds = take amount $ randomRs (0, fsum) gen
-  -- MaybeT . return $ (mapM (\x -> getRandomElement x mlist) rnds) >>= return . concat
+  -- let rnds = take amount $ randomRs (0, msum) gen
+  -- a <- MaybeT . return $ mapM (\x -> getRandomElement x mlist) rnds
+  
+  
+  let mlist = lowHighList $ map (snd &&& fst) $ M.toList ng
+  let fsum = (snd . fst . last) mlist
+  gen <- lift newStdGen
+  let rnds = take amount $ randomRs (0, fsum) gen
+  MaybeT . return $ (mapM (\x -> getRandomElement x mlist) rnds) >>= return . concat

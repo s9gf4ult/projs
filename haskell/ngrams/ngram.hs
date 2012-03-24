@@ -50,10 +50,9 @@ generateSeq amount ng = do
       rnd <- lift $ randomRIO (0, V.length vct - 1)
       return $ vct V.! rnd
   
-  
-  
-  -- let mlist = lowHighList $ map (snd &&& fst) $ M.toList ng
-  -- let fsum = (snd . fst . last) mlist
+generateSeq amount ng = do
+  -- let mlist = lowHighList $ M.toList $ mutateNgram ng
+  -- let msum  = (snd . fst . last) mlist
   -- gen <- lift newStdGen
-  -- let rnds = take amount $ randomRs (0, fsum) gen
-  -- MaybeT . return $ (mapM (\x -> getRandomElement x mlist) rnds) >>= return . concat
+  -- let rnds = take amount $ randomRs (0, msum) gen
+  -- a <- MaybeT . return $ mapM (\x -> getRandomElement x mlist) rnds

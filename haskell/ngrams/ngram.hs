@@ -50,7 +50,6 @@ generateSeq amount ng = do
       rnd <- lift $ randomRIO (0, V.length vct - 1)
       return $ vct V.! rnd
   
-generateSeq amount ng = do
   -- let mlist = lowHighList $ M.toList $ mutateNgram ng
   -- let msum  = (snd . fst . last) mlist
   -- gen <- lift newStdGen

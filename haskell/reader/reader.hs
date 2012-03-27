@@ -61,9 +61,30 @@ emptyLeft = do
   put (emptyBottle l, r)
 emptyRight = execSwapped emptyLeft
 
-data (Monad m) => CheckStateT s m a = CheckStateT { getSolve :: SolveMonad m s a,
-                                                    getChecker :: s -> Bool}
+data (Monad m, Monoid w) => CheckStateT r w s m a =
+  CheckStateT {checkState :: s -> Bool,
+               getRWS :: RWST r w s m a}
+                                                       
 
-instance (Monad m) => Monad (CheckStateT s m) where
-  return a = CheckStateT {getSolve = return a, getChecker = (\_ -> True)}
-  (CheckStateT {getSolve = slv, getChecker = chk}) >>= f = 
+-- instance Monad (CheckStateT r w s m) where
+--   return a = CheckStateT $ \r s -> Just (return a)
+--   a@(CheckStateT runrws) >>= f = CheckStateT $ \
+
+-- magic :: SomeMagicType
+-- magic = do
+--   lift fillLeft
+--   lift leftToRight
+--   (l, r) <- get
+--   if (isFull r) then do
+--     emptyRight
+--     else return ()               -- ну как то так, типа то еще не придумал
+--   magic
+  
+  
+             
+-- data (Monad m) => CheckStateT s m a = CheckStateT { getSolve :: SolveMonad m s a,
+--                                                     getChecker :: s -> Bool}
+
+-- instance (Monad m) => Monad (CheckStateT s m) where
+--   return a = CheckStateT {getSolve = return a, getChecker = (\_ -> True)}
+--   (CheckStateT {getSolve = slv, getChecker = chk}) >>= f = 

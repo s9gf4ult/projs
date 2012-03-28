@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad (unless, when)
 import Control.Monad.Trans.RWS
 import Data.Monoid
 import Control.Arrow ((&&&))
@@ -28,7 +29,7 @@ data Action a = Flow {getFrom :: Bottle a,
 type SolveMonad m a ret = RWST () (Endo [Action a]) (Bottle a, Bottle a) m ret
 
 endotell :: (Monad m) => [Action a] -> SolveMonad m a ()
-endotell a = tell $ Endo $ (++ a)
+endotell a = tell $ Endo $ (a ++)
 
      
 leftToRight, rightToLeft :: (Monad m, Num a, Ord a) => SolveMonad m a ()
@@ -51,6 +52,7 @@ rightToLeft = execSwapped leftToRight
 fillLeft, fillRight :: (Monad m, Num a, Ord a) => SolveMonad m a ()
 fillLeft = do
   (l, r) <- get
+  endotell [(Fill {getWhat = l, getAmount = (getFree l)})]
   put (fillBottle (getFree l) l, r)
 
 fillRight = execSwapped fillLeft
@@ -58,13 +60,41 @@ fillRight = execSwapped fillLeft
 emptyLeft, emptyRight :: (Monad m, Num a) => SolveMonad m a ()
 emptyLeft = do
   (l, r) <- get
+  endotell [(Empty {getWhat =l, getAmount = (getSize l)})]
   put (emptyBottle l, r)
 emptyRight = execSwapped emptyLeft
 
-data (Monad m, Monoid w) => CheckStateT r w s m a =
-  CheckStateT {checkState :: s -> Bool,
-               getRWS :: RWST r w s m a}
-                                                       
+checkState :: (Eq a) => a -> (Bottle a, Bottle a) -> Bool
+checkState sz (Bottle s1 _, Bottle s2 _) = s1 == sz || s2 == sz
+
+isFull :: (Ord a) => Bottle a -> Bool
+isFull (Bottle s m) = s >= m
+                      
+solve :: (Monad m, Eq a, Num a, Ord a) => a -> SolveMonad m a ()
+solve sz = do
+  s <- get
+  unless (checkState sz s) $ do
+    fillLeft
+    s1 <- get
+    unless (checkState sz s1) $ do
+      leftToRight
+      s2@(l, r) <- get
+      unless (checkState sz s2) $ do
+        when (isFull r) $ do
+          emptyRight
+          leftToRight
+        solve sz
+
+-- data (Monad m, Monoid w) => RWSCheckerT ckfn r w s m a =
+--   RWSCheckerT { runRWSCheckerT :: RWST r w s m a,
+--                 runChecker :: ckfn }
+
+-- instance Monad (RWSCheckerT ckfn) where
+  
+
+-- data (Monad m, Monoid w) => CheckStateT r w s m a =
+--   CheckStateT {checkState :: s -> Bool,
+--                getRWS :: RWST r w s m a}
 
 -- instance Monad (CheckStateT r w s m) where
 --   return a = CheckStateT $ \r s -> Just (return a)

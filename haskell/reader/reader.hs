@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad (unless, when)
+import Control.Monad.State.Class (MonadState)
 import Control.Monad.Trans.RWS
 import Data.Monoid
 import Control.Arrow ((&&&))
@@ -85,36 +86,20 @@ solve sz = do
           leftToRight
         solve sz
 
--- data (Monad m, Monoid w) => RWSCheckerT ckfn r w s m a =
---   RWSCheckerT { runRWSCheckerT :: RWST r w s m a,
---                 runChecker :: ckfn }
+-- data (MonadState s m) => StateCheck s m a =
+--   StateCheck { runStateCheck :: m a,
+--                getCheckFunction :: s -> Bool}
+--   | StateStop
 
--- instance Monad (RWSCheckerT ckfn) where
-  
-
--- data (Monad m, Monoid w) => CheckStateT r w s m a =
---   CheckStateT {checkState :: s -> Bool,
---                getRWS :: RWST r w s m a}
-
--- instance Monad (CheckStateT r w s m) where
---   return a = CheckStateT $ \r s -> Just (return a)
---   a@(CheckStateT runrws) >>= f = CheckStateT $ \
-
--- magic :: SomeMagicType
--- magic = do
---   lift fillLeft
---   lift leftToRight
---   (l, r) <- get
---   if (isFull r) then do
---     emptyRight
---     else return ()               -- ну как то так, типа то еще не придумал
---   magic
-  
-  
-             
--- data (Monad m) => CheckStateT s m a = CheckStateT { getSolve :: SolveMonad m s a,
---                                                     getChecker :: s -> Bool}
-
--- instance (Monad m) => Monad (CheckStateT s m) where
---   return a = CheckStateT {getSolve = return a, getChecker = (\_ -> True)}
---   (CheckStateT {getSolve = slv, getChecker = chk}) >>= f = 
+-- instance (MonadState s m) => Monad (StateCheck s m) where
+--   return a = StateCheck { runStateCheck = ret,
+--                           getCheckFunction = \_ -> False}
+--     where
+--       ret = return a
+--   StateStop >>= _ = StateStop
+--   m@StateCheck {runStateCheck = inner,
+--                 getCheckFunction = chkfn} >>= f = StateCheck $ do
+--     s <- get
+--     if (chkfn s)
+--       then return StateStop
+--       else return $ StateCheck {runStateCheck = 

@@ -4,8 +4,10 @@ from random import random
 
 def createngram(fname, length):
     ret = {}
+    cont = u''
     with open(fname) as fin:
-        cont = fin.read()
+        for ln in fin.readlines():
+            cont += ln
     for f, t in zip(xrange(len(cont)), xrange(length, len(cont)+1)):
         key = cont[f:t]
         if key in ret:
@@ -14,13 +16,6 @@ def createngram(fname, length):
             ret[key] = 1
     return ret
             
-
-def getrandom(htb):
-    lst = make_glist(htb)
-    sm = sum(htb.itervalues())
-    rnd = random() * sm
-    return findelement(lst, rnd)
-
 def make_glist(htb):
     ret = []
     x = 0
@@ -40,11 +35,17 @@ def printhelp():
 
 def execute(length, count, filename):
     htb = createngram(filename, length)
+    print('ngram builded {0} elements'.format(len(htb)))
+    lst = make_glist(htb)
+    sm = sum(htb.itervalues())
     for x in xrange(count):
-        sys.stdout.write(str(getrandom(htb)))
+        rnd = random() * sm
+        sys.stdout.write(findelement(lst, rnd))
 
 if __name__ == '__main__':
     ar = sys.argv
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
     if len(ar) != 4:
         printhelp()
     else:

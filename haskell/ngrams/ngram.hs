@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Control.Arrow
 import Data.List (inits, tails, foldl')
 import System.Environment
-import qualified Data.Vector as V
+-- import qualified Data.Vector as V
 
 getRandomElement :: (Num a, Ord a) => a -> [((a, a), b)] -> Maybe b
 getRandomElement _ [] = Nothing
@@ -31,27 +31,23 @@ makeNgram n str = foldl' foldf M.empty $ nlists n str
                    $ take (length str + 1 - n)
                    $ tails str
 
-mutateNgram :: Ord b => M.Map a b -> M.Map b (V.Vector a)
-mutateNgram ng = foldl foldf M.empty mlist
-  where
-    mlist = M.toList ng
-    foldf mp (a, b) = M.insertWith (V.++) b (V.singleton a) mp
+-- mutateNgram :: Ord b => M.Map a b -> M.Map b (V.Vector a)
+-- mutateNgram ng = foldl foldf M.empty mlist
+--   where
+--     mlist = M.toList ng
+--     foldf mp (a, b) = M.insertWith (V.++) b (V.singleton a) mp
 
 generateSeq :: (Random b, Ord b, Num b) => Int -> M.Map [a] b -> MaybeT IO [a]
-generateSeq amount ng = do 
-  let mlist = lowHighList $ M.toList $ mutateNgram ng
-  let msum  = (snd . fst . last) mlist
-  gen <- lift newStdGen
-  let rnds = take amount $ randomRs (0, msum) gen
-  a <- MaybeT . return $ mapM (\x -> getRandomElement x mlist) rnds
-  mapM domap a >>= return . concat
-  where
-    domap vct = do
-      rnd <- lift $ randomRIO (0, V.length vct - 1)
-      return $ vct V.! rnd
-  
+generateSeq amount ng = do
   -- let mlist = lowHighList $ M.toList $ mutateNgram ng
   -- let msum  = (snd . fst . last) mlist
   -- gen <- lift newStdGen
   -- let rnds = take amount $ randomRs (0, msum) gen
   -- a <- MaybeT . return $ mapM (\x -> getRandomElement x mlist) rnds
+  
+  
+  let mlist = lowHighList $ map (snd &&& fst) $ M.toList ng
+  let fsum = (snd . fst . last) mlist
+  gen <- lift newStdGen
+  let rnds = take amount $ randomRs (0, fsum) gen
+  MaybeT . return $ (mapM (\x -> getRandomElement x mlist) rnds) >>= return . concat

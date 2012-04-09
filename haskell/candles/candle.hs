@@ -1,20 +1,26 @@
 module Main where
 
 import Data.Monoid
+import Data.Time
 
-data Candle a b = Cempty 
-                | Tick {getTime :: DateTime,
-                        getCandleCost :: a,
-                        getCandleVolume :: b}
-                | Candle {getOpenData :: PeriodData a b,
-                          getCloseData :: PeriodData a b,
-                          getChildTicks :: [Candle a b]}
+data Candle a = Cempty 
+              | Tick {tickTime :: LocalTime,
+                      tickCost :: a,
+                      tickVolume :: a}
+              | Candle {candleOpenCost :: a,
+                        candleCloseCost :: a,
+                        candleMinCost :: a,
+                        candleMaxCost :: a,
+                        candleVolume :: a,
+                        candleOpenTime :: LocalTime,
+                        candleCloseTime :: LocalTime,
+                        childTicks :: [Candle a]}
 
-data PeriodData a b = PeriodData {getPeriodCost :: a,
-                                  getPeriodVolume :: b}
 
-data DateTime = DateTime
-
-instance Monoid Candle where
+instance Monoid (Candle a) where
   mempty = Cempty
-  mappend (Tick {getTime 
+  mappend Cempty x = x
+  mappend x Cempty = x
+  mappend (Tick time cost volume) (Candle {candleOpenCost = opentime,
+                                           candleCloseTime = closetime
+                                           

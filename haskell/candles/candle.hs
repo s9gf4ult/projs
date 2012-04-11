@@ -2,6 +2,7 @@ module Main where
 
 import Data.Monoid
 import Data.Time
+import Data.Maybe
 
 data Candle a = Cempty 
               | Tick {tickTime :: LocalTime,
@@ -92,8 +93,23 @@ instance (Eq a, Ord a, Num a) => Monoid (Candle a) where
                                                      candleCloseTime = max ot1 ot2,
                                                      childTicks = child1 ++ child2}
 
+data CandleColor = RedCandle
+                 | GreenCandle
+                 | GrayCandle
+                 deriving (Show, Read)
 
+getCandleColor :: (Ord a) => Candle a -> Maybe CandleColor
+getCandleColor Cempty = Nothing
+getCandleColor Tick {} = Nothing
+getCandleColor Candle {candleOpenCost = oc,
+                       candleCloseCost = cc} = Just $ case compare oc cc of
+  EQ -> GrayCandle
+  LT -> GreenCandle
+  GT -> RedCandle
 
 wah = do a <- getZonedTime
          let b = zonedTimeToLocalTime a
-         putStrLn $ show $ mappend (Tick b 2 2) (Tick b 5 3)
+         let candle = mappend (Tick b 6 2) (Tick b 5 3)
+         putStrLn $ show $ candle
+         putStrLn $ fromMaybe "Undefined" (getCandleColor candle >>= return . show)
+      

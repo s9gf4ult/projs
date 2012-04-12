@@ -139,9 +139,7 @@ wah count = do rnds <- sequence $ replicate count $ randomRIO (0, 59)
     loctime :: LocalTime -> Int -> LocalTime
     loctime time rnd = time {localTimeOfDay = tofday (localTimeOfDay time) rnd}
     tofday :: TimeOfDay -> Int -> TimeOfDay
-    tofday time rnd = time {todSec = topico rnd}
-    topico :: Int -> Pico
-    topico val = (toEnum val * (fromInteger $ resolution $ ((toEnum val) :: Pico)))
+    tofday time rnd = time {todSec = fromIntegral rnd}
 
 main :: IO ()
 main = do

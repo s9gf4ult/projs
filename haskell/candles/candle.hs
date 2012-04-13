@@ -9,6 +9,7 @@ import Data.List (foldl')
 import Data.Fixed
 import Control.Applicative
 import System.Random
+import System.Environment
 
 data Candle time a = Cempty 
                    | Tick {tickTime :: !time,
@@ -138,5 +139,11 @@ wah count = do gen <- newStdGen
 
 main :: IO ()
 main = do
-  a <- getLine >>= return . read
-  wah a
+  args <- getArgs
+  if length args == 1
+    then do 
+    let a = read $ args !! 0
+    wah a
+    else do
+    a <- getLine >>= return . read
+    wah a

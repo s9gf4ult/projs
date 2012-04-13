@@ -4,28 +4,26 @@ module Main where
 import Data.Monoid
 import Data.Time
 import Data.Maybe
+import Data.Set (Set, singleton, insert, union, toList)
+import Data.List (foldl')
 import Data.Fixed
-import Data.DList (singleton, append, cons, DList, toList)
 import Control.Applicative
 import System.Random
 
 data Candle time a = Cempty 
-                     | Tick {tickTime :: time,
-                             tickCost :: a,
-                             tickVolume :: a}
-                     | Candle {candleOpenCost :: a,
-                               candleCloseCost :: a,
-                               candleMinCost :: a,
-                               candleMaxCost :: a,
-                               candleVolume :: a,
-                               candleOpenTime :: time,
-                               candleCloseTime :: time,
-                               childTicks :: DList (Candle time a)}
-                       deriving (Eq)
+                   | Tick {tickTime :: time,
+                           tickCost :: a,
+                           tickVolume :: a}
+                   | Candle {candleOpenCost :: a,
+                             candleCloseCost :: a,
+                             candleMinCost :: a,
+                             candleMaxCost :: a,
+                             candleVolume :: a,
+                             candleOpenTime :: time,
+                             candleCloseTime :: time,
+                             childTicks :: Set (Candle time a)}
+                   deriving (Eq)
 
-instance (Eq a) => Eq (DList a) where
-  a == b = (toList a == toList b)
-  
                                             
 instance (Eq a, Ord t) => Ord (Candle t a) where
   compare Cempty Cempty = EQ
@@ -58,7 +56,7 @@ instance (Eq a, Ord a, Num a, Ord t) => Monoid (Candle t a) where
                                                            candleVolume = v1 + v2,
                                                            candleOpenTime = t1,
                                                            candleCloseTime = t2,
-                                                           childTicks = cons x (singleton y)}
+                                                           childTicks = insert x $ singleton y}
   mappend x@(Tick {tickTime = t1,
                    tickCost = c1,
                    tickVolume = v1})
@@ -76,7 +74,7 @@ instance (Eq a, Ord a, Num a, Ord t) => Monoid (Candle t a) where
                                                      candleVolume = v2 + v1,
                                                      candleOpenTime = min t1 ot,
                                                      candleCloseTime = max t1 ct,
-                                                     childTicks = cons x childs}
+                                                     childTicks = insert x childs}
   mappend x@(Candle {}) y@(Tick {}) = mappend y x
   mappend x@(Candle {candleOpenCost = oc1,
                      candleCloseCost = cc1,
@@ -100,7 +98,7 @@ instance (Eq a, Ord a, Num a, Ord t) => Monoid (Candle t a) where
                                                      candleVolume = v1 + v2,
                                                      candleOpenTime = min ot1 ot2,
                                                      candleCloseTime = max ot1 ot2,
-                                                     childTicks = append child1 child2}
+                                                     childTicks = union child1 child2}
 
 data CandleColor = RedCandle
                  | GreenCandle
@@ -123,7 +121,7 @@ wah count = do rnds <- sequence $ replicate count $ randomRIO (0, 59)
                costs <- sequence $ replicate count $ randomRIO (100, 200 :: Int)
                volumes <- sequence $ replicate count $ randomRIO (10, 20)
                let candles = map (\(t, c, v) -> (Tick t c v)) $ zip3 times costs volumes
-               let cnd = mconcat candles
+               let cnd = foldl' mappend mempty candles
                putStrLn $ fromMaybe "Undefined" $ getCandleColor cnd >>= return . show
                putStrLn $ "open is " ++ (show $ candleOpenCost cnd)
                putStrLn $ "close is " ++ (show $ candleCloseCost cnd)
@@ -132,16 +130,9 @@ wah count = do rnds <- sequence $ replicate count $ randomRIO (0, 59)
                putStrLn $ "low is " ++ (show $ candleMinCost cnd)
                putStrLn $ "high is " ++ (show $ candleMaxCost cnd)
                putStrLn $ "child ticks " ++ (show $ length $ toList $ childTicks cnd)
-               -- return ()
   where
-    -- ptime :: ZonedTime -> Int -> ZonedTime
-    -- ptime time rnd = time {zonedTimeToLocalTime = loctime (zonedTimeToLocalTime time) rnd}
     loctime :: LocalTime -> Int -> LocalTime
-    loctime time rnd = time {localTimeOfDay = tofday (localTimeOfDay time) rnd}
-    tofday :: TimeOfDay -> Int -> TimeOfDay
-    tofday time rnd = time {todSec = topico rnd}
-    topico :: Int -> Pico
-    topico val = (toEnum val * (fromInteger $ resolution $ ((toEnum val) :: Pico)))
+    loctime time val = time {localTimeOfDay = (localTimeOfDay time) {todSec = fromIntegral val}}
 
 main :: IO ()
 main = do

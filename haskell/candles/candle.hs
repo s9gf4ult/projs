@@ -10,20 +10,35 @@ import Data.Fixed
 import Control.Applicative
 import System.Random
 import System.Environment
+import Control.DeepSeq (deepseq, NFData, rnf)
 
 data Candle time a = Cempty 
-                   | Tick {tickTime :: !time,
-                           tickCost :: !a,
-                           tickVolume :: !a}
-                   | Candle {candleOpenCost :: !a,
-                             candleCloseCost :: !a,
-                             candleMinCost :: !a,
-                             candleMaxCost :: !a,
-                             candleVolume :: !a,
-                             candleOpenTime :: !time,
-                             candleCloseTime :: !time,
-                             childTicks :: ! (Set (Candle time a))}
+                   | Tick {tickTime :: time,
+                           tickCost :: a,
+                           tickVolume :: a}
+                   | Candle {candleOpenCost :: a,
+                             candleCloseCost :: a,
+                             candleMinCost :: a,
+                             candleMaxCost :: a,
+                             candleVolume :: a,
+                             candleOpenTime :: time,
+                             candleCloseTime :: time,
+                             childTicks :: (Set (Candle time a))}
                    deriving (Eq)
+
+instance NFData (Candle t a) where
+  rnf Tick {tickTime = t,
+            tickCost = a,
+            tickVolume = v} = t `seq` a `seq` v `seq` ()
+  rnf Candle {candleOpenCost = oc,
+              candleCloseCost = cc,
+              candleMinCost = mc,
+              candleMaxCost = mac,
+              candleVolume = v,
+              candleOpenTime = ot,
+              candleCloseTime = ct,
+              childTicks = childs} = childs `seq` ct `seq` ot `seq` v `seq` mac `seq` mc `seq` cc `seq` oc `seq` ()
+  rnf x@Cempty = x `seq` ()
 
                                             
 instance (Eq a, Ord t) => Ord (Candle t a) where
@@ -124,7 +139,7 @@ wah count = do gen <- newStdGen
                let volumes = randomRs (10, 20) gen
                let candles = map (\(t, c, v) -> (Tick t c v)) $ take count $ zip3 times costs volumes
                -- putStrLn $ show $ length candles
-               let cnd = foldl' mappend mempty candles
+               let cnd = foldl' deepend mempty candles
                putStrLn $ fromMaybe "Undefined" $ getCandleColor cnd >>= return . show
                putStrLn $ "open is " ++ (show $ candleOpenCost cnd)
                putStrLn $ "close is " ++ (show $ candleCloseCost cnd)
@@ -136,6 +151,7 @@ wah count = do gen <- newStdGen
   where
     loctime :: LocalTime -> Int -> LocalTime
     loctime time val = time {localTimeOfDay = (localTimeOfDay time) {todSec = toEnum val}}
+    deepend a b = a `deepseq` b `deepseq` mappend a b
 
 main :: IO ()
 main = do

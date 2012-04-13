@@ -11,17 +11,17 @@ import Control.Applicative
 import System.Random
 
 data Candle time a = Cempty 
-                   | Tick {tickTime :: time,
-                           tickCost :: a,
-                           tickVolume :: a}
-                   | Candle {candleOpenCost :: a,
-                             candleCloseCost :: a,
-                             candleMinCost :: a,
-                             candleMaxCost :: a,
-                             candleVolume :: a,
-                             candleOpenTime :: time,
-                             candleCloseTime :: time,
-                             childTicks :: Set (Candle time a)}
+                   | Tick {tickTime :: !time,
+                           tickCost :: !a,
+                           tickVolume :: !a}
+                   | Candle {candleOpenCost :: !a,
+                             candleCloseCost :: !a,
+                             candleMinCost :: !a,
+                             candleMaxCost :: !a,
+                             candleVolume :: !a,
+                             candleOpenTime :: !time,
+                             candleCloseTime :: !time,
+                             childTicks :: ! (Set (Candle time a))}
                    deriving (Eq)
 
                                             
@@ -115,12 +115,14 @@ getCandleColor Candle {candleOpenCost = oc,
   GT -> RedCandle
 
 wah :: Int -> IO ()
-wah count = do rnds <- sequence $ replicate count $ randomRIO (0, 59)
+wah count = do gen <- newStdGen
+               let rnds = randomRs (0, (59 * (fromInteger $ resolution $ (0 :: Pico)))) gen
                time <- getZonedTime
                let times = map (loctime $ zonedTimeToLocalTime time) rnds
-               costs <- sequence $ replicate count $ randomRIO (100, 200 :: Int)
-               volumes <- sequence $ replicate count $ randomRIO (10, 20)
-               let candles = map (\(t, c, v) -> (Tick t c v)) $ zip3 times costs volumes
+               let costs = randomRs (100, 200 :: Int) gen
+               let volumes = randomRs (10, 20) gen
+               let candles = map (\(t, c, v) -> (Tick t c v)) $ take count $ zip3 times costs volumes
+               -- putStrLn $ show $ length candles
                let cnd = foldl' mappend mempty candles
                putStrLn $ fromMaybe "Undefined" $ getCandleColor cnd >>= return . show
                putStrLn $ "open is " ++ (show $ candleOpenCost cnd)
@@ -132,7 +134,7 @@ wah count = do rnds <- sequence $ replicate count $ randomRIO (0, 59)
                putStrLn $ "child ticks " ++ (show $ length $ toList $ childTicks cnd)
   where
     loctime :: LocalTime -> Int -> LocalTime
-    loctime time val = time {localTimeOfDay = (localTimeOfDay time) {todSec = fromIntegral val}}
+    loctime time val = time {localTimeOfDay = (localTimeOfDay time) {todSec = toEnum val}}
 
 main :: IO ()
 main = do

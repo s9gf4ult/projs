@@ -1,10 +1,17 @@
 var MyApp = angular.module('MyApp', ['ngCookies']);
 
 MyApp.config(function($routeProvider, $locationProvider) {
-    $routeProvider.when('#!project/:name', {template : 'project.html', controller: projectController});
-    $routeProvider.when('#!activity/:name', {template: 'acvitity.html', controller: activityController});
-    $locationProvider.html5Mode(true);
+    $routeProvider
+        .when('/activity/:name', {template: 'activity.html', controller: activityController})
+        .when('/project/:name', {template : 'project.html', controller: projectController})
+        .when('/', {template : 'main.html', controller: mainController})
+        .otherwise({redirectTo: '/'});
+    // $locationProvider.html5Mode(true);
 });
+
+var mainController = function($scope) {
+    
+};
 
 var projectController = function($scope, $route, $routeParams) {
     $scope.name = $routeParams.name;

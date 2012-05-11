@@ -18,7 +18,7 @@ readall s = readall' [] s
     readall' ac "" = ac
     readall' ac st = case reads st of
       []        -> readall' ac $ tail st
-      [(x, tl)] -> readall' (x:ac)
+      [(x, tl)] -> readall' (x:ac) tl
 
 
 main = do

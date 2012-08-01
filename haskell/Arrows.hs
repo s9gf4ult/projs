@@ -57,17 +57,19 @@ instance Arrow StreamMap where
   first (SM f) = SM(\x -> let {(a, b) = unzipStream x;
                                c = f a} in zipStream c b )
 
-streamClone a = Cons a $ streamClone a
-  
-unstream (SM f) a = b
-  where
-    (Cons b _) = f $ streamClone a
+reshapeStream f (Cons a xs) = case f a of
+  Nothing -> reshapeStream f xs
+  Just b -> Cons b $ reshapeStream f xs
 
 instance ArrowChoice StreamMap where
-  left f = SM(mapStream mapf)
+  left (SM f) = SM(\s -> rleft s $ f $ reshapeStream getleft s)
     where
-      mapf (Right b) = Right b
-      mapf (Left a) = Left $ unstream f a
+      getleft (Right b) = Nothing
+      getleft (Left a) = Just a
+
+      rleft :: Stream (Either a b) -> Stream c -> Stream (Either c b)
+      rleft (Cons (Right b) xs) y = (Cons (Right b) $ rleft xs y)
+      rleft (Cons (Left a) xs) (Cons b ys) = (Cons (Left b) $ rleft xs ys)
 
 newtype Except a x y = E(a x (Either String y))
 

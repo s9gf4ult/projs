@@ -75,4 +75,15 @@ newtype Except a x y = E(a x (Either String y))
 
 instance ArrowChoice a => C.Category (Except a) where
   id = E(arr (\x -> Right x))
-  (.) (E f) (E g) = undefined
+  (.) (E f) (E g) = undefined -- FFFFFFFFUUUUUUUUUUUUU
+
+
+trace :: ((a, c) -> (b, c)) -> a -> b
+trace f a = let {(b, c) = f (a, c)} in b
+
+ok (x, y) = (x, x * y)
+fuck (x, y) = (x + y, x*y)
+
+main = do
+  putStrLn $ show $ trace ok 10
+  putStrLn $ show $ trace fuck 10

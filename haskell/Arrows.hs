@@ -81,9 +81,5 @@ instance ArrowChoice a => C.Category (Except a) where
 trace :: ((a, c) -> (b, c)) -> a -> b
 trace f a = let {(b, c) = f (a, c)} in b
 
-ok (x, y) = (x, x * y)
-fuck (x, y) = (x + y, x*y)
-
-main = do
-  putStrLn $ show $ trace ok 10
-  putStrLn $ show $ trace fuck 10
+instance ArrowLoop StreamMap where
+  loop (SM f) = SM(\a -> let {(b, c) = unzipStream $ f $ zipStream a c} in b)

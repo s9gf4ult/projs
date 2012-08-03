@@ -1,3 +1,4 @@
+{-# LANGUAGE Arrows #-}
 
 import qualified Control.Category as C
 
@@ -83,3 +84,5 @@ trace f a = let {(b, c) = f (a, c)} in b
 
 instance ArrowLoop StreamMap where
   loop (SM f) = SM(\a -> let {(b, c) = unzipStream $ f $ zipStream a c} in b)
+
+-- doLoop = proc 

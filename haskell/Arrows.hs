@@ -85,4 +85,23 @@ trace f a = let {(b, c) = f (a, c)} in b
 instance ArrowLoop StreamMap where
   loop (SM f) = SM(\a -> let {(b, c) = unzipStream $ f $ zipStream a c} in b)
 
--- doLoop = proc 
+
+vodka 0 s _ = s
+vodka n s v = s + (vodka (n-1) s v) * (1 - s - v)
+
+find :: (ArrowLoop r1, ArrowApply r1) => r1 (a, r1 a a, r1 a Bool) a
+find = proc (start, next, test) -> do
+  reset <- app -< (test, start)
+  rec let out = if reset then start else elem
+      elem <- find -< (x, next, test)
+      x <- app -< (next, start)
+                
+  -- rec out <- returnA -< if stop then out else elem
+  --     elem <- app -< (next, out)
+  --     stop <- app -< (test, out)
+  returnA -< out
+
+
+funcfind :: a -> (a -> a) -> (a -> Bool) -> a
+funcfind x next test | test x = x
+                     | otherwise = funcfind (next x) next test

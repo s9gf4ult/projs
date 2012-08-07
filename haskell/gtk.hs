@@ -33,19 +33,21 @@ clickfunc e1 e2 lout = do
   t2 <- entryGetText e2
   labelSetText lout $ calculate t1 t2
 
+calculate :: String -> String -> String
 calculate t1 t2 = case (calc t1 t2) of
   Left s -> s
   Right s -> show (s :: Integer)
 
-calc = undefined
--- calc :: (Read x, Num x) => String -> String -> Either String  x
--- calc t1 t2 = do
---   a <- readString "Argument 1: " t1
---   b <- readString "Argument 2: " t2
---   return a + b
+calc :: (Read x, Num x) => String -> String -> Either String x
+calc t1 t2 = do
+  a <- readString "Argument 1: " t1
+  b <- readString "Argument 2: " t2
+  return (a + b)
 
+readString :: (Read x) => String -> String -> Either String x
 readString message str = maybeToEither (message ++ "could not read value" ++ (show str)) $ maybeRead str
 
+maybeRead :: (Read x) => String -> Maybe x
 maybeRead str = do
   (x, str) <- listToMaybe $ reads str
   if str == ""

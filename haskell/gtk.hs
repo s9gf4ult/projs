@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
 import Graphics.UI.Gtk
+import System.Glib.Signals
 import Data.Either
 import Data.Maybe
 
@@ -23,7 +24,10 @@ makeRoot = do
   lout <- labelNew Nothing
   h <- withHBox [W e1, W lplus, W e2, W lout]
   button <- buttonNew
-  onClicked button $ clickfunc e1 e2 lout
+  on button buttonActivated $ clickfunc e1 e2 lout
+  on e1 editableChanged $ clickfunc e1 e2 lout
+  on e2 editableChanged $ clickfunc e1 e2 lout
+  
   set button [buttonLabel := "Compute"]
   v <- withVBox [W h, W button]
   return v
@@ -36,7 +40,7 @@ clickfunc e1 e2 lout = do
 calculate :: String -> String -> String
 calculate t1 t2 = case (calc t1 t2) of
   Left s -> s
-  Right s -> show (s :: Hernia)
+  Right s -> show (s :: Integer)
 
 calc :: (Read x, Num x) => String -> String -> Either String x
 calc t1 t2 = do

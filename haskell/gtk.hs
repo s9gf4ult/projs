@@ -36,7 +36,7 @@ clickfunc e1 e2 lout = do
 calculate :: String -> String -> String
 calculate t1 t2 = case (calc t1 t2) of
   Left s -> s
-  Right s -> show (s :: Integer)
+  Right s -> show (s :: Hernia)
 
 calc :: (Read x, Num x) => String -> String -> Either String x
 calc t1 t2 = do

@@ -95,10 +95,6 @@ find = proc (start, next, test) -> do
   rec let out = if reset then start else elem
       elem <- find -< (x, next, test)
       x <- app -< (next, start)
-                
-  -- rec out <- returnA -< if stop then out else elem
-  --     elem <- app -< (next, out)
-  --     stop <- app -< (test, out)
   returnA -< out
 
 

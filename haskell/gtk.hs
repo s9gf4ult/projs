@@ -6,6 +6,37 @@ import Data.Either
 import Data.Maybe
 
 data W = forall w. WidgetClass w => W w
+
+data Hernia = Hernia Integer
+            | Mutota Integer
+            | Something
+              deriving (Show, Read)
+
+instance Num Hernia where
+  (Hernia x) + (Hernia y) = Hernia (x + y)
+  (Mutota x) + (Mutota y) = Mutota (x + y)
+  (Hernia x) + (Mutota y) = Hernia (x + y*10)
+  (Mutota x) + (Hernia y) = (Hernia y) + (Mutota x)
+  Something + _ = Something
+  _ + Something = Something
+  negate (Hernia x) = Hernia (- x)
+  negate (Mutota x) = Mutota (- x)
+  negate Something = Something
+  (Hernia x) * (Hernia y) = Hernia (x * y)
+  (Mutota x) * (Mutota y) = Mutota (x * y)
+  (Hernia x) * (Mutota y) = Mutota (y * x * 10)
+  (Mutota x) * (Hernia y) = (Hernia y) * (Mutota x)
+  Something * _ = Something
+  _ * Something = Something
+  abs (Hernia x) = Hernia (abs x)
+  abs (Mutota x) = Mutota (abs x)
+  abs Something = Something
+  signum (Hernia x) = Hernia (signum x)
+  signum (Mutota x) = Mutota (signum x)
+  signum Something = Something
+  fromInteger x = Hernia x
+  
+              
   
 main :: IO ()
 main = do
@@ -40,7 +71,7 @@ clickfunc e1 e2 lout = do
 calculate :: String -> String -> String
 calculate t1 t2 = case (calc t1 t2) of
   Left s -> s
-  Right s -> show (s :: Integer)
+  Right s -> show (s :: Hernia)
 
 calc :: (Read x, Num x) => String -> String -> Either String x
 calc t1 t2 = do

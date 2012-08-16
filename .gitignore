@@ -5,3 +5,9 @@
 *.pyc
 *.log
 *.db
+*.hi
+haskell/test1
+haskell/korz
+haskell/gtk
+haskell/test2
+haskell/arr

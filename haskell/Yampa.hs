@@ -10,7 +10,7 @@ import Control.Concurrent
 sf :: SF () (IO Bool) -- The signal function to be run
 sf = proc inp -> do
   quit <- (now ()) >>> (delayEvent 5) -< ()
-  t <- time -< ()
+  t <- integral -< (2 :: Double)
   returnA -< do
     putStrLn $ show t
     return $ isEvent quit

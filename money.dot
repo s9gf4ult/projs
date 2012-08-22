@@ -1,0 +1,34 @@
+digraph Money {
+  yandex[shape=box, label="yandex"];
+  webmoney[shape=box, label="Web Money"];
+  cash[shape=box, label="Наличка"];
+  visa[shape=box, label="Visa"];
+  mastercard[shape=box, label="Master Card"];
+  qivi[shape=box, label="Qivi"];
+  
+  qiviterminal[label="Терминал Qivi"];
+  sberterminal[label="Банкомат Сбербанка"];
+  alphacard[label="Связь с картой\nАльфа банк"];
+  alphabank[label="Счет в банке\nАльфабанк"];
+  opencard[label="Карта банка Открытие"];
+  sberbank[label="Счет в банке\nСбербанк"];
+
+  cash -> sberbank;
+  sberbank -> webmoney;
+  alphabank -> webmoney;
+  cash -> sberterminal;
+  sberterminal -> yandex [label="комиссия 1.5%"];
+  cash -> alphabank;
+  cash -> alphacard;
+  cash -> opencard;
+  cash -> qiviterminal;
+  qiviterminal -> qivi;
+
+  alphabank -> yandex;
+  alphacard -> yandex;
+  opencard -> yandex;
+
+  yandex -> opencard [label="3% комиссия"];
+  opencard -> cash;
+
+}

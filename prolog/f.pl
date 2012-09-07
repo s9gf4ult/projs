@@ -3,27 +3,52 @@ name(borisov).
 name(ivanov).
 
 has_sister(borisov).
+%% has_sister(semenov).
 
 younger(X, semenov) :-
+    X \== semenov,
     tokar(X).
-younger(X, _) :-
+younger(X, Y) :-
+    X \== Y,
     slesar(X).
-%% younger(X, Z) :-
-%%     younger(X, Y),
-%%     younger(Y, Z).
+younger(X, Y) :-
+    X \== Y,
+    not(younger(Y, X)).
+younger(X, Z) :-
+    X \== Z,
+    younger(X, Y),
+    younger(Y, Z).
     
 tokar(X) :-
-    name(X),
-    not(svarshik(X)),
-    not(slesar(X)).
+    name(X).
+    %% X \== semenov.
+    %% svarshik(Y),
+    %% slesar(Z),
+    %% X \== Y,
+    %% X \== Z.
 
 svarshik(X) :-
-    name(X),
-    not(tokar(X)),
-    not(slesar(X)).
+    name(X).
+    %% tokar(Y),
+    %% slesar(Z),
+    %% X \== Y,
+    %% X \== Z.
+
 
 slesar(X) :-
     name(X),
-    not(tokar(X)),
-    not(svarshik(X)),
-    not(has_sister(X)).
+    %% X \== semenov,
+    %% tokar(Y),
+    %% svarshik(Z),
+    has_sister(I),
+    %% X \== Y,
+    %% X \== Z,
+    X \== I.
+
+solve(X, Y, Z) :-
+    tokar(X),
+    svarshik(Y),
+    slesar(Z),
+    X \== Y,
+    X \== Z,
+    Y \== Z.

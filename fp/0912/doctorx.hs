@@ -6,60 +6,68 @@ import Text.Parsec.String
 import Control.Monad.Trans.Error
 import Control.Monad.Trans
 
-data Person = Person {persNmb :: Integer,
+data Person = Person {persNmb :: Int,
                       persSymbol :: Char,
-                      persOpinions :: [Opinion]}
+                      persOpinions :: [Opinion Int]}
               deriving (Show, Eq)
            
-data Opinion = OpCrazy Integer
-             | OpNoraml Integer
-             deriving (Show, Eq)
+data Opinion a = Crazy a
+               | Noraml a 
+               deriving (Show, Eq)
 
 parsePeople :: Parser [Person]
 parsePeople = do
-  res <- sepEndBy (try parseMan) (char '\n')
+  many newline
+  res <- sepEndBy parseMan newline
+  many newline
   eof
   return res
+
+spcs :: Parser ()
+spcs = do
+  many $ choice [char ' ',
+                 char '\t']
+  return ()
   
 parseMan :: Parser Person
 parseMan = do
-  spaces
+  spcs
   nmb <- parseInt
-  spaces
+  spcs
   char ':'
-  spaces
+  spcs
   char '\''
   ch <- anyChar
   char '\''
-  spaces
+  spcs
   ops <- option [] $ do 
     char ','
-    spaces
+    spcs
     q <- sepBy parseOpinion $ try $ do
-      spaces
+      spcs
       char ','
-      spaces
+      spcs
     return q
-  spaces
+  spcs
   return Person {persNmb = nmb,
                  persSymbol = ch,
                  persOpinions = ops}
   
-parseInt :: Parser Integer
+parseInt :: Parser Int
 parseInt = do
   d <- many1 digit
   case (reads d) of
     [(a, "")] -> return a
     _         -> return 0 -- stupid
 
-parseOpinion :: Parser Opinion
+parseOpinion :: Parser (Opinion Int)
 parseOpinion = do
   crazy <- option False $ do
     char '-'
     return True
   i <- parseInt
   return $ if crazy
-           then OpCrazy i
-           else OpNoraml i
+           then Crazy i
+           else Noraml i
   
   

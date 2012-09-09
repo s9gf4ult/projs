@@ -7,20 +7,22 @@ import Control.Monad.Trans.Error
 import Control.Monad.Trans
 import System.Environment
 import Data.List (sort)
+import Data.Maybe (catMaybes)
+import Data.Set (empty, toList, difference, fromList, insert)
 
 data Person = Person {persNmb :: Int,
                       persSymbol :: Char,
                       persOpinions :: [Opinion Int]}
-              deriving (Show, Eq)
+              deriving (Show, Eq, Ord)
            
 data Opinion a = Crazy a
                | Noraml a
-               deriving (Show, Eq)
+               deriving (Show, Eq, Ord)
 
 data PersonType a = PNormal a
                   | PCrazy a
                   | PDoctorX a
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord)
 
 isDoctor (PDoctorX a) = True
 isDoctor _ = False
@@ -81,7 +83,17 @@ parseOpinion = do
            else Noraml i
 
 solve :: [Person] -> [[PersonType Person]]
-solve = undefined
+solve [] = []
+solve (x:xs) = catMaybes $ (solve_ empty (PNormal x) xs) ++
+               (solve_ empty (PCrazy x) xs) ++ (solve_ empty (PDoctorX x) xs)
+  where
+    solve_ known current [] = [Just $ current:(toList known)]
+    solve_ known current unknown | notPosible (insert current known) unknown = [Nothing]
+                                 | 
+
+    notPosible = undefined
+
+                            
 
 printError :: (Monad m) => m (Either ParseError a) -> m (Either String a)
 printError p = do
@@ -100,7 +112,7 @@ printSolutions sol col = mapM_ printS $ zip sol [1..]
         [(PDoctorX d)] -> do
           putStrLn $ "DoctorX is " ++ (show $ persNmb d)
           printMatrix col $ filter (not . isDoctor) s
-        _ -> putStrLn "Wrong ... no one or more then one doctors found ..."
+        _ -> putStrLn "is wrong ... no one or more then one doctors found"
 
 printMatrix c a = mapM_ putStrLn $ makePicture c a
 

@@ -5,6 +5,8 @@ import Text.Parsec
 import Text.Parsec.String
 import Control.Monad.Trans.Error
 import Control.Monad.Trans
+import System.Environment
+import Data.List (sort)
 
 data Person = Person {persNmb :: Int,
                       persSymbol :: Char,
@@ -12,13 +14,21 @@ data Person = Person {persNmb :: Int,
               deriving (Show, Eq)
            
 data Opinion a = Crazy a
-               | Noraml a 
+               | Noraml a
                deriving (Show, Eq)
+
+data PersonType a = PNormal a
+                  | PCrazy a
+                  | PDoctorX a
+                  deriving (Show, Eq)
+
+isDoctor (PDoctorX a) = True
+isDoctor _ = False
 
 parsePeople :: Parser [Person]
 parsePeople = do
   many newline
-  res <- sepEndBy parseMan newline
+  res <- sepEndBy parseMan (many1 newline)
   many newline
   eof
   return res
@@ -69,5 +79,64 @@ parseOpinion = do
   return $ if crazy
            then Crazy i
            else Noraml i
+
+solve :: [Person] -> [[PersonType Person]]
+solve = undefined
+
+printError :: (Monad m) => m (Either ParseError a) -> m (Either String a)
+printError p = do
+  a <- p
+  case a of
+    Left e -> return $ Left $ show e
+    Right val -> return $ Right $ val
+
+printSolutions :: [[PersonType Person]] -> Int -> IO ()
+printSolutions sol col = mapM_ printS $ zip sol [1..]
+  where
+    printS :: ([PersonType Person], Int) -> IO ()
+    printS (s, c) = do
+      putStrLn $ "Solution " ++ (show c) ++ ":"
+      case (filter isDoctor s) of
+        [(PDoctorX d)] -> do
+          putStrLn $ "DoctorX is " ++ (show $ persNmb d)
+          printMatrix col $ filter (not . isDoctor) s
+        _ -> putStrLn "Wrong ... no one or more then one doctors found ..."
+
+printMatrix c a = mapM_ putStrLn $ makePicture c a
+
+makePicture :: Int -> [PersonType Person] -> [String]
+makePicture c s = splits $ normals ++ crazys
+  where
+    normals = sort $ map persSymbol $ getNormal s
+    crazys = reverse $ sort $ map persSymbol $ getCrazy s
+    getNormal [] = []
+    getNormal ((PNormal a):xs) = a:(getNormal xs)
+    getNormal (_:xs) = getNormal xs
+    getCrazy [] = []
+    getCrazy ((PCrazy a):xs) = a:(getCrazy xs)
+    getCrazy (_:xs) = getCrazy xs
+    splits [] = []
+    splits x = shead:(splits stail)
+      where
+        (shead, stail) = splitAt c x
+
+readVal :: (Read a, Monad m) => String -> ErrorT String m a
+readVal s = case (reads s) of
+  [(a, "")] -> return a
+  _         -> throwError $ "could not convert string \"" ++ s ++ "\" to value"
+
+main = do
+  ret <- runErrorT $ do
+    args <- lift getArgs
+    case args of
+      [fname, cols] -> do
+        columns <- readVal cols
+        people <- ErrorT $ printError $ parseFromFile parsePeople fname
+        let s = solve people
+        lift $ printSolutions s columns
   
+      _ -> throwError "Need 2 arguments: filename and count of columns to print image"
   
+  case ret of
+    Left e -> putStrLn e
+    Right x -> return ()

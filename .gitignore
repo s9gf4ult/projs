@@ -18,3 +18,4 @@ haskell/candles/candles
 haskell/arr
 haskell/ngrams/ngfilter
 haskell/ngrams/ngfilter2
+/haskell/teststorage/cabal-dev

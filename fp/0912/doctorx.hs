@@ -89,7 +89,7 @@ solve (x:xs) = catMaybes $ (solve_ empty (PNormal x) xs) ++
   where
     solve_ known current [] = [Just $ current:(toList known)]
     solve_ known current unknown | notPosible (insert current known) unknown = [Nothing]
-                                 | 
+                                 | otherwise = undefined
 
     notPosible = undefined
 

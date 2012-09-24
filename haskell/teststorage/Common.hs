@@ -56,7 +56,7 @@ littleTest inscount a = do
   return ()
   
 mapLeftE :: (Monad m) => (a -> b) -> ErrorT a m c -> ErrorT b m c
-mapLeftE f m = ErrorT ((runErrorT m) >>= mapl)
-  where
-    mapl (Left x) = Left $ f x
-    mapl x@(Right _) = x
+mapLeftE f m = ErrorT $ runErrorT m >>= return . mapl
+    where
+      mapl (Left x) = Left $ f x
+      mapl (Right x) = Right x

@@ -25,4 +25,4 @@ executable PostTest
                        time,
                        postgresql-simple,
                        safe
-  ghc-options:         -main-is PostTest
+  ghc-options:         -main-is PostTest -rtsopts

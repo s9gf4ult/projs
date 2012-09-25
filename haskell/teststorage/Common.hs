@@ -28,15 +28,15 @@ genStorables = do
   g <- newStdGen
   return $ randoms g
 
-data Condition = LT Int32
-               | GT Int32
-               | LGT Int32 Int32
+data Condition = CLT Int32
+               | CGT Int32
+               | CLGT Int32 Int32
   
 class Storage a where
   saveS :: (MonadIO m, Monad m) => a -> [Storable] -> ErrorT String m ()
   getS :: (Monad m, MonadIO m) => a -> ErrorT String m [Storable]
   getFilterA :: (MonadIO m, Monad m) => Condition -> a -> ErrorT String m [Storable]
-  resetS :: a -> ErrorT String m ()
+  resetS :: a -> (Monad m, MonadIO m) => ErrorT String m ()
 
 measureTime :: (Monad m, MonadIO m, NFData a) => (a -> String) -> ErrorT String m a -> ErrorT String m a
 measureTime s m = do
@@ -60,3 +60,7 @@ mapLeftE f m = ErrorT $ runErrorT m >>= return . mapl
     where
       mapl (Left x) = Left $ f x
       mapl (Right x) = Right x
+
+maybeToErrorT :: (Monad m, Error b) => b -> Maybe a -> ErrorT b m a
+maybeToErrorT _ (Just x) = return x
+maybeToErrorT b Nothing = throwError b

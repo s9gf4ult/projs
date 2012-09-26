@@ -10,6 +10,7 @@ import Control.DeepSeq
 import Control.Exception
 import Common
 import Control.Monad.IO.Class
+import Data.List (splitAt)
 
 instance ToRow Storable where
   toRow (Storable a b c d) = [toField a,
@@ -28,11 +29,19 @@ instance FromRow Storable where
 execLeft :: (Monad m, MonadIO m) => IO a -> ErrorT String m a 
 execLeft = (mapLeftE (show :: SomeException -> String)) . ErrorT . liftIO . try
 
+splitList :: Int -> [a] -> [[a]]
+splitList i x = a : (stop b $ splitList i b)
+  where
+    (a, b) = splitAt i x
+    stop [] _ = []
+    stop _ x = x
+
 instance Storage Connection where
   saveS c s = do
-    execLeft $ executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)" s
-    return ()
-  getS c = execLeft $ query_ c "select a, b, c, d from storables"
+    execLeft $ mapM_ (executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)") $ splitList 1000 s
+  getS c = do
+    ret <- execLeft $ query_ c "select a, b, c, d from storables"
+    return ret
   resetS c = do
     execLeft $ execute_ c "drop table if exists storables"
     execLeft $ execute_ c "create table storables (a integer, b integer, c bigint, d char(100))"

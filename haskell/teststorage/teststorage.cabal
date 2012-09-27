@@ -26,3 +26,17 @@ executable PostTest
                        postgresql-simple,
                        safe
   ghc-options:         -main-is PostTest -rtsopts
+
+executable GenerateTest
+  main-is:             GenerateTest.hs
+
+  build-depends:       base ==4.5.*,
+                       random,
+                       deepseq,
+                       transformers,
+                       mtl,
+                       time,
+                       safe
+
+  ghc-options:         -main-is GenerateTest -rtsopts
+                   

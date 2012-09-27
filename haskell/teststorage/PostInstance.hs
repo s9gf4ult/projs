@@ -38,7 +38,8 @@ splitList i x = a : (stop b $ splitList i b)
 
 instance Storage Connection where
   saveS c s = do
-    execLeft $ mapM_ (executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)") $ splitList 1000 s
+    execLeft $ executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)" s
+    return ()
   getS c = do
     ret <- execLeft $ query_ c "select a, b, c, d from storables"
     return ret

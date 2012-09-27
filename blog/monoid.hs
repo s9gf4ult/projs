@@ -29,9 +29,10 @@ avg3 x y = do
       yag = mconcat $ map mkAvg y
   xa <- getAvg xag
   ya <- getAvg yag
-  ra <- getAvg $ mappend xag yag
-  r <- avg $ concat [x, y]
-  return $ (r, ra, (xa + ya) / 2)
+  ra <- getAvg $ mappend xag yag -- результат композиции моноидов
+  r <- avg $ concat [x, y]       -- очевидный способ
+  let wrong = (xa + ya) / 2     -- не првильный способ
+  return $ (r, ra, wrong)
 
 checkEqual :: [[Rational]] -> Bool
 checkEqual arb = case res of

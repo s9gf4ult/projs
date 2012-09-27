@@ -81,11 +81,13 @@ getSum. вот как можно пользоваться этим моноид�
 
 Смотрим определение в прелюдии
 
-    newtype First a = First { getFirst :: Maybe a }
-            deriving (Eq, Ord, Read, Show)
+```Haskell
+newtype First a = First { getFirst :: Maybe a }
+        deriving (Eq, Ord, Read, Show)
 
-    instance Monoid (First a) where
-            mempty = First Nothing
-            r@(First (Just _)) `mappend` _ = r
-            First Nothing `mappend` r = r
+instance Monoid (First a) where
+        mempty = First Nothing
+        r@(First (Just _)) `mappend` _ = r
+        First Nothing `mappend` r = r
+```            
 

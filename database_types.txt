@@ -1,0 +1,45 @@
+;; This buffer is for notes you don't want to save, and for Lisp evaluation.
+;; If you want to create a file, visit that file with C-x C-f,
+;; then enter the text in that file's own buffer.
+
+Mysql
+
+- Int32, Int64
+- Decimal
+- Float, Double
+- Bit mask up to 64 bit
+- Date
+- DateTime up to one second precision
+- UTC date time up to one second precision
+- Time up to one second precision
+- String
+- ByteString
+- Geometry data
+
+
+PostgreSql
+
+- Int32, Int64
+- Decimal
+- Float, Double
+- String
+- ByteString
+- Date
+- Time without timezone
+- Time with timezon but this is deprecated
+- DateTime without timezone
+- UTC datetime
+- Time interval in months days and seconds
+- Bool
+- Bit mask with arbitrary length
+- UUID
+- XML
+- Array of some type
+- Composite type, some kind of structures
+- Geometry data
+
+
+SQlite3
+
+- Int32, Int64
+

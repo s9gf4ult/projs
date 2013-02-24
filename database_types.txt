@@ -4,42 +4,57 @@
 
 Mysql
 
-- Int32, Int64
-- Decimal
-- Float, Double
 - Bit mask up to 64 bit
+- ByteString
 - Date
 - DateTime up to one second precision
-- UTC date time up to one second precision
-- Time up to one second precision
-- String
-- ByteString
+- Decimal
+- Float, Double
 - Geometry data
+- Int32, Int64
+- String
+- Time up to one second precision
+- UTC date time up to one second precision
 
 
 PostgreSql
 
-- Int32, Int64
+- Array of some type
+- Bit mask with arbitrary length
+- Bool
+- ByteString
+- Composite type, some kind of structures
+- Date
+- DateTime without timezone
 - Decimal
 - Float, Double
+- Geometry data
+- Int32, Int64
 - String
-- ByteString
-- Date
-- Time without timezone
-- Time with timezon but this is deprecated
-- DateTime without timezone
-- UTC datetime
 - Time interval in months days and seconds
-- Bool
-- Bit mask with arbitrary length
+- Time with timezon but this is deprecated
+- Time without timezone
+- UTC datetime
 - UUID
 - XML
-- Array of some type
-- Composite type, some kind of structures
-- Geometry data
 
 
 SQlite3
 
+- ByteString
+- Double
 - Int32, Int64
+- String
 
+
+ODBC
+
+- Bool
+- Byte
+- ByteString
+- Decimal
+- Double
+- Float
+- Int32, Int64
+- String
+- UUID

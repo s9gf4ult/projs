@@ -1,38 +1,63 @@
 
 * MySql
 ** Types
-*** Bit mask up to 64 bit
-*** ByteString
-*** Date
-*** DateTime up to one second precision
-*** Decimal
-*** Float, Double
-*** Geometry data
-*** Int32, Int64
-*** String
-*** Time up to one second precision
-*** UTC date time up to one second precision
-
+*** Dates and times
+**** Date
+**** Time
+**** DateTime without timezone
+**** UTC date time up to one second precision
+*** Numeric types
+**** Int32, Int64
+**** Float, Double
+**** Decimal
+*** Binary and strings
+**** Bit mask up to 64 bit
+**** ByteString
+**** String
+*** Composite types
+**** Geometry data
+**** Set of strings, the same as bit field but different serialization
 * PostgreSql
 ** types
-*** Array of some type
-*** Bit mask with arbitrary length
-*** Bool
-*** ByteString
-*** Composite type, some kind of structures
-*** Date
-*** DateTime without timezone
-*** Decimal
-*** Float, Double
-*** Geometry data
-*** Int32, Int64
-*** String
-*** Time interval in months days and seconds
-*** Time with timezon but this is deprecated
-*** Time without timezone
-*** UTC datetime
-*** UUID
-*** XML
+*** Dates and times
+**** Date
+**** Time without timezone
+**** Time with timezone but this is deprecated
+     - Note taken on [2013-02-25 Пн. 12:23] \\
+       the qoute from the documentation
+       
+       The type time with time zone is defined by the SQL standard, but the definition
+       exhibits properties which lead to questionable usefulness. In most cases, a
+       combination of date, time, timestamp without time zone, and timestamp with time
+       zone should provide a complete range of date/time functionality required by any
+       application.
+       
+       ... and later ...
+       
+       To address these difficulties, we recommend using date/time types that contain
+       both date and time when using time zones. We do not recommend using the type
+       time with time zone (though it is supported by PostgreSQL for legacy
+       applications and for compliance with the SQL standard). PostgreSQL assumes your
+       local time zone for any type containing only date or time.
+**** DateTime without timezone
+**** UTC datetime
+**** Time interval in months days and seconds
+*** Numeric types
+**** Int32, Int64
+**** Float
+**** Double
+**** Decimal
+*** Binary and strings
+**** Bit mask with arbitrary length
+**** Bool
+**** ByteString
+**** String
+*** Composite types
+**** Array of values of some type, including arrays
+**** Composite type, some kind of structures
+**** Geometry data
+**** UUID
+**** XML
 
 * SQlite3
 ** types
@@ -43,23 +68,62 @@
 
 * ODBC
 ** types
-*** Bool
-*** Byte
-*** ByteString
-*** Decimal
-*** Double
-*** Float
-*** Int32, Int64
-*** String
-*** UUID
-*** DateTime without timezone
+*** Dates and times
+**** DateTime without timezone
+*** Numeric types
+**** Int32, Int64
+**** Decimal
+**** Double
+**** Float
+**** Byte
+*** Binary and strings
+**** ByteString
+**** Bool
+**** String
+*** Composite types
+**** UUID
 
 * Oracle
 ** types
-*** ByteString
-*** DateTime
-*** Decimal
-*** Double
-*** Float
-*** String
-*** UTC time
+*** Dates and times
+**** DateTime
+**** UTC datetime
+*** Numeric types
+**** Decimal
+**** Double
+**** Float
+*** Binary and strings
+**** ByteString
+**** String
+*** Composite types
+**** XML
+* MSSQL
+** types
+*** Dates and times
+**** DateTime without timezone
+*** Numeric types
+**** Int32, Int64
+**** Decimal
+**** Float
+**** Double
+*** Binary and strings
+**** String
+**** ByteString
+*** Composite types
+**** UUID
+* DB2
+** types
+*** Dates and times
+**** Date
+**** Time
+**** UTC datetime
+*** Numeric types
+**** Int32, Int64
+**** Float
+**** Double
+**** Decimal
+*** Binary and strings
+**** String
+**** ByteString
+*** Composite types
+**** XML

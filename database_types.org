@@ -17,6 +17,13 @@
 *** Composite types
 **** Geometry data
 **** Set of strings, the same as bit field but different serialization
+** Values
+*** NULL
+*** DateTime
+**** Cuurent date
+**** Current time
+**** Current timestamp
+
 * PostgreSql
 ** types
 *** Dates and times
@@ -59,13 +66,20 @@
 **** UUID
 **** XML
 
+** values
+*** NULL
+*** DateTime
+**** Now
+**** Tomorow
+**** Yesterday
 * SQlite3
 ** types
 *** ByteString
 *** Double
 *** Int32, Int64
 *** String
-
+** values
+*** NULL
 * ODBC
 ** types
 *** Dates and times
@@ -83,6 +97,8 @@
 *** Composite types
 **** UUID
 
+** values
+*** NULL
 * Oracle
 ** types
 *** Dates and times
@@ -97,6 +113,10 @@
 **** String
 *** Composite types
 **** XML
+** values
+*** NULL
+*** DateTime
+**** sysdate (now)
 * MSSQL
 ** types
 *** Dates and times
@@ -111,6 +131,8 @@
 **** ByteString
 *** Composite types
 **** UUID
+** values
+*** NULL
 * DB2
 ** types
 *** Dates and times
@@ -127,3 +149,9 @@
 **** ByteString
 *** Composite types
 **** XML
+** values
+*** NULL
+*** DateTime
+**** Current date
+**** Current time
+**** Current timestamp

@@ -24,7 +24,8 @@ executable PostTest
                        mtl,
                        time,
                        postgresql-simple,
-                       safe
+                       safe,
+                       text
   ghc-options:         -main-is PostTest -rtsopts
 
 executable GenerateTest
@@ -36,7 +37,8 @@ executable GenerateTest
                        transformers,
                        mtl,
                        time,
-                       safe
+                       safe,
+                       text
 
   ghc-options:         -main-is GenerateTest -rtsopts
                    

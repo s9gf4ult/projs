@@ -1,6 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Common where
 
 import Data.Int
+import Data.Text (Text, pack)
 import System.Random
 import Control.DeepSeq
 import Control.Monad.Trans.Error
@@ -8,7 +11,7 @@ import Control.Monad.Trans
 import Control.Monad.IO.Class
 import Data.Time.Clock
 
-data Storable = Storable Int32 Int32 Int64 String
+data Storable = Storable Int32 Int32 Int64 Text
               deriving (Eq, Show)
 
 instance Random Storable where
@@ -17,7 +20,7 @@ instance Random Storable where
       (a, g1) = randomR (0, 1000) g
       (b, g2) = random g1
       (c, gn) = random g2
-      d = take 10 $ randomRs ('a', 'z') gn
+      d = pack $ take 10 $ randomRs ('a', 'z') gn
   randomR _ g = random g        --  FIXME: we just dont need it now
 
 instance NFData Storable where

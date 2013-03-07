@@ -1,5 +1,13 @@
 
 
+* hdbc-postgresql
+** Модули
+*** HDBC.PostgreSQL.ConnectionImpl
+**** Типы
+***** Connection
+      Инстанцирует IConnection.
+*** HDBC.PostgreSQL.Connection
+**** 
 * HDBC
 ** Устаревшее
 *** Используется ручные инстансы Typeable вместо дерайвинга

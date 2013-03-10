@@ -1,5 +1,13 @@
 
 
+* hdbc-sqlite3
+
+** Модули
+*** HDBC.Sqlite3.Connection
+**** Что делает
+     - Создает соединение
+     - Интроспекция таблиц
+     - commit/rollback
 * hdbc-postgresql
 ** Недостатки
 *** C перемешан с Haskell

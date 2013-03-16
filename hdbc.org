@@ -397,7 +397,14 @@
      поддерживает даже UTCTime.
 *** Модули
 **** Connection
+     Интерфейс соединения
 **** Statement
+     Интерфейс выражения
 **** SqlValue
+     SqlValue и инстансы
 **** DriverUtils
+     Общие для всех драйверов функции и типы, такие как
+     финализация Statement в ChildList
 **** Utils
+     Вспомогательные функции и типы данных, такие как
+     withTransaction и connWrapper

@@ -76,6 +76,7 @@
 ********** TODO Убрать String в запросах, заменить на Text
 ********** TODO SqlByteString -> SqlBlob, SqlString -> SqlText
 ********* TODO tests
+********* TODO tpc ?
 ********* Запросы в ByteString
           Для быстрейшей генерации запросов можно
           сделать обертку над ByteString чтобы можно

@@ -78,6 +78,9 @@
 ********** DONE Убрать String в запросах, заменить на Text
 ********** DONE SqlByteString -> SqlBlob, SqlString -> SqlText
 ********* TODO Убрать SqlResult
+          тупо выбрасывать исключения, потом придумаю
+          более логичное решение.
+********* TODO Перенести run в тайпкласс Connection
 ********* TODO tests
 ********** TODO Сделать dummy драйвер и протестировать.
 ********* Запросы в ByteString

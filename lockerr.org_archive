@@ -1,0 +1,38 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/razor/projs/lockerr.org
+
+
+* lockerr
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2014-01-26 Вс 13:24
+  :ARCHIVE_FILE: ~/projs/lockerr.org
+  :ARCHIVE_CATEGORY: lockerr
+  :END:
+#+BEGIN: clocktable :maxlevel 2 :scope subtree
+Clock summary at [2014-01-26 Вс 13:19]
+
+| Headline          | Time    |      |
+|-------------------+---------+------|
+| *Total time*      | *10:12* |      |
+|-------------------+---------+------|
+| lockerr           | 10:12   |      |
+| \__ dealder_admin |         | 7:21 |
+| \__ honda         |         | 2:51 |
+#+END:
+
+** dealder_admin
+*** DONE issue65 Дgобавить крестик "Закрыть" на стартовый поп-ап
+    - Note taken on [2014-01-24 Пт 21:38] \\
+      По хонде, сангйонг и мерседесу
+    CLOCK: [2014-01-24 Пт 20:15]--[2014-01-24 Пт 21:17] =>  1:02
+    CLOCK: [2014-01-23 Чт 22:15]--[2014-01-23 Чт 23:41] =>  1:26
+    CLOCK: [2014-01-23 Чт 21:44]--[2014-01-23 Чт 22:10] =>  0:26
+*** DONE issue18 Экспорт экрана (табличной части в XLS)
+    CLOCK: [2014-01-25 Сб 18:35]--[2014-01-25 Сб 21:12] =>  2:37
+*** DONE issue70 CRM\Новые - свернуть клиентов по менеджерам
+    CLOCK: [2014-01-26 Вс 11:11]--[2014-01-26 Вс 13:01] =>  1:50
+** honda
+*** DONE issue3 Поправить импорт Хонды
+    CLOCK: [2014-01-25 Сб 23:23]--[2014-01-26 Вс 02:14] =>  2:51

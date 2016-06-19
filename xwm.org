@@ -1,12 +1,26 @@
-
 * xhb
-** minimum
-*** fix https://github.com/aslatter/xhb/issues/12
-** disireable
-*** refactor
-**** sendRequest
-     Должен возвращать TMVar (Maybe Error). Чтобы можно было проверять результат
-     ответа
-**** Переделать кодогенерацию
-     Все функции (в том числе без ответов) должны возвращать (Receipt a|()), по
-     которому можно дождаться и убедиться в правильности ответа
+** todo
+*** minimum
+**** fix https://github.com/aslatter/xhb/issues/12
+*** disireable
+**** refactor
+***** sendRequest
+      Должен возвращать TMVar (Maybe Error). Чтобы можно было проверять результат
+      ответа
+***** Переделать кодогенерацию
+      Все функции (в том числе без ответов) должны возвращать (Receipt a|()), по
+      которому можно дождаться и проверить статус ответа
+** xproto
+*** Каждый запрос может иметь от 0 до нескольких ответов
+*** XID
+    The resource-id-mask contains a single contiguous set of bits (at least
+    18). The client allocates resource IDs for types WINDOW, PIXMAP, CURSOR,
+    FONT, GCONTEXT, and COLORMAP by choosing a value with only some subset of
+    these bits set and ORing it with resource-id-base.  Only values constructed
+    in this way can be used to name newly created resources over this con-
+    nection.
+**** можно переиспользовать
+**** можно генерировать в произвольном порядке
+**** XID генерирует клиент
+* hayland
+**

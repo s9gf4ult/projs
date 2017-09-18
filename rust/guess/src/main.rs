@@ -5,29 +5,31 @@ extern crate rand;
 // use std::cmp::Ordering;
 // use rand::Rng;
 
-struct Name<'a> {
-    val : &'a str
+struct Name<'s> {
+    val : &'s str
 }
 
-struct User<'a> {
-    name : &'a Name<'a>,
-    soname : &'a Name<'a>,
+struct User<'a, 's : 'a> {
+    name : &'a Name<'s>,
+    soname : &'a Name<'s>,
 }
 
-impl<'a> User<'a> {
-    fn name_str(self) -> &'a str {
+impl<'a, 's> User<'a, 's> {
+    fn name_str(self) -> &'s str {
         self.name.val
     }
 
 }
 
 fn main() {
-    let name;
+    let s;
+    let name = Name {val: "ivan"};
+    let soname = "ivanich";
     {
         let u = User {
-            name : Name { val: "ivan" },
-            soname : Name { val : "ivanich" },
+            name : & name,
+            soname : & Name { val : soname },
         };
-        // name = u.name_str;
+        s = u.name_str();
     }
 }

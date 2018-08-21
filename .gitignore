@@ -6,6 +6,7 @@
 *.log
 *.db
 *.hi
+**/.stack-work
 haskell/test1
 haskell/korz
 haskell/gtk

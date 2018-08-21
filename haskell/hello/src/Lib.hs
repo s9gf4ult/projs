@@ -2,7 +2,8 @@ module Lib where
 
 import Control.Applicative
 import Control.Monad.State
-import Data.Foldable
+import Data.ByteString.Builder
+import Data.HashSet as H
 import Data.Set as S
 
 data Brace = Brace
@@ -21,11 +22,11 @@ newtype SeqLen = SeqLen Int
 
 type Gen a = StateT SeqLen [] a
 
-closedBraces :: Brace -> String
-closedBraces (Brace o c) = [o, c]
+closedBraces :: Brace -> Builder
+closedBraces (Brace o c) = charUtf8 o <> charUtf8 c
 
-braceWrap :: String -> Brace -> String
-braceWrap s (Brace o c) = o:s ++ [c]
+braceWrap :: Builder -> Brace -> Builder
+braceWrap s (Brace o c) = charUtf8 o <> s <> charUtf8 c
 
 dec :: Gen a -> Gen a
 dec ma = do
@@ -34,7 +35,7 @@ dec ma = do
   put $ pred s
   ma
 
-allBraces :: [Brace] -> Gen String
+allBraces :: [Brace] -> Gen Builder
 allBraces braces = closed <|> wrapped <|> appended
   where
     closed = dec $ lift $ closedBraces <$> braces
@@ -45,18 +46,19 @@ allBraces braces = closed <|> wrapped <|> appended
       a <- dec $ allBraces braces
       modify succ
       b <- allBraces braces
-      return $ a ++ b
+      return $ a <> b
 
 runGen :: SeqLen -> Gen a -> [a]
 runGen s ma = evalStateT ma s
 
-lazyUniq :: (Ord a) => [a] -> [a]
-lazyUniq as = evalState (foldrM go [] as) S.empty
-  where
-    go a acc = do
-      s <- get
-      case S.member a s of
-        True  -> pure acc
-        False -> do
-          put $ S.insert a s
-          pure $ a:acc
+-- uniqBuilder :: [Builder] -> [Builder]
+-- uniqBuilder = go H.empty
+--   where
+--     go _acc [] = []
+--     go acc (a:as) = case H.member b acc of
+--       True  -> go acc as
+--       False -> (lazyByteString b) : go (H.insert b acc) as
+--       where b = toLazyByteString a
+
+uniqBuilder :: [Builder] -> [Builder]
+uniqBuilder bs = fmap lazyByteString $ H.toList $ H.fromList $ toLazyByteString <$> bs

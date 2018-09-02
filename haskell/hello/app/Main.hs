@@ -13,6 +13,6 @@ main = do
     $ toLazyByteString
     $ mconcat
     $ L.intersperse (charUtf8 '\n')
-    $ uniqBuilder
-    $ runGen (SeqLen $ read a)
-    $ allBraces [roundBrace, squareBrce]
+    $ countBuilders
+    $ unL
+    $ allUniqBraces (SeqLen $ read a) $ L [roundBrace]

@@ -25,7 +25,6 @@ library
                      , bytestring
                      , containers
                      , hashable
-                     , lens
                      , mtl
                      , text
                      , unordered-containers

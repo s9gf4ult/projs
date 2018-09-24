@@ -10,6 +10,7 @@ import Data.IORef
 import GHC.Generics (Generic)
 
 data User = Ivan | Anon
+  deriving (Eq, Ord, Show)
 
 data UserService m = UserService
   { currentUser :: m User
@@ -17,18 +18,33 @@ data UserService m = UserService
   , logout      :: m ()
   } deriving (Generic)
 
-newUserService :: MonadBase IO m => IORef User -> UserService m
+type HasLogger r m = HasField' "logger" r (String -> m ())
+
+logStr
+  :: (MonadReader r m, HasLogger r m)
+  => String
+  -> m ()
+logStr s = do
+  f <- view $ field' @"logger"
+  f s
+
+type HasUserService r m = HasField' "userService" r (UserService m)
+
+newUserService
+  :: (MonadBase IO m, MonadReader r m, HasLogger r m)
+  => IORef User
+  -> UserService m
 newUserService u =
   let
-    currentUser = liftBase $ do
-      putStrLn "Geting user from database"
-      readIORef u
-    login = liftBase $ do
-      putStrLn "Login"
-      writeIORef u Ivan
-    logout = liftBase $ do
-      putStrLn "Logout"
-      writeIORef u Anon
+    currentUser = do
+      logStr "Geting user from database"
+      liftBase $ readIORef u
+    login = do
+      logStr "Login"
+      liftBase $ writeIORef u Ivan
+    logout = do
+      logStr "Logout"
+      liftBase $ writeIORef u Anon
   in UserService{..}
 
 -- Note that to construct fake service we need weaken constraints

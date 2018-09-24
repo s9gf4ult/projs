@@ -35,6 +35,7 @@ library
                     , StandaloneDeriving
                     , TemplateHaskell
                     , TypeApplications
+                    , UndecidableInstances
   default-language:    Haskell2010
 
 executable mu-reader

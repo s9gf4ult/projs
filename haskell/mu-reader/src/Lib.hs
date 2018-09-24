@@ -38,18 +38,25 @@ useTruthService = do
   t <- s ^. field' @"truth"
   liftBase $ print t
 
-newtype SelfReader s m a = SelfReader (ReaderT (s (SelfReader s m)) m a)
-  deriving (Functor, Applicative, Monad)
+newtype RecTransT s t m a = RecTransT (t (s (RecTransT s t m)) m a)
 
-deriving instance (Monad m, MonadBase m m) => MonadBase m (SelfReader s m)
+type ApplyStruct s t m = s (RecTransT s t m)
 
-deriving instance (Monad m) => MonadReader (s (SelfReader s m)) (SelfReader s m)
+type ApplyTrans s t m = t (ApplyStruct s t m) m
 
-runSelfReader :: s (SelfReader s m) -> SelfReader s m a -> m a
-runSelfReader struct (SelfReader r) = runReaderT r struct
+deriving instance Functor (ApplyTrans s t m) => Functor (RecTransT s t m)
+
+deriving instance Applicative (ApplyTrans s t m) => Applicative (RecTransT s t m)
+
+deriving instance (Monad (ApplyTrans s t m), MonadBase b (ApplyTrans s t m)) => MonadBase b (RecTransT s t m)
+
+-- deriving instance (Monad m) => MonadReader (s (RecTransT s m)) (RecTransT s m)
+
+runRecReaderT :: s (RecTransT s ReaderT m) -> RecTransT s ReaderT m a -> m a
+runRecReaderT struct (RecTransT r) = runReaderT r struct
 
 test :: IO ()
 test = do
-  runSelfReader truthService useTruthService
-  runSelfReader lieService useTruthService
-  runSelfReader multipleService useTruthService
+  runRecTransT truthService useTruthService
+  runRecTransT lieService useTruthService
+  runRecTransT multipleService useTruthService

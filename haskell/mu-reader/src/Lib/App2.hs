@@ -5,6 +5,7 @@ import Control.Monad.Base
 import Control.Monad.Reader
 import Data.Generics.Product
 import GHC.Generics (Generic)
+import Lib.Common
 import Lib.Service
 
 data App2 m = App2
@@ -30,7 +31,7 @@ data App2 m = App2
 newApp2 :: MonadBase IO m => UserService m -> App2 m
 newApp2 us = App2
   { userService = us
-  , logger = \a -> liftBase $ putStrLn $ "[App2]" <> a
+  , logger = \a -> liftBase $ putStrLn $ "[App2] " <> a
   , field1 = 1
   , field2 = 2
   , field3 = 3
@@ -47,3 +48,13 @@ newApp2 us = App2
   , field14 = 14
   , field15 = 15
   }
+
+
+app2Handler :: (MonadReader r m, HasLogger r m, HasUserService r m) => m ()
+app2Handler = do
+  logStr "==================== app2Handler"
+  someServiceCode
+  let revLogger logger s = logger $ reverse s -- lol!
+  logStr "====================== reversed"
+  local (over (field' @"logger") revLogger) $ do
+    someServiceCode

@@ -11,6 +11,8 @@ import GHC.TypeLits
 newtype RecReaderT s m a = RecReaderT (ReaderT (s (RecReaderT s m)) m a)
   deriving (Functor, Applicative, Monad)
 
+type IOReader s = RecReaderT s IO
+
 deriving instance (Monad m, MonadBase b m) => MonadBase b (RecReaderT s m)
 
 deriving instance (Monad m) => MonadReader (s (RecReaderT s m)) (RecReaderT s m)

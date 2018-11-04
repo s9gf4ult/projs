@@ -99,4 +99,14 @@ instance (Functor f) => HasField '2 (->) f Buzz Buzz Text Text where
 
 ## Good for 'TypeApplications' and 'DuplicateRecordFields' extensions
 
+## Base for generic code
+
 ## 'makeFields' generates classes which still may clash
+
+## generic-lens has problems
+
+### not supports flaky fields
+
+### typeclass 'HasLens' is not generic enough
+
+### generics are still not very

@@ -2,35 +2,44 @@ theory Hello
   imports Main
 begin
 
-fun append :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where 
-"append Nil a = a" | 
-"append (Cons a as) b = Cons a (append as b)"
+datatype nat = Z | S nat 
 
-fun revert :: "'a list \<Rightarrow> 'a list" where
-"revert Nil = Nil" | 
-"revert (Cons a b) = append (revert b) (Cons a Nil)"
+fun add :: "nat \<Rightarrow> nat \<Rightarrow> nat" where
+"add Z n = n" |
+"add (S n) m = S (add n m)"
 
-lemma rev_assoc [simp]: "append (append a b) c = append a (append b c)"
-  apply (induction a)
-  apply (auto)
+fun mul :: "nat \<Rightarrow> nat \<Rightarrow> nat" where 
+"mul Z a = Z" | 
+"mul (S a) b = add (mul a b) (add b b)"
+
+lemma add0[simp]: "add n Z = n"
+  apply(induction n)
+  apply(auto)
   done
 
-lemma append_nil [simp]: "append a Nil = a"
+lemma add_assoc[simp]: "add a (add b c) = add (add a b) c"
   apply(induction a)
   apply(auto)
   done
 
-lemma revapp [simp]: "revert (append a b) = append (revert a) (revert b)"
+lemma add_s[simp]: "add a (S b) = S (add a b)"
   apply(induction a)
   apply(auto)
   done
 
-lemma rev_rev [simp]: "revert(revert a) = a"
+lemma add_commutative[simp]: "add a b = add b a"
   apply(induction a)
   apply(auto)
   done
 
+lemma mul_sz[simp]: "mul a Z = mul (S a) Z"
+  apply(induction a)
+  apply(auto)
+  done
 
+lemma mul_z[simp]: "mul a Z = Z" 
+  apply(induction a)
+  done 
 
 
 end 

@@ -17,7 +17,7 @@ lemma add0[simp]: "add n Z = n"
   apply(auto)
   done
 
-lemma add_assoc[simp]: "add a (add b c) = add (add a b) c"
+lemma add_assoc: "add a (add b c) = add (add a b) c"
   apply(induction a)
   apply(auto)
   done
@@ -27,12 +27,12 @@ lemma add_s[simp]: "add a (S b) = S (add a b)"
   apply(auto)
   done
 
-lemma add_commutative[simp]: "add a b = add b a"
+lemma add_commutative: "add a b = add b a"
   apply(induction a)
   apply(auto)
   done
 
-lemma mul_sz[simp]: "mul a Z = mul (S a) Z"
+lemma mul_sz[simp]: "mul (S a) Z = mul a Z"
   apply(induction a)
   apply(auto)
   done

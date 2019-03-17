@@ -236,3 +236,77 @@ discriminate ft.
 Qed.
 
 Print neq_nega.
+
+Print Nat.add.
+
+Lemma eqNats : (S (S O)) + (S O) = (S (S (S O))).
+Proof.
+simpl.
+exact (eq_refl _).
+Qed.
+
+Print eqNats.
+
+Print nat_ind.
+
+Theorem plus_n_O : (forall n, n + O = n).
+  Proof.
+  intros n.
+  elim n.
+    simpl.
+    exact (eq_refl _).
+    intros n0.
+    intros np.
+    simpl.
+    rewrite np.
+    exact (eq_refl _).
+Qed.
+
+Print plus_n_O.
+
+Lemma plus_sym: (forall n m, n + m = m + n).
+Proof.
+intros n m.
+elim n.
+elim m.
+exact (eq_refl _).
+intros n0.
+intros n00n.
+rewrite (plus_n_O (S n0)).
+simpl.
+exact (eq_refl _).
+intros n0.
+intros n0m.
+simpl.
+rewrite n0m.
+elim m.
+simpl.
+exact (eq_refl _).
+intros n1.
+intros sn1n0.
+simpl.
+rewrite sn1n0.
+exact (eq_refl _).
+Qed.
+
+Print plus_sym.
+
+Require Import List.
+
+Print list.
+Print list_ind.
+
+Theorem cons_adds_one_to_length :
+   (forall A:Type,
+   (forall (x : A) (lst : list A),
+   length (x :: lst) = (S (length lst)))).
+Proof.
+intros A x.
+intros lst.
+simpl.
+reflexivity.
+Qed.
+
+Print hd.
+
+Print option.

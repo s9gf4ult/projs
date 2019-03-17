@@ -124,3 +124,115 @@ Qed.
 
 Print orb_is_or.
 
+Theorem negb_is_not : (forall a, Is_true (negb a) <-> (~(Is_true a))).
+Proof.
+intros a.
+unfold iff.
+refine (conj _ _).
+case a.
+simpl.
+intros f t.
+exact f.
+simpl.
+intros t f.
+exact f.
+case a.
+simpl.
+intros tf.
+exact (tf I).
+simpl.
+intros nf.
+exact I.
+Qed.
+
+Print negb_is_not.
+
+Definition basic_andb 
+  := (fun a => Is_true (andb a true)).
+
+Lemma basic_andb_ex : (ex basic_andb).
+Proof.
+refine (ex_intro _ true _).
+unfold basic_andb.
+simpl.
+exact I.
+Qed.
+
+Print ex.
+
+Theorem thm_forall_exists : (forall b, (exists a, Is_true(eqb a b))).
+Proof.
+intros b.
+case b.
+refine (ex_intro _ true _).
+simpl.
+exact I.
+refine (ex_intro _ false _).
+exact I.
+Qed.
+
+Theorem forall_exists : (forall P : Set->Prop, (forall x, ~(P x)) -> ~(exists x, P x)).
+Proof.
+intros P.
+intros forallxNotP.
+unfold not.
+intros exPx.
+destruct exPx as [x Px].
+pose (notP := forallxNotP x).
+unfold not in notP.
+exact (notP Px).
+Qed.
+
+Print forall_exists.
+
+Theorem exists_forall : (forall P : Set->Prop, ~(exists x, P x) -> (forall x, ~(P x))).
+Proof.
+intros P.
+intros notExP.
+intros x.
+unfold not.
+intros Px.
+unfold not in notExP.
+exact (notExP (ex_intro P x Px)).
+Qed.
+
+Print ex_intro.
+
+Lemma no_orb : not (exists a : bool, Is_true (andb false a)).
+Proof.
+unfold not.
+intros notb.
+destruct notb as [a P].
+destruct a.
+exact P.
+exact P.
+Qed.
+
+Theorem thm_eq_trans__again : (forall x y z: Set, x = y -> y = z -> x = z).
+Proof.
+intros x y z.
+intros xy yz.
+rewrite xy.
+rewrite <- yz.
+exact (eq_refl y).
+Qed.
+
+Print thm_eq_trans__again.
+
+Print eq_ind.
+
+Theorem neq_nega: (forall a, a <> (negb a)).
+Proof.
+intros a.
+case a.
+simpl.
+unfold not.
+intros tf.
+discriminate tf.
+unfold not.
+simpl.
+intros ft.
+discriminate ft.
+Qed.
+
+Print neq_nega.

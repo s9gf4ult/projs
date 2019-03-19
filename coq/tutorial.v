@@ -310,3 +310,60 @@ Qed.
 Print hd.
 
 Print option.
+
+Definition hd_never_fail (A : Type) (lst : list A) (safety_proof : lst <> nil)
+  : A
+:=
+  (match lst as b return (lst = b -> A) with
+    | nil => (fun foo : lst = nil =>
+                   match (safety_proof foo) return A with
+                   end
+                )
+    | x :: _ => (fun foo : lst = x :: _ =>
+                   x
+                )
+  end) eq_refl.
+
+Theorem correctness_of_hd_never_fail :
+   (forall A:Type,
+   (forall (x : A) (rest : list A),
+   (exists safety_proof : ((x :: rest) <> nil),
+      (hd_never_fail A (x :: rest) safety_proof) = x))).
+Proof.
+intros A x.
+intros rest.
+assert (witness : ((x :: rest) <> nil)).
+  unfold not.
+  intros req.
+  discriminate req.
+refine (ex_intro _ witness _).
+simpl.
+reflexivity.
+Qed.
+
+Print eq_ind.
+
+Print correctness_of_hd_never_fail.
+
+Definition tl_never_fail (A : Type) (lst : list A) (safety_proof : lst <> nil) 
+  : list A := 
+  (match lst as l return (lst = l -> list A) with 
+    | nil => (fun a : lst = nil => 
+      match (safety_proof a) return (list A) with 
+      end)
+    | _ :: x => (fun (a : lst = _ :: x) => x)
+  end) eq_refl.
+
+Lemma tl_never_fail_proof : forall (A : Prop) (x : A) (rest : list A)
+  , (exists proof : (x :: rest) <> nil, tl_never_fail A (x :: rest) proof = rest).
+Proof.
+intros A x rest.
+assert (wit : x :: rest <> nil).
+  unfold not.
+  intros lie.
+  discriminate lie.
+refine (ex_intro _ wit _).
+simpl.
+reflexivity.
+Qed.
+

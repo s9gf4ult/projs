@@ -367,3 +367,62 @@ simpl.
 reflexivity.
 Qed.
 
+Fixpoint app (A : Type) (a : list A) (b : list A) : list A := 
+  match a with 
+    | nil => b
+    | x :: xs => x :: (app A xs b)
+  end.
+  
+Theorem app_nil_l : (forall A:Type, (forall l:list A, nil ++ l = l)).
+Proof.
+intros A l.
+simpl.
+reflexivity.
+Qed.
+
+Theorem app_nil_r : (forall A:Type, (forall l:list A, l ++ nil = l)).
+Proof.
+intros A l.
+elim l.
+reflexivity.
+intros a aa aanil.
+simpl.
+rewrite aanil.
+reflexivity.
+Qed.
+
+Theorem app_comm_cons : forall A (x y:list A) (a:A), a :: (x ++ y) = (a :: x) ++ y.
+Proof.
+intros A x y a.
+simpl.
+reflexivity.
+Qed.
+
+Theorem app_assoc : forall A (l m n:list A), l ++ m ++ n = (l ++ m) ++ n.
+Proof.
+intros A l m n.
+elim l.
+simpl.
+reflexivity.
+intros a aa.
+intros pre.
+simpl.
+rewrite pre.
+reflexivity.
+Qed.
+
+Theorem app_cons_not_nil : forall A (x y:list A) (a:A), nil <> x ++ a :: y.
+Proof.
+intros A x y a.
+elim x.
+unfold not.
+simpl.
+intros lie.
+discriminate lie.
+intros b bs tru.
+unfold not.
+intros lie.
+simpl in lie.
+discriminate lie.
+Qed.
+

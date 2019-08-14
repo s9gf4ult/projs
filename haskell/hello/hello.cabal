@@ -27,6 +27,7 @@ library
                     , TypeApplications
                     , TypeSynonymInstances
   exposed-modules:     Bib
+                     , Clear
                      , Lazy
                      , Lib
   build-depends:       base >= 4.7 && < 5

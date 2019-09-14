@@ -17,12 +17,14 @@ library
   hs-source-dirs:      src
   ghc-options:         -Wall
   default-extensions: DataKinds
+                    , DeriveFunctor
                     , DeriveGeneric
                     , FlexibleContexts
                     , FlexibleInstances
                     , GeneralizedNewtypeDeriving
                     , MultiParamTypeClasses
                     , OverloadedStrings
+                    , RankNTypes
                     , ScopedTypeVariables
                     , TypeApplications
                     , TypeSynonymInstances
@@ -30,8 +32,12 @@ library
                      , Clear
                      , Lazy
                      , Lib
+                     , Stack
+                     , Store
+                     , Stream
   build-depends:       base >= 4.7 && < 5
                      , bytestring
+                     , comonad
                      , containers
                      , generic-lens
                      , hashable

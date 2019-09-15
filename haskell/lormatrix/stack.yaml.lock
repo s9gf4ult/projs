@@ -25,6 +25,13 @@ packages:
       sha256: 0328dda508b97c14ed2731f61796fe5140abb3e5038ed7ac244e3be256dd8d0b
   original:
     hackage: accelerate-llvm-1.2.0.1
+- completed:
+    hackage: accelerate-arithmetic-1.0.0.1@sha256:555639232aa5cad411e89247b27871d09352b987a754230a288c690b6de6d888,2096
+    pantry-tree:
+      size: 1057
+      sha256: 859dfbd8ac45a4114fa9a6a3fd7e7e570823f1e2bcc3963758f6deddb8495641
+  original:
+    hackage: accelerate-arithmetic-1.0.0.1
 snapshots:
 - completed:
     size: 524127

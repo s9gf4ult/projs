@@ -13,3 +13,4 @@ extra-deps:
   - accelerate-1.2.0.1
   - accelerate-llvm-native-1.2.0.1
   - accelerate-llvm-1.2.0.1
+  - accelerate-arithmetic-1.0.0.1

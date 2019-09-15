@@ -118,10 +118,10 @@ executable lormatrix-accelerate
                     , RankNTypes
                     , ScopedTypeVariables
                     , TypeApplications
+                    , TypeOperators
                     , TypeSynonymInstances
   build-depends:       base
-                     , accelerate
-                     , accelerate-arithmetic
+                     , accelerate <= 1.1.1.0
                      , accelerate-llvm-native
                      , clock
   hs-source-dirs:      src

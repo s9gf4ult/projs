@@ -5,33 +5,26 @@
 
 packages:
 - completed:
-    hackage: accelerate-1.2.0.1@sha256:bb1928efe602545df4043692916ed427c959110cbd678d03c3f9c3be25d1ae88,20112
+    hackage: accelerate-1.1.1.0@sha256:ddfa440f8ff7ff1962cbe5eea2dac6bcca81fccc1c6959fdf854eb238cfb8d9e,14736
     pantry-tree:
-      size: 10790
-      sha256: 8a4fbbb91a5a4ff77ebcc8f65ab5288874127f5f2e86304fad1b4c5d8186af5e
+      size: 5617
+      sha256: 7541e141d559c035f36179571bddbbc19084cb63db3a68949ab74912ac68a68c
   original:
-    hackage: accelerate-1.2.0.1
+    hackage: accelerate-1.1.1.0
 - completed:
-    hackage: accelerate-llvm-native-1.2.0.1@sha256:d98c01bc08c6923270e50c5f032f3f816ceee4daddee98ced6e2f2440889f03f,7282
+    hackage: accelerate-llvm-native-1.1.0.1@sha256:d4698ffc589b332f6acab289cdc202239191309ee50712d8c7a4d6a1ee3a1bcf,7975
     pantry-tree:
-      size: 3808
-      sha256: 3b97b110d7a5b3f2b8774f8064041be98a26340e2b8d715433ec88b0dcda2007
+      size: 3601
+      sha256: 646a465b0df623a6406ef688fa9327d7e4f5386aac0a8fe0b33680d71648b7e9
   original:
-    hackage: accelerate-llvm-native-1.2.0.1
+    hackage: accelerate-llvm-native-1.1.0.1
 - completed:
-    hackage: accelerate-llvm-1.2.0.1@sha256:e794b1abfea5424671d84d5d69bb9ccf468af9adaa481f9adaa78c42538a9cda,7206
+    hackage: accelerate-llvm-1.1.0.0@sha256:86e0849f8f256c909633625d4cd407c2faf6d41a310c0a9d38dc882b159b46c0,8304
     pantry-tree:
-      size: 5092
-      sha256: 0328dda508b97c14ed2731f61796fe5140abb3e5038ed7ac244e3be256dd8d0b
+      size: 5090
+      sha256: be34a3256f6caa76beaca7c58e74bb590d7da9224a96affb81a5d99c68f87cf9
   original:
-    hackage: accelerate-llvm-1.2.0.1
-- completed:
-    hackage: accelerate-arithmetic-1.0.0.1@sha256:555639232aa5cad411e89247b27871d09352b987a754230a288c690b6de6d888,2096
-    pantry-tree:
-      size: 1057
-      sha256: 859dfbd8ac45a4114fa9a6a3fd7e7e570823f1e2bcc3963758f6deddb8495641
-  original:
-    hackage: accelerate-arithmetic-1.0.0.1
+    hackage: accelerate-llvm-1.1.0.0
 snapshots:
 - completed:
     size: 524127

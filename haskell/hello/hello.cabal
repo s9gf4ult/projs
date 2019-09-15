@@ -33,6 +33,7 @@ library
                      , Lazy
                      , Lib
                      , Stack
+                     , Matrix
                      , Store
                      , Stream
   build-depends:       base >= 4.7 && < 5
@@ -43,6 +44,7 @@ library
                      , hashable
                      , lens
                      , mtl
+                     , repa
                      , text
                      , unordered-containers
   default-language:    Haskell2010
@@ -51,9 +53,25 @@ executable hello
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: DataKinds
+                    , DeriveFunctor
+                    , DeriveGeneric
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , GeneralizedNewtypeDeriving
+                    , LambdaCase
+                    , MultiParamTypeClasses
+                    , OverloadedStrings
+                    , RankNTypes
+                    , ScopedTypeVariables
+                    , TypeApplications
+                    , TypeSynonymInstances
   build-depends:       base
                      , bytestring
+                     , clock
                      , hello
+                     , repa
+                     , time
   default-language:    Haskell2010
 
 test-suite hello-test

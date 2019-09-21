@@ -121,7 +121,7 @@ executable lormatrix-accelerate
                     , TypeOperators
                     , TypeSynonymInstances
   build-depends:       base
-                     , accelerate <= 1.1.1.0
+                     , accelerate
                      , accelerate-llvm-native
                      , clock
   hs-source-dirs:      src

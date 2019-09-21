@@ -1,5 +1,5 @@
 { mkDerivation, accelerate, accelerate-llvm-native, array, base
-, clock, repa, stdenv
+, clock, lens, lens-accelerate, repa, stdenv
 }:
 mkDerivation {
   pname = "lormatrix";
@@ -8,7 +8,8 @@ mkDerivation {
   isLibrary = false;
   isExecutable = true;
   executableHaskellDepends = [
-    accelerate accelerate-llvm-native array base clock repa
+    accelerate accelerate-llvm-native array base clock lens
+    lens-accelerate repa
   ];
   license = stdenv.lib.licenses.bsd3;
 }

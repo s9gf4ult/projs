@@ -12,12 +12,12 @@ packages:
   original:
     hackage: accelerate-1.2.0.1
 - completed:
-    hackage: accelerate-llvm-native-1.2.0.1@sha256:d98c01bc08c6923270e50c5f032f3f816ceee4daddee98ced6e2f2440889f03f,7282
+    hackage: accelerate-arithmetic-1.0.0.1@sha256:555639232aa5cad411e89247b27871d09352b987a754230a288c690b6de6d888,2096
     pantry-tree:
-      size: 3808
-      sha256: 3b97b110d7a5b3f2b8774f8064041be98a26340e2b8d715433ec88b0dcda2007
+      size: 1057
+      sha256: 859dfbd8ac45a4114fa9a6a3fd7e7e570823f1e2bcc3963758f6deddb8495641
   original:
-    hackage: accelerate-llvm-native-1.2.0.1
+    hackage: accelerate-arithmetic-1.0.0.1
 - completed:
     hackage: accelerate-llvm-1.2.0.1@sha256:e794b1abfea5424671d84d5d69bb9ccf468af9adaa481f9adaa78c42538a9cda,7206
     pantry-tree:
@@ -26,12 +26,19 @@ packages:
   original:
     hackage: accelerate-llvm-1.2.0.1
 - completed:
-    hackage: accelerate-arithmetic-1.0.0.1@sha256:555639232aa5cad411e89247b27871d09352b987a754230a288c690b6de6d888,2096
+    hackage: accelerate-llvm-native-1.2.0.1@sha256:d98c01bc08c6923270e50c5f032f3f816ceee4daddee98ced6e2f2440889f03f,7282
     pantry-tree:
-      size: 1057
-      sha256: 859dfbd8ac45a4114fa9a6a3fd7e7e570823f1e2bcc3963758f6deddb8495641
+      size: 3808
+      sha256: 3b97b110d7a5b3f2b8774f8064041be98a26340e2b8d715433ec88b0dcda2007
   original:
-    hackage: accelerate-arithmetic-1.0.0.1
+    hackage: accelerate-llvm-native-1.2.0.1
+- completed:
+    hackage: lens-accelerate-0.2.0.0@sha256:292e850bf11f3babbb9d7af362ff99fc29621fb33fed06e681af2e124f09f53d,1493
+    pantry-tree:
+      size: 704
+      sha256: 11a4d09c8aee88f5a0d25df91b08462486cb500ca80512adb81129077b255528
+  original:
+    hackage: lens-accelerate-0.2.0.0
 snapshots:
 - completed:
     size: 524127

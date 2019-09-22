@@ -7,12 +7,11 @@ import Text.Printf (printf)
 import Data.Array.Repa
 
 newMatrix :: Int -> Array D DIM2 Double
-newMatrix n = fromFunction (ix2 n n) $ \(Z :. i :. j) ->
+newMatrix n =
   let
-    x = fromIntegral i
-    y = fromIntegral j
-    s = fromIntegral n
-  in (x - y) * (x + y) / s / s
+    tmp = 1 / fromIntegral n / fromIntegral n
+  in fromFunction (ix2 n n) $ \(Z :. i :. j) ->
+    tmp * fromIntegral (i - j) * fromIntegral (i + j)
 
 multiply
   :: (Source r1 Double, Source r2 Double)
@@ -35,9 +34,9 @@ main = do
     [a] -> pure (read a)
     _ -> exitFailure
   t1 <- clock
-  a <- computeUnboxedP $ newMatrix n
-  b <- computeUnboxedP $ newMatrix n
-  res <- computeUnboxedP $ multiply a b
+  let
+    a = computeUnboxedS $ newMatrix n
+  res <- computeUnboxedP $ multiply a a
   let center = n `div` 2
   printf "% 8.6f\n" $ res ! (ix2 center center)
   t2 <- clock

@@ -21,5 +21,7 @@ multiplyMatrixMatrix x y =
             ((replicate (lift $ Any :. All :. All :. cols) x) :: Acc (Array DIM3 a))
             ((replicate (lift $ Any :. rows :. All :. All) y) :: Acc (Array DIM3 a))
 
+
+
 main :: P.IO ()
 main = error "FIXME: main not implemented"

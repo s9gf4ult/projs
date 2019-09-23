@@ -1,13 +1,13 @@
 module Main where
 
-import System.Environment (getArgs)
-import System.Exit (exitFailure)
-import Control.Lens (_3, _2)
-import Data.Array.Accelerate.Control.Lens ()
+import           Control.Lens                       (_2, _3)
 import           Data.Array.Accelerate
-import           Prelude               (($), (>>=), pure, read)
-import Data.Array.Accelerate.LLVM.Native (run)
-import qualified Prelude               as P
+import           Data.Array.Accelerate.Control.Lens ()
+import           Data.Array.Accelerate.LLVM.Native  (run)
+import           Prelude                            (pure, read, ($), (>>=))
+import qualified Prelude                            as P
+import           System.Environment                 (getArgs)
+import           System.Exit                        (exitFailure)
 
 multiplyMatrixMatrix
   :: forall a. (Num a)

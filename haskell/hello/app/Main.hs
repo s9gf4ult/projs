@@ -1,3 +1,6 @@
 module Main where
 
-import           Matrix
+import           Escape
+
+main :: IO ()
+main = escTest

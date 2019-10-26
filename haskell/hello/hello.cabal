@@ -30,22 +30,26 @@ library
                     , TypeSynonymInstances
   exposed-modules:     Bib
                      , Clear
+                     , Escape
                      , Lazy
                      , Lib
                      , Stack
-                     , Matrix
                      , Store
                      , Stream
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , comonad
                      , containers
+                     , exceptions
                      , generic-lens
                      , hashable
                      , lens
+                     , monad-control
                      , mtl
                      , repa
                      , text
+                     , transformers
+                     , transformers-base
                      , unordered-containers
   default-language:    Haskell2010
 

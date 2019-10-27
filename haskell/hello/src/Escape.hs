@@ -24,58 +24,100 @@ escTest lim as = evalContT $ do
       | otherwise -> next ()
     liftBase $ readIORef r
 
--- | Should not compile
-isolateTest :: ControlT IO s ()
-isolateTest = do
+put :: (MonadBase IO m) => String -> m ()
+put = liftBase . putStrLn
+
+type CR r m s a = a -> ControlT r m s a
+
+stuffWrap :: (MonadBase IO m) => (CR r m s a -> CR r m s a -> ControlT r m s a) -> ControlT r m s a
+stuffWrap ma = do
   callCC $ \exit -> do
-    isolate $ do
-      return ()
-    exit ()
+    res <- callCC $ \rollback -> do
+      res <- callCC $ \commit -> do
+        res <- ma commit rollback
+        put "Exited"
+        exit res
+      put "Commit called"
+      exit res
+    put "Rollback called"
+    exit res
 
-newtype ControlT (m :: * -> *) (s :: k) (a :: *) = ControlT
-  { unControlT :: ContT a m a
-  }
+stuffTest :: IO ()
+stuffTest = evalControlT $ do
+  stuffWrap $ \com rol -> do
+    put "Doing nothing"
+  stuffWrap $ \com rol -> do
+    put "Call com"
+    com ()
+  stuffWrap $ \com rol -> do
+    put "Call roll"
+    rol ()
+  stuffWrap $ \com rol -> do
+    put "Failing"
+    contCatch (fail "oh shi")
+      (\ (e :: SomeException) -> put "Error catched")
 
-instance Functor (ControlT m s)
-instance Applicative (ControlT m s)
-instance Monad (ControlT m s)
-instance MonadCont (ControlT m s)
-instance MonadThrow (ControlT m s)
+
+  -- stuffWrap $ \con rol -> do
+  --   put "Not compiling"
+  --   contCatch (fail "oh shi")
+  --     (\ (e :: SomeException) -> do
+  --         put "Error catched"
+  --         con ()
+  --         )
 
 
--- class (forall s. MonadThrow (m s)) => MultiMonadCatch (m :: k -> * -> *) where
---   multiCatch
+newtype ControlT (r :: *) (m :: * -> *) (s :: k) (a :: *) = ControlT
+  { unControlT :: ContT r m a
+  } deriving (Functor, Applicative, Monad, MonadCont, MonadThrow)
+
+deriving instance (MonadBase b m) => MonadBase b (ControlT r m s)
+
+
+-- class (forall s. MonadThrow (m s)) => IndexedMonadCatch (m :: k -> * -> *) where
+--   indCatch
 --     :: forall s e a
 --     .  (Exception e)
 --     => (forall t. m t a)
---     -> (e -> m s a)
+--     -> (forall q. e -> m q a)
 --     -> m s a
 
--- instance MultiMonadCatch (ControlT m)
+-- instance (MonadCatch m) => IndexedMonadCatch (ControlT r m) where
+--   indCatch = contCatch
 
--- class MultiMonadMask (m :: k -> * -> *) where
---   multiMask
+-- class IndexesMonadMask (m :: k -> * -> *) where
+--   indMask
+--     :: forall s a
+--     .  (forall t. (forall q b. m q b -> m t b) -> m t a)
+--     -> m s a
+
+-- instance (MonadMask m) => IndexesMonadMask (ControlT r m) where
+--   indMask = contMask
 
 contCatch
   :: (MonadCatch m, Exception e)
-  => (forall s. ControlT m s a)
-  -> (forall q. e -> ControlT m q a)
-  -> ControlT m t a
-contCatch ma handler = ControlT $ lift $ catch (evalControlT ma) (evalControlT . handler)
+  => (forall s. ControlT a m s a)
+  -> (forall q. e -> ControlT a m q a)
+  -> ControlT r m t a
+contCatch ma handler = liftControl
+  $ catch (evalControlT ma) (evalControlT . handler)
 
 contMask
-  :: forall t m b
+  :: forall r m t b
   .  (MonadMask m)
-  => (forall s. (forall a. m a -> m a) -> ControlT m s b)
-  -> ControlT m t b
-contMask ma = controlLift $ mask $ \restore ->
-  evalControlT (ma restore)
+  => (forall s. (forall a q . ControlT a m q a -> ControlT b m s a) -> ControlT b m s b)
+  -> ControlT r m t b
+contMask ma = liftControl $ mask $ \restore ->
+  evalControlT (ma $ liftControl . restore . evalControlT)
 
-evalControlT :: (Monad m) => ControlT m s a -> m a
+evalControlT :: (Monad m) => ControlT a m s a -> m a
 evalControlT (ControlT ma) = evalContT ma
 
-controlLift :: (Monad m) => m a -> ControlT m s a
-controlLift = ControlT . lift
+runControlT :: (Monad m) => (a -> m r) -> ControlT r m s a -> m r
+runControlT run (ControlT ma) = runContT ma run
 
-isolate :: (Monad m) => (forall s. ControlT m s a) -> ControlT m t a
+liftControl :: (Monad m) => m a -> ControlT r m s a
+liftControl = ControlT . lift
+
+isolate :: (Monad m) => (forall s. ControlT a m s a) -> ControlT r m t a
 isolate ma = ControlT $ lift $ evalControlT ma

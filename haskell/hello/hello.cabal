@@ -34,6 +34,7 @@ library
                     , TypeApplications
                     , TypeSynonymInstances
                     , UnboxedTuples
+                    , UndecidableInstances
   exposed-modules:     Bib
                      , Clear
                      , Escape

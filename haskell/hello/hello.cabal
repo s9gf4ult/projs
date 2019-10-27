@@ -22,12 +22,18 @@ library
                     , FlexibleContexts
                     , FlexibleInstances
                     , GeneralizedNewtypeDeriving
+                    , MagicHash
                     , MultiParamTypeClasses
+                    , MultiWayIf
                     , OverloadedStrings
+                    , PolyKinds
+                    , QuantifiedConstraints
                     , RankNTypes
                     , ScopedTypeVariables
+                    , StandaloneDeriving
                     , TypeApplications
                     , TypeSynonymInstances
+                    , UnboxedTuples
   exposed-modules:     Bib
                      , Clear
                      , Escape

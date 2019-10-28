@@ -2,6 +2,9 @@ module Escape
   ( ControlT(unControlT)
   , contCatch
   , contMask
+  , evalControlT
+  , runControlT
+  , liftControl
   )
 
 where

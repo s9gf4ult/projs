@@ -13,7 +13,7 @@ import           System.Environment
 
 
 escTest :: Integer -> [Integer] -> IO [Integer]
-escTest lim as = evalContT $ do
+escTest lim as = evalControlT $ do
   r <- liftBase $ newIORef []
   callCC $ \done -> do
     for_ as $ \a -> callCC $ \next -> if
@@ -61,13 +61,13 @@ stuffTest = evalControlT $ do
     put "Failing"
     contCatch (fail "oh shi")
       (\ (e :: SomeException) -> put "Error catched")
-  stuffWrap $ \con rol -> do
-    put "Not compiling"
-    contCatch (fail "oh shi")
-      (\ (e :: SomeException) -> do
-          put "Error catched"
-          coerce $ con ()
-          )
+  -- stuffWrap $ \con rol -> do
+  --   put "Not compiling"
+  --   contCatch (fail "oh shi")
+  --     (\ (e :: SomeException) -> do
+  --         put "Error catched"
+  --         coerce $ con ()
+  --         )
 
 main :: IO ()
 main = do

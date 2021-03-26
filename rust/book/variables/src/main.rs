@@ -1,18 +1,24 @@
 fn main() {
-    let a : [u32; 3] = [1, 2, 3];
-    let mut i :usize = 0 ;
-    while i < 2 {
-        i += 1;
-    } ;
-
-
-    println!("wow: {}", a[i]);
-
-    for el in a.iter() {
-        println!("{}", el);
-    }
 }
 
-fn ups(a : &mut usize) {
-    *a += 1;
+fn intmove() {
+    let a : u32 = 10;
+    let b = a;
+    println!("{}", a);
+}
+
+// fn strmove() {
+//     let a = String::from("hello") ;
+//     {
+//         let b = a;
+//         println!("{}", b);
+//     }
+//     println!("{}", a);
+// }
+
+fn mutref() {
+    let mut a : u32 = 10;
+    let r3 = &a;
+    let r2 = &a;
+    println!("{}", *r3);
 }

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 struct User {
     name: String,
     email: String,
@@ -5,7 +6,7 @@ struct User {
 }
 
 fn main() {
-    let mut  user = User {
+    let mut user = User {
         name: String::from("tntntn"),
         email: String::from("ntnt@snsn.com"),
         active: true,
@@ -15,10 +16,8 @@ fn main() {
     user.name = String::from("tnaisht");
     println!("{}", &user.name);
 
-    let user2 = User {
-        name: String::from("ururur"),
-        ..user
-    };
-
     println!("{}", user.email);
+    println!("{:?}", user);
+    let tup : (u32, u32) = (1, 20) ;
+    println!("{:?}", tup);
 }

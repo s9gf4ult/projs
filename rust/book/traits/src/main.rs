@@ -5,11 +5,19 @@ fn main() {
     println!("{:?}", l1);
     let l2 = largest(&v2) ;
     println!("{:?}", l2);
+
+    let s1 = "stnt1".to_string() ;
+    let s2 ;
+    let lon ;
+    {
+        s2 = "snasht2".to_string() ;
+        lon = longest(&s1, &s2) ;
+        println!("{}", lon);
+    }
+
 }
 
-fn largest<T> (l : &[T]) -> Option<&T>
-where T : PartialOrd
-{
+fn largest<T : PartialOrd> (l : &[T]) -> Option<&T> {
     let mut iter = l.into_iter() ;
     let mut lrg = iter.next()? ;
     for item in iter {
@@ -18,4 +26,24 @@ where T : PartialOrd
         }
     } ;
     Some(lrg)
+}
+
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+
+fn longest2<'a, 'b, 'c> (x: &'a str, y: &'b str) -> &'c str
+where 'a : 'c
+    , 'b : 'c
+{
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
 }

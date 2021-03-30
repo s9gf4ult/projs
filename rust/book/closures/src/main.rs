@@ -1,22 +1,24 @@
 use std::collections::HashMap ;
 use std::hash::Hash ;
 
-fn calcFib(x : u32) -> u64 {
-    match x {
-        0 => 1,
-        1 => 1,
-        _ => calcFib(x - 1) + calcFib(x - 2),
-    }
-}
+// fn calcFib<F> (c: &mut MapCacher<F, u32, u64>, x : u32) -> u64
+//     where F : Fn(&mut MapCacher<F, u32, u64>, u32) -> u64
+// {
+//     match x {
+//         0 => 1,
+//         1 => 1,
+//         _ => c.execFixCopy(x - 1) + c.execFixCopy(x - 2),
+//     }
+// }
 
 struct RecFib<'s> {
     f : fn (&'s RecFib, u32) -> u64
 }
 
 fn main() {
-    let mut fibCache : MapCacher<_, u32, u64> = MapCacher::new(calcFib) ;
-    let fib = fibCache.execCopy(3) ;
-    println!("{}", fib);
+    let fibs = Fibs::new() ;
+    let fv : Vec<u64> = fibs.take_while(|x| x < &1000000000000).collect() ;
+    println!("{:?}", fv);
 }
 
 struct Cacher<F, V> {
@@ -81,15 +83,16 @@ where
     }
 }
 
+
 // impl <F, K, V> MapCacher<F, K, V>
 // where
-//     F : Fn(Fn(K) -> V, K) -> V, K : Eq + Hash + Copy + Sized, V : Copy + Sized
+//     F : Fn(&mut MapCacher<F, K, V>, K) -> V, K : Eq + Hash + Copy, V : Copy
 // {
 //     pub fn execFixCopy(&mut self, key : K) -> V {
 //         match self.values.get(&key) {
 //             Some(res) => *res,
 //             None => {
-//                 let res = (self.calc)(|x| self.execFixCopy(x), key) ;
+//                 let res = (self.calc)(self, key) ;
 //                 self.values.insert(key, res) ;
 //                 res
 //             }
@@ -97,19 +100,33 @@ where
 //     }
 // }
 
+pub struct Fibs {
+    pub fib : u32,
+    a : u64, // fib - 1
+    b : u64, // fib - 2
+}
 
-// impl <'a, F, K, V> MapCacher<F, &'a K, &'a V>
-// where
-//     F : Fn(&'a K) -> &'a V, K : Eq + Hash
-// {
-//     pub fn execRef (&mut self, key : &'a K) -> &'a V {
-//         match self.values.get(&key) {
-//             Some(res) => *res,
-//             None => {
-//                 let res = (self.calc)(key) ;
-//                 self.values.insert(key, res) ;
-//                 res
-//             }
-//         }
-//     }
-// }
+impl Fibs {
+    fn new() -> Fibs {
+        Fibs {
+            fib : 0,
+            a : 1,
+            b : 1
+        }
+    }
+}
+
+impl Iterator for Fibs {
+    type Item = u64 ;
+    fn next(&mut self) -> Option<Self::Item> {
+        let res = match self.fib {
+            0 => 1,
+            1 => 1,
+            _ => self.a + self.b
+        } ;
+        self.b = self.a ;
+        self.a = res ;
+        self.fib += 1 ;
+        Some(res)
+    }
+}

@@ -1,38 +1,34 @@
 extern crate rand;
 
-// use std::iter;
+use std::iter;
 use std::sync::mpsc;
 use std::thread;
-// use std::io;
+use std::io;
 // use std::cmp::Ordering;
 // use rand::Rng;
 
+macro_rules! zip {
+    ($x: expr) => ($x);
+    ($x: expr, $($y: expr), +) => (
+        $x.iter().zip(
+            zip!($($y), +))
+    )
+}
+
 fn main() {
-    let (tx_plus, rx) = mpsc::channel();
-    let tx_minus = tx_plus.clone();
+    let v = vec!["yoba","yoba","boba", "boba","hueba", "hueba"];
+    let res = std::iter::repeat(v.iter())
+      //  .take(4)
+        .flatten() ;
+        // .take(11)
+    let v2 = vec![1,2] ;
+    let res2 = std::iter::repeat(v2.iter())
+        .flatten()
+        .take(11)
+        .collect::<Vec<_>>();
 
-    let h = thread::spawn(move || {
-        for x in 1..10_000_000 {
-            tx_plus.send(x).unwrap();
-        }
-    });
-
-    let h2 = thread::spawn(move || {
-        for x in (-10_000_000..-1).rev() {
-            tx_minus.send(x).unwrap();
-        }
-    });
-
-    let mut res : i64 = 0;
-    loop {
-        match rx.recv() {
-            Ok(x) => res += x,
-            Err(_) => break
-            // All senders are dropped;
-        }
-    }
-
-    println!("{:?}", res);
-    h.join().unwrap();
-    h2.join().unwrap();
+    let z = zip!(res2, res);
+       // .collect::<Vec<_>>();
+    dbg!(z.last());
+    // println!("{:?}", z);
 }

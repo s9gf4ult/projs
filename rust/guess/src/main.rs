@@ -1,4 +1,5 @@
 extern crate rand;
+// extern crate thread;
 
 use std::{
     fs::File,
@@ -6,14 +7,19 @@ use std::{
     cmp::PartialOrd
 };
 
+struct T;
+
+impl T { fn x<'a, 'b, 'c>(&'a self, x: &'b i32, y: &'c i32) -> &'a i32 { panic!("FIXME: not implemented") } }
+
 #[derive(Debug)]
 struct Point<X1, Y1> {
     x: X1,
     y: Y1,
 }
 
-impl<X1: Copy, Y1> Point<X1, Y1> {
-    fn mixup<X2, Y2: Copy>(&self, other: &Point<X2, Y2>) -> Point<X1, Y2> {
+impl<'x1, X1, Y1> Point<&'x1 X1, Y1> {
+    #[inline]
+    fn mixup_ref<'y2, X2, Y2>(&self, other: &Point<X2, &'y2 Y2>) -> Point<&'x1 X1, &'y2 Y2> {
         Point {
             x: self.x,
             y: other.y,
@@ -22,6 +28,7 @@ impl<X1: Copy, Y1> Point<X1, Y1> {
 }
 
 impl<X1: Clone, Y1> Point<X1, Y1> {
+    #[inline]
     fn mixup_clone<X2, Y2: Clone>(&self, other: &Point<X2, Y2>) -> Point<X1, Y2> {
         Point {
             x: self.x.clone(),
@@ -31,9 +38,9 @@ impl<X1: Clone, Y1> Point<X1, Y1> {
 }
 
 #[derive(Debug)]
-enum EitherStr<'t1, 't2> {
-    Left(&'t1 str),
-    Right(&'t2 str)
+enum Either<L, R> {
+    Left(L),
+    Right(R)
 }
 
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
@@ -55,25 +62,34 @@ where
     }
 }
 
-fn longest3<'a, 'b>(x: &'a str, y: &'b str) -> EitherStr<'a, 'b>{
-    if x.len() > y.len() {
-        EitherStr::Left(x)
-    } else {
-        EitherStr::Right(y)
+impl <'a, 'b> Either<&'a str, &'b str> {
+    fn longest(x: &'a str, y: &'b str) -> Self {
+        if x.len() > y.len() {
+            Either::Left(x)
+        } else {
+            Either::Right(y)
+        }
     }
-
 }
 
 
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
 fn main() {
-    let string1 = String::from("long string is long");
-    let result;
-    {
-        let string2 = String::from("xyz");
-        result = match longest3(string1.as_str(), string2.as_str()) {
-            EitherStr::Left(s1) => s1,
-            EitherStr::Right(s2) => panic!("Nope")
-        }
-    }
-    println!("The longest string is:{}", result);
+    let mut list = [
+        Rectangle { width: 10, height: 1 },
+        Rectangle { width: 3, height: 5 },
+        Rectangle { width: 7, height: 12 },
+    ];
+
+    let mut num_sort_operations = 0;
+    list.sort_by_cached_key(|r| {
+        num_sort_operations += 1;
+        r.width
+    });
+    println!("{:#?}, sorted in {num_sort_operations} operations", list);
 }

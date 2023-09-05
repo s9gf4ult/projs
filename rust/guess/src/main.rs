@@ -1,16 +1,28 @@
-#![feature(iter_next_chunk)]
+use std::{
+    cell::RefCell,
+    rc::Rc
+};
+
 
 #[derive(Debug)]
-struct Rectangle {
-    width: u32,
-    height: u32,
+enum List {
+    Cons(i32, RefCell<Rc<List>>),
+    Nil,
+}
+
+use List::*;
+
+impl List {
+    fn tail(&self) -> Option<&RefCell<Rc<List>>> {
+        match self {
+            Cons(_, item) => Some(item),
+            Nil => None,
+        }
+    }
 }
 
 fn main() {
-    let v = vec![1,2,3,4];
-    match v.iter().next_chunk() {
-        Ok([a,b,c]) => println!("{a}, {b}, {c}"),
-        Err(_) => println!("nope")
-    }
-
+    let r:RefCell<i32> = RefCell::new(10);
+    println!("{}", r.borrow());
+    println!("{}", r.borrow_mut());
 }

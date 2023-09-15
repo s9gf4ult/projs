@@ -5,3 +5,5 @@ authors = ["Alexey Uimanov <s9gf4ult@gmail.com>"]
 
 [dependencies]
 rand = "0.3.14"
+serde = "*"
+serde_json = "*"

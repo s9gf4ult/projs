@@ -1,50 +1,19 @@
-extern crate serde;
-extern crate serde_json;
-
-use std::{
-    cell::RefCell,
-    ops::Deref,
-    rc::Rc,
-    sync::{mpsc, Arc, Mutex},
-    thread,
-    time::Duration,
-};
-
-mod ser;
-
-trait Pilot {
-    fn fly(&self);
-}
-
-trait Wizard {
-    fn fly(&self);
-}
-
-trait X: Pilot + Wizard {}
-
-#[derive(Debug, Clone, Copy)]
-struct Human;
-
-impl Pilot for Human {
-    fn fly(&self) {
-        println!("This is your captain speaking.");
-    }
-}
-
-impl Wizard for Human {
-    fn fly(&self) {
-        println!("Up!");
-    }
-}
-
-impl Human {
-    fn fly(&self, s: &str) {
-        println!("*waving arms furiously {}*", s);
-    }
+struct T {
+    a: usize,
+    b: usize,
+    x: i32,
+    y: i32,
+    z: i32,
 }
 
 fn main() {
-    let p = Human;
-    // p.fly();
-    p.fly("hzhuh");
+    let t = T {
+        a: 10,
+        b: 20,
+        x: 0,
+        y: 1,
+        z: 2,
+    };
+    let t2 = T { y: 5, ..t };
+    println!(r"abc\nabc")
 }

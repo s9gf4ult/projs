@@ -1,19 +1,25 @@
-struct T {
+use std::fmt::Debug;
+
+trait Tr {
+    fn tr(&self) {
+        println!("TR!");
+    }
+}
+
+#[derive(Debug)]
+struct I;
+
+impl Tr for I {}
+
+#[derive(Debug)]
+struct DST<T: ?Sized> {
     a: usize,
-    b: usize,
-    x: i32,
-    y: i32,
-    z: i32,
+    b: T,
 }
 
 fn main() {
-    let t = T {
-        a: 10,
-        b: 20,
-        x: 0,
-        y: 1,
-        z: 2,
-    };
-    let t2 = T { y: 5, ..t };
-    println!(r"abc\nabc")
+    let d = DST { a: 10, b: I };
+    let r: &DST<dyn Tr> = &d;
+    r.b.tr();
+    d.b.tr();
 }

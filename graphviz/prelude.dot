@@ -1,0 +1,39 @@
+digraph {
+  graph [layout=dot; overlap=false; rankdir=LR; nodesep=0.5];
+  subgraph types {
+    node [shape=oval];
+    Integer -> Rational [label="(%1)"];
+  }
+  subgraph classes {
+    node [shape=square];
+    edge [arrowhead=diamond; style=dashed];
+    Num;
+    Real;
+    Real -> Num;
+    Integral -> Real;
+    Fractional -> Num;
+    Floating -> Fractional;
+    RealFrac -> {Real; Fractional};
+    RealFloat -> {RealFrac; Floating};
+  }
+  subgraph methods {
+    edge [color=red];
+    Integer -> Num [label=fromInteger];
+    Real -> Rational [label=toRational];
+    Integral -> Integer [label=toInteger];
+    Rational -> Fractional [label=fromRational];
+    RealFrac -> Integral [label="round,truncate,floor"];
+    Floating -> Floating [label="exp,sqrt,**,sin"];
+    RealFloat -> RealFloat [label="uncurry encodeFloat . decodeFloat"];
+  }
+  subgraph cluster_legend {
+    graph [label=Legend];
+    Typ1 -> Typ2 [label=Function];
+    { "Instance of C" [shape=square];
+      "Instance of C" -> Typ3 [color=red; label="Method of C"];
+    }
+    { node [shape=square];
+      Class1 -> Class2 [arrowhead=diamond; style=dashed; label=Inherits];
+    }
+  }
+}

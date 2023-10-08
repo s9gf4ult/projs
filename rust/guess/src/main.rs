@@ -1,25 +1,52 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::Hash;
+use std::mem;
 
-trait Tr {
-    fn tr(&self) {
-        println!("TR!");
+struct T1;
+
+impl Drop for T1 {
+    fn drop(&mut self) {
+        println!("Dropped T1");
     }
 }
 
-#[derive(Debug)]
-struct I;
+struct T2;
 
-impl Tr for I {}
+impl Drop for T2 {
+    fn drop(&mut self) {
+        println!("Dropped T2");
+    }
+}
 
-#[derive(Debug)]
-struct DST<T: ?Sized> {
-    a: usize,
-    b: T,
+struct Custom {
+    t1: T1,
+    t2: T2,
+}
+
+impl Drop for Custom {
+    fn drop(&mut self) {
+        println!("Dropped Custom");
+    }
 }
 
 fn main() {
-    let d = DST { a: 10, b: I };
-    let r: &DST<dyn Tr> = &d;
-    r.b.tr();
-    d.b.tr();
+    let c = Custom { t1: T1, t2: T2 };
 }
+
+// fn get_default<'m, 'v, K, V>(map: &'m mut HashMap<K, V>, key: K) -> &'v mut V
+// where
+//     K: Clone + Eq + Hash,
+//     V: Default,
+//     'm: 'v,
+// {
+//     match map.get_mut(&key) {
+//         Some(value) => value,
+//         None => {
+//             map.insert(key.clone(), V::default());
+//             map.get_mut(&key).unwrap()
+//         }
+//     }
+// }
+
+// fn main() {}

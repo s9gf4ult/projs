@@ -1,0 +1,8 @@
+digraph {
+  // graph [overlap=false];
+  subgraph cluster_named {
+    graph [label=name];
+    node [shape=diamond];
+    a; b;
+  }
+}

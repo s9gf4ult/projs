@@ -3,35 +3,19 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem;
 
-struct T1;
+struct Inspector<'a>(&'a u8);
 
-impl Drop for T1 {
-    fn drop(&mut self) {
-        println!("Dropped T1");
-    }
-}
-
-struct T2;
-
-impl Drop for T2 {
-    fn drop(&mut self) {
-        println!("Dropped T2");
-    }
-}
-
-struct Custom {
-    t1: T1,
-    t2: T2,
-}
-
-impl Drop for Custom {
-    fn drop(&mut self) {
-        println!("Dropped Custom");
-    }
+impl<'a> Drop for Inspector<'a> {
+    fn drop(&mut self) {}
 }
 
 fn main() {
-    let c = Custom { t1: T1, t2: T2 };
+    let days = Box::new(1);
+    {
+        let days = Box::new(1);
+        let inspector = Some(Inspector(&days));
+        println!("Findol");
+    }
 }
 
 // fn get_default<'m, 'v, K, V>(map: &'m mut HashMap<K, V>, key: K) -> &'v mut V
@@ -40,13 +24,10 @@ fn main() {
 //     V: Default,
 //     'm: 'v,
 // {
-//     match map.get_mut(&key) {
-//         Some(value) => value,
-//         None => {
-//             map.insert(key.clone(), V::default());
-//             map.get_mut(&key).unwrap()
-//         }
+//     if map.contains_key(&key) {
+//         map.get_mut(&key).unwrap()
+//     } else {
+//         map.insert(key.clone(), V::default());
+//         map.get_mut(&key).unwrap()
 //     }
 // }
-
-// fn main() {}

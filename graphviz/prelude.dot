@@ -2,7 +2,8 @@ digraph {
   graph [layout=dot; overlap=false; rankdir=LR; nodesep=0.5];
   subgraph types {
     node [shape=oval];
-    Integer -> Rational [label="(%1)"];
+    Integer;
+    Rational;
   }
   subgraph classes {
     node [shape=square];
@@ -25,6 +26,10 @@ digraph {
     RealFrac -> Integral [label="round,truncate,floor"];
     Floating -> Floating [label="exp,sqrt,**,sin"];
     RealFloat -> RealFloat [label="uncurry encodeFloat . decodeFloat"];
+  }
+  subgraph functions {
+    Integer -> Rational [label="(%1)"];
+    Real -> Fractional [label="realToFrac"];
   }
   subgraph cluster_legend {
     graph [label=Legend];

@@ -1,0 +1,6 @@
+strict graph morse {
+  subgraph cluster_symmetric {
+    ".-" -- "-.";
+    ".--" -- "--.";
+  }
+}

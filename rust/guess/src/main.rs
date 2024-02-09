@@ -4,17 +4,14 @@
 // use std::mem;
 // use std::ops::{Deref, DerefMut};
 
-#[derive(Debug)]
-struct T;
-
-trait Foo {}
-
-impl Foo for T {}
-
 fn main() {
-    let x = &T;
-    dbg!(x);
-    let t: &dyn Foo = &T;
+    let v: Vec<i32> = vec![1, 2, 3, 4];
+    let mut t = v.iter();
+    let s: i32 = t.by_ref().take(3).cloned().sum();
+    println!("{s}");
+    for i in t {
+        println!("{}", i);
+    }
 }
 
 // fn get_default<'m, 'v, K, V>(map: &'m mut HashMap<K, V>, key: K) -> &'v mut V

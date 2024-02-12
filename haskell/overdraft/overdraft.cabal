@@ -32,14 +32,21 @@ library
       Paths_overdraft
   hs-source-dirs:
       src
+  default-extensions:
+      OverloadedRecordDot
+      NoFieldSelectors
+      LambdaCase
+      ImportQualifiedPost
+      BangPatterns
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers
     , factor
     , optparse-applicative
   default-language: Haskell2010
 
-executable overdraft-exe
+executable overdraft
   main-is: Main.hs
   other-modules:
       Paths_overdraft
@@ -47,9 +54,16 @@ executable overdraft-exe
       Paths_overdraft
   hs-source-dirs:
       app
+  default-extensions:
+      OverloadedRecordDot
+      NoFieldSelectors
+      LambdaCase
+      ImportQualifiedPost
+      BangPatterns
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , factor
     , optparse-applicative
     , overdraft
@@ -64,9 +78,16 @@ test-suite overdraft-test
       Paths_overdraft
   hs-source-dirs:
       test
+  default-extensions:
+      OverloadedRecordDot
+      NoFieldSelectors
+      LambdaCase
+      ImportQualifiedPost
+      BangPatterns
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , factor
     , optparse-applicative
     , overdraft

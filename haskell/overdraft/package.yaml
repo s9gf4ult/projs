@@ -23,6 +23,14 @@ dependencies:
 - base >= 4.7 && < 5
 - optparse-applicative
 - factor
+- containers
+
+default-extensions:
+  - OverloadedRecordDot
+  - NoFieldSelectors
+  - LambdaCase
+  - ImportQualifiedPost
+  - BangPatterns
 
 ghc-options:
 - -Wall
@@ -39,7 +47,7 @@ library:
   source-dirs: src
 
 executables:
-  overdraft-exe:
+  overdraft:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

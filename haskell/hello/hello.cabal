@@ -13,54 +13,6 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
-library
-  hs-source-dirs:      src
-  ghc-options:         -Wall
-  default-extensions: DataKinds
-                    , DeriveFunctor
-                    , DeriveGeneric
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , GeneralizedNewtypeDeriving
-                    , MagicHash
-                    , MultiParamTypeClasses
-                    , MultiWayIf
-                    , OverloadedStrings
-                    , PolyKinds
-                    , QuantifiedConstraints
-                    , RankNTypes
-                    , ScopedTypeVariables
-                    , StandaloneDeriving
-                    , TypeApplications
-                    , RoleAnnotations
-                    , TypeSynonymInstances
-                    , UnboxedTuples
-                    , UndecidableInstances
-  exposed-modules:     Bib
-                     , Clear
-                     , Escape
-                     , Lazy
-                     , Lib
-                     , Stack
-                     , Store
-                     , Stream
-  build-depends:       base >= 4.7 && < 5
-                     , bytestring
-                     , comonad
-                     , containers
-                     , exceptions
-                     , generic-lens
-                     , hashable
-                     , lens
-                     , monad-control
-                     , mtl
-                     , repa
-                     , text
-                     , transformers
-                     , transformers-base
-                     , unordered-containers
-  default-language:    Haskell2010
-
 executable hello
   hs-source-dirs:      app
   main-is:             Main.hs
@@ -87,32 +39,7 @@ executable hello
                     , UnboxedTuples
                     , UndecidableInstances
   build-depends:       base
-                     , bytestring
-                     , clock
-                     , comonad
-                     , containers
-                     , exceptions
-                     , generic-lens
-                     , hashable
-                     , hello
-                     , lens
-                     , monad-control
-                     , mtl
-                     , repa
-                     , text
-                     , time
-                     , transformers
-                     , transformers-base
-                     , unordered-containers
-  default-language:    Haskell2010
 
-test-suite hello-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , hello
-  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head

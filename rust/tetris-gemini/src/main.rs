@@ -2,17 +2,19 @@
 
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    // Removed KeyModifiers from here as it wasn't used
+    event::{self, Event, KeyCode, KeyEvent},
     execute, queue,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{
         disable_raw_mode, enable_raw_mode, size, Clear, ClearType, EnterAlternateScreen,
         LeaveAlternateScreen,
     },
-    Result,
+    // Removed the incorrect 'Result' import
 };
-use rand::{seq::SliceRandom, Rng}; // Added Rng trait
-use std::io::{stdout, Stdout, Write};
+// Removed 'seq::SliceRandom' as it wasn't used
+use rand::Rng;
+use std::io::{stdout, Stdout, Write, Result as IoResult}; // Import std::io::Result
 use std::time::{Duration, Instant};
 
 // --- Constants ---
@@ -178,12 +180,14 @@ impl GameState {
             if x < 0 || x >= BOARD_WIDTH as isize || y < 0 || y >= BOARD_HEIGHT_TOTAL as isize {
                 return false; // Out of bounds
             }
-            if self.board[y as usize][x as usize] != Cell::Empty {
+            // Need to check y >= 0 before indexing board
+            if y >= 0 && self.board[y as usize][x as usize] != Cell::Empty {
                 return false; // Collision with existing blocks
             }
         }
         true
     }
+
 
     fn move_piece(&mut self, dx: isize, dy: isize) -> bool {
         let current_blocks = self.current_piece.get_blocks();
@@ -201,33 +205,66 @@ impl GameState {
         }
     }
 
-    fn rotate_piece(&mut self) {
-        let rotated_blocks = self.current_piece.get_rotated_blocks();
+     fn rotate_piece(&mut self) {
+        let rotated_blocks_relative = self.current_piece.get_rotated_blocks(); // Gets absolute coords
+
+        // Calculate blocks relative to the piece's new potential position (x,y)
+        // This seems overly complex, let's simplify the wall kick logic.
+        // get_rotated_blocks already gives the absolute positions if rotation happens *without* moving x,y.
+        // We just need to test these absolute positions, potentially shifted by kicks.
 
         // Basic Wall Kick attempt (simple shifts)
-        let kicks = [(0, 0), (-1, 0), (1, 0), (-2, 0), (2, 0), (0, -1), (0, -2)]; // Added vertical kicks
+        // Order: No kick, horizontal kicks, vertical kicks
+        let kicks = [(0, 0), (-1, 0), (1, 0), (-2, 0), (2, 0), (0, -1), (0, 1)]; // Added (0,1) kick
+
+        let original_x = self.current_piece.x;
+        let original_y = self.current_piece.y;
+        let next_rotation_index = (self.current_piece.rotation + 1) % 4;
 
         for &(kick_x, kick_y) in &kicks {
-            let mut potential_blocks = [(0,0); 4];
-             for i in 0..4 {
-                 potential_blocks[i] = (rotated_blocks[i].0 + kick_x, rotated_blocks[i].1 + kick_y);
-             }
+            let potential_x = original_x + kick_x;
+            let potential_y = original_y + kick_y;
 
-            if self.is_valid_position(&potential_blocks) {
-                self.current_piece.x += kick_x;
-                self.current_piece.y += kick_y;
-                self.current_piece.rotation = (self.current_piece.rotation + 1) % 4;
+            // Get the shape definition for the next rotation
+            let shape = TETROMINOES[self.current_piece.tetromino_index].1[next_rotation_index];
+            let mut potential_blocks_absolute = [(0isize, 0isize); 4];
+            let mut valid = true;
+
+            // Calculate the absolute position of each block in the potential rotated & kicked position
+            for i in 0..4 {
+                let abs_x = potential_x + shape[i].0;
+                let abs_y = potential_y + shape[i].1;
+                potential_blocks_absolute[i] = (abs_x, abs_y);
+
+                // Perform validation checks directly here for efficiency
+                 if abs_x < 0 || abs_x >= BOARD_WIDTH as isize || abs_y < 0 || abs_y >= BOARD_HEIGHT_TOTAL as isize {
+                    valid = false; // Out of bounds
+                    break;
+                }
+                if abs_y >= 0 && self.board[abs_y as usize][abs_x as usize] != Cell::Empty {
+                     valid = false; // Collision with existing blocks
+                     break;
+                 }
+            }
+
+
+            // If this kicked position is valid, apply the rotation and kick offset
+            if valid {
+                self.current_piece.x = potential_x;
+                self.current_piece.y = potential_y;
+                self.current_piece.rotation = next_rotation_index;
                 return; // Rotation successful
             }
         }
-        // If no kick works, rotation fails
+        // If no kick works, rotation fails, piece remains unchanged.
     }
 
     fn hard_drop(&mut self) {
+        let mut distance = 0;
         while self.move_piece(0, 1) {
-            // Keep moving down until it hits something
-            self.score += 2; // Small score bonus for hard drop
+            distance += 1;
         }
+        self.score += 2 * distance; // Score based on distance dropped
         self.lock_piece();
     }
 
@@ -235,54 +272,71 @@ impl GameState {
         let blocks = self.current_piece.get_blocks();
         let color = self.current_piece.color();
         for &(x, y) in &blocks {
+             // Ensure coordinates are valid before accessing board
             if y >= 0 && y < BOARD_HEIGHT_TOTAL as isize && x >= 0 && x < BOARD_WIDTH as isize {
-                self.board[y as usize][x as usize] = Cell::Occupied(color);
-            }
+                // Check bounds again just to be safe, although is_valid should prevent out of bounds lock
+                 self.board[y as usize][x as usize] = Cell::Occupied(color);
+             } else if y < 0 {
+                // If any part of the piece locks above the visible area, it's game over
+                self.game_over = true;
+                 return; // Exit immediately on game over condition during lock
+             }
         }
-        self.clear_lines();
-        self.spawn_new_piece(); // Spawn next piece
+
+        // Only clear lines and spawn if not game over
+        if !self.game_over {
+             self.clear_lines();
+             // Spawn might trigger game over if the new piece immediately collides
+             self.spawn_new_piece();
+        }
     }
+
 
     fn clear_lines(&mut self) {
         let mut lines_to_clear = Vec::new();
-        // Check from bottom up, but only within visible area
+        // Check from bottom up, including the top hidden row where pieces might lock partially
         for y in (0..BOARD_HEIGHT_TOTAL).rev() {
-            if y < BOARD_HEIGHT_TOTAL - BOARD_HEIGHT { continue; } // Skip hidden area check
-
+            // Check if the row is full
             if self.board[y].iter().all(|&cell| cell != Cell::Empty) {
                 lines_to_clear.push(y);
             }
         }
+
 
         if !lines_to_clear.is_empty() {
             let num_cleared = lines_to_clear.len() as u32;
             self.lines_cleared += num_cleared;
 
             // Scoring: 1: 100, 2: 300, 3: 500, 4: 800 points per level
-            let points = match num_cleared {
+            let base_points = match num_cleared {
                 1 => 100,
                 2 => 300,
                 3 => 500,
                 4 => 800,
-                _ => 0,
-            } * self.level;
+                _ => 0, // Should not happen with standard board width
+            };
+             let points = base_points * self.level;
             self.score += points;
 
-            // Update level and speed
+            // --- Level Up Logic ---
             let new_level = 1 + self.lines_cleared / LEVEL_UP_LINES;
-            if new_level > self.level {
+             if new_level > self.level {
                 self.level = new_level;
-                // Decrease tick rate, but don't let it become too fast
+                // Decrease tick rate, making the game faster
                 let new_tick_millis = (self.tick_rate.as_millis() as f64 * ACCELERATION_FACTOR) as u64;
-                self.tick_rate = Duration::from_millis(new_tick_millis.max(50)); // Minimum 50ms tick
+                // Ensure tick rate doesn't go below a minimum threshold
+                self.tick_rate = Duration::from_millis(new_tick_millis.max(50)); // e.g., 50ms minimum tick
             }
 
+            // --- Remove Cleared Lines and Shift ---
+             // Sort indices in descending order to avoid index issues after removal
+             lines_to_clear.sort_unstable_by(|a, b| b.cmp(a));
 
-            // Remove cleared lines and shift down
             for &line_y in &lines_to_clear {
-                self.board.remove(line_y);
-            }
-            // Add new empty lines at the top
+                 self.board.remove(line_y);
+             }
+
+            // Add new empty lines at the top (index 0)
             for _ in 0..num_cleared {
                 self.board.insert(0, vec![Cell::Empty; BOARD_WIDTH]);
             }
@@ -295,15 +349,18 @@ impl GameState {
             return;
         }
         if !self.move_piece(0, 1) {
-            // Could not move down, lock the piece
-            self.lock_piece();
+            // Could not move down, potential lock
+             // Before locking, check if the piece is entirely above the visible board.
+             // If so, it's game over. (This check is now partly in lock_piece)
+             self.lock_piece();
         }
     }
 }
 
 // --- Rendering ---
 
-fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
+// Use std::io::Result for functions interacting with the terminal
+fn draw(stdout: &mut Stdout, state: &GameState) -> IoResult<()> {
     let (term_width, term_height) = size()?;
 
     // Calculate offsets to center the game board (roughly)
@@ -312,29 +369,31 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
     let info_width = 20; // Width for score/next piece info
 
     let total_width = board_draw_width + info_width;
-    let start_x = if term_width > total_width as u16 { (term_width - total_width as u16) / 2 } else { 0 };
-    let start_y = if term_height > board_draw_height as u16 { (term_height - board_draw_height as u16) / 2 } else { 0 };
+    let start_x = if term_width > total_width as u16 { (term_width - total_width as u16) / 2 } else { 1 }; // Min 1 margin
+    let start_y = if term_height > board_draw_height as u16 { (term_height - board_draw_height as u16) / 2 } else { 1 }; // Min 1 margin
 
     queue!(stdout, Clear(ClearType::All), Hide)?;
 
     // Draw board border
+    let border_color = Color::DarkGrey;
+    queue!(stdout, SetForegroundColor(border_color))?;
     for y in 0..=BOARD_HEIGHT {
         queue!(
             stdout,
             MoveTo(start_x, start_y + y as u16),
-            SetForegroundColor(Color::White),
-            Print("│"),
+            Print("│"), // Left
             MoveTo(start_x + (BOARD_WIDTH * 2 + 1) as u16, start_y + y as u16),
-            Print("│")
+            Print("│") // Right
         )?;
     }
      for x in 0..=BOARD_WIDTH * 2 {
+        let char = if x % 2 == 0 { "─" } else {"─"}; // Can simplify to just "─"
         queue!(
             stdout,
             MoveTo(start_x + x as u16, start_y),
-             Print(if x % 2 == 0 {"─"} else {"─"}), // Top border
+             Print(char), // Top border
              MoveTo(start_x + x as u16, start_y + (BOARD_HEIGHT + 1) as u16),
-             Print(if x % 2 == 0 {"─"} else {"─"}) // Bottom border
+             Print(char) // Bottom border
         )?;
     }
     // Corner pieces
@@ -342,12 +401,15 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
     queue!(stdout, MoveTo(start_x + (BOARD_WIDTH * 2 + 1) as u16, start_y), Print("┐"))?;
     queue!(stdout, MoveTo(start_x, start_y + (BOARD_HEIGHT + 1) as u16), Print("└"))?;
     queue!(stdout, MoveTo(start_x + (BOARD_WIDTH * 2 + 1) as u16, start_y + (BOARD_HEIGHT + 1) as u16), Print("┘"))?;
+    queue!(stdout, ResetColor)?; // Reset color after border
 
 
     // Draw locked pieces on the board (only visible area)
-    for y in 0..BOARD_HEIGHT {
+    for y in 0..BOARD_HEIGHT { // Iterate through visible height
         for x in 0..BOARD_WIDTH {
-            let board_y = y + (BOARD_HEIGHT_TOTAL - BOARD_HEIGHT); // Adjust index for the full board
+            let board_y = y + (BOARD_HEIGHT_TOTAL - BOARD_HEIGHT); // Adjust index to get from full board data
+            if board_y >= BOARD_HEIGHT_TOTAL { continue; } // Should not happen, but safety check
+
             let cell = state.board[board_y][x];
             let draw_x = start_x + 1 + (x * 2) as u16;
             let draw_y = start_y + 1 + y as u16;
@@ -359,16 +421,62 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
                         MoveTo(draw_x, draw_y),
                         SetBackgroundColor(color),
                         Print("  "), // Two spaces for a block look
-                        ResetColor
+                        ResetColor // Reset background color immediately after block
                     )?;
                 }
                 Cell::Empty => {
-                     queue!(
+                     // Optionally draw empty cells with a background or just leave them empty
+                     // queue!(
+                     //    stdout,
+                     //    MoveTo(draw_x, draw_y),
+                     //    Print("..") // Example: light dots for empty cells
+                    // )?;
+                    // Current: Does nothing, leaves terminal background
+                }
+            }
+        }
+    }
+
+    // Draw Ghost Piece (preview of where the piece will land)
+    if !state.game_over {
+        let mut ghost_piece = state.current_piece; // Copy current piece
+        let mut ghost_y = ghost_piece.y;
+        let mut current_blocks = ghost_piece.get_blocks();
+        while ghost_piece.is_valid_position(&current_blocks) {
+            ghost_y += 1;
+             // Calculate next potential block positions
+             for i in 0..4 {
+                 current_blocks[i].1 += 1; // Move down one step for the check
+             }
+        }
+        // The last valid position was one step *before* the loop condition failed
+        ghost_y -= 1;
+
+
+        // Get the blocks for the final ghost position
+        let ghost_shape = TETROMINOES[ghost_piece.tetromino_index].1[ghost_piece.rotation];
+        let ghost_color = Color::DarkGrey; // Color for ghost
+
+         for i in 0..4 {
+             let px = ghost_piece.x + ghost_shape[i].0;
+             let py = ghost_y + ghost_shape[i].1; // Use the calculated final ghost_y
+
+            // Only draw ghost if within the visible board area and cell is empty
+            let visible_y = py - (BOARD_HEIGHT_TOTAL - BOARD_HEIGHT) as isize;
+             if px >= 0 && px < BOARD_WIDTH as isize && visible_y >= 0 && visible_y < BOARD_HEIGHT as isize {
+                 // Check if the target cell for the ghost is actually empty on the board
+                 let board_check_y = py as usize; // Use absolute y for board check
+                 if board_check_y < state.board.len() && state.board[board_check_y][px as usize] == Cell::Empty {
+                    let draw_x = start_x + 1 + (px * 2) as u16;
+                    let draw_y = start_y + 1 + visible_y as u16;
+                    queue!(
                         stdout,
                         MoveTo(draw_x, draw_y),
-                        Print("  ") // Empty space
+                        SetForegroundColor(ghost_color),
+                        Print("::"), // Use different pattern for ghost
+                        ResetColor
                     )?;
-                }
+                 }
             }
         }
     }
@@ -388,7 +496,7 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
                     MoveTo(draw_x, draw_y),
                     SetBackgroundColor(color),
                     Print("  "),
-                    ResetColor
+                    ResetColor // Reset background color immediately after block
                 )?;
             }
         }
@@ -398,36 +506,43 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
     let info_x = start_x + board_draw_width as u16 + 3;
     let info_y = start_y + 1;
 
-    queue!(stdout, MoveTo(info_x, info_y), SetForegroundColor(Color::White), Print("Score:"))?;
-    queue!(stdout, MoveTo(info_x + 2, info_y + 1), Print(format!("{}", state.score)))?;
+    // Check if there's enough space to draw the info panel
+    if info_x + 10 < term_width { // Rough check for info panel width
+        queue!(stdout, MoveTo(info_x, info_y), SetForegroundColor(Color::White), Print("Score:"))?;
+        queue!(stdout, MoveTo(info_x + 2, info_y + 1), Print(format!("{}", state.score)))?;
 
-    queue!(stdout, MoveTo(info_x, info_y + 3), Print("Lines:"))?;
-    queue!(stdout, MoveTo(info_x + 2, info_y + 4), Print(format!("{}", state.lines_cleared)))?;
+        queue!(stdout, MoveTo(info_x, info_y + 3), Print("Lines:"))?;
+        queue!(stdout, MoveTo(info_x + 2, info_y + 4), Print(format!("{}", state.lines_cleared)))?;
 
-    queue!(stdout, MoveTo(info_x, info_y + 6), Print("Level:"))?;
-    queue!(stdout, MoveTo(info_x + 2, info_y + 7), Print(format!("{}", state.level)))?;
+        queue!(stdout, MoveTo(info_x, info_y + 6), Print("Level:"))?;
+        queue!(stdout, MoveTo(info_x + 2, info_y + 7), Print(format!("{}", state.level)))?;
 
-    queue!(stdout, MoveTo(info_x, info_y + 9), Print("Next:"))?;
-    // Draw the next piece preview
-    let next_piece_data = TETROMINOES[state.next_piece_index];
-    let next_piece_color = next_piece_data.0;
-    let next_piece_shape = next_piece_data.1[0]; // Use base rotation for preview
+        queue!(stdout, MoveTo(info_x, info_y + 9), Print("Next:"))?;
+        // Draw the next piece preview
+        let next_piece_data = TETROMINOES[state.next_piece_index];
+        let next_piece_color = next_piece_data.0;
+        let next_piece_shape = next_piece_data.1[0]; // Use base rotation for preview
 
-    // Clear previous preview area
-    for y_off in 0..4 {
-        queue!(stdout, MoveTo(info_x + 2, info_y + 10 + y_off), Print("        "))?; // 4 * 2 spaces
-    }
-    // Draw new preview
-    for &(block_x, block_y) in &next_piece_shape {
-        let draw_x = info_x + 2 + (block_x * 2) as u16;
-        let draw_y = info_y + 10 + block_y as u16;
-         queue!(
-            stdout,
-            MoveTo(draw_x, draw_y),
-            SetBackgroundColor(next_piece_color),
-            Print("  "),
-            ResetColor
-        )?;
+        // Clear previous preview area (4x2 grid approx)
+        for y_off in 0..4 {
+            queue!(stdout, MoveTo(info_x + 2, info_y + 10 + y_off), Print("        "))?; // 4 * 2 spaces wide
+        }
+        // Draw new preview blocks relative to the preview area
+        for &(block_x, block_y) in &next_piece_shape {
+            // Adjust coords to be relative to top-left of a 4x4 grid
+            let draw_x = info_x + 2 + (block_x * 2) as u16;
+            let draw_y = info_y + 10 + block_y as u16;
+             queue!(
+                stdout,
+                MoveTo(draw_x, draw_y),
+                SetBackgroundColor(next_piece_color),
+                Print("  "),
+                ResetColor // Reset background color immediately
+            )?;
+        }
+    } else {
+        // Terminal too small for info panel, maybe print a message?
+        queue!(stdout, MoveTo(1, term_height -1), Print("Terminal too small for stats"))?;
     }
 
 
@@ -435,21 +550,30 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
     if state.game_over {
         let msg = "GAME OVER";
         let msg_len = msg.len() as u16;
-        let msg_x = start_x + (board_draw_width as u16 - msg_len) / 2;
+        // Center message within the board area
+        let msg_x = start_x + (board_draw_width as u16).saturating_sub(msg_len) / 2;
         let msg_y = start_y + (board_draw_height as u16) / 2;
-        queue!(
-            stdout,
-            MoveTo(msg_x, msg_y),
-            SetForegroundColor(Color::Red),
-            Print(msg),
-            MoveTo(msg_x - 2, msg_y + 1), // Slightly adjust for second line
-            Print("Press Q to Quit")
-        )?;
+
+         // Ensure message coordinates are valid
+        if msg_x > 0 && msg_y > 0 {
+            queue!(
+                stdout,
+                MoveTo(msg_x, msg_y),
+                SetForegroundColor(Color::White),
+                SetBackgroundColor(Color::Red), // Background for emphasis
+                Print(msg),
+                ResetColor, // Reset both fg and bg
+                MoveTo(msg_x.saturating_sub(2).max(1), msg_y + 1), // Adjust for second line, ensure within bounds
+                 SetForegroundColor(Color::White),
+                Print("Press Q to Quit")
+            )?;
+        }
     }
 
     // --- Instructions ---
      let help_y = start_y + board_draw_height as u16 + 2; // Below the board
-     if help_y < term_height {
+     // Check if there's space below the board for instructions
+     if help_y < term_height && start_x + 50 < term_width { // Check width too
         queue!(stdout, MoveTo(start_x, help_y), ResetColor, Print("Arrows: Move/Rotate | Space: Hard Drop | Q: Quit"))?;
      }
 
@@ -460,12 +584,35 @@ fn draw(stdout: &mut Stdout, state: &GameState) -> Result<()> {
 
 // --- Main Game Loop ---
 
-fn run_game(stdout: &mut Stdout) -> Result<()> {
+// Use std::io::Result
+fn run_game(stdout: &mut Stdout) -> IoResult<()> {
     let mut state = GameState::new();
     let mut last_tick = Instant::now();
     let mut soft_dropping = false;
 
+    // Initial draw
+    draw(stdout, &state)?;
+
     loop {
+        if state.game_over {
+            // If game is over, just wait for quit command
+             if event::poll(Duration::from_millis(100))? { // Poll frequently for quit
+                 match event::read()? {
+                    Event::Key(KeyEvent { code, kind: event::KeyEventKind::Press, .. }) => {
+                         if code == KeyCode::Char('q') || code == KeyCode::Char('Q') {
+                             break;
+                         }
+                     }
+                      Event::Resize(_, _) => { // Allow redraw on resize even when game over
+                         draw(stdout, &state)?;
+                     }
+                     _ => {}
+                 }
+             }
+             continue; // Skip rest of the loop if game is over
+        }
+
+
         // --- Timing ---
         let current_tick_rate = if soft_dropping {
              FAST_TICK_RATE.min(state.tick_rate) // Use faster rate if soft dropping, but not faster than level speed
@@ -473,79 +620,77 @@ fn run_game(stdout: &mut Stdout) -> Result<()> {
             state.tick_rate
         };
 
-        if last_tick.elapsed() >= current_tick_rate {
-            state.tick();
-            last_tick = Instant::now();
-            if state.game_over {
-                draw(stdout, &state)?; // Draw final state
-            }
+        let time_since_last_tick = last_tick.elapsed();
+        let mut needs_redraw = false;
+
+        if time_since_last_tick >= current_tick_rate {
+            state.tick(); // Attempt to move piece down
+            last_tick = Instant::now(); // Reset timer *after* ticking
+             needs_redraw = true; // Redraw after a game tick occurs
+             if state.game_over {
+                 draw(stdout, &state)?; // Draw final game over state immediately
+                 continue; // Go to game over handling at the top of the loop
+             }
         }
+
 
         // --- Input Handling ---
         // Poll for events with a timeout based on remaining time until next tick
-        let timeout = current_tick_rate.saturating_sub(last_tick.elapsed());
+        let timeout = current_tick_rate.saturating_sub(time_since_last_tick);
         if event::poll(timeout)? {
             match event::read()? {
-                Event::Key(KeyEvent { code, modifiers: _, kind: event::KeyEventKind::Press, state: _ }) => { // Only react on Press
-                    if state.game_over {
-                        // Only allow quit when game is over
-                        if code == KeyCode::Char('q') || code == KeyCode::Char('Q') {
-                            break;
+                Event::Key(KeyEvent { code, kind: event::KeyEventKind::Press, .. }) => {
+                     match code {
+                        KeyCode::Left => {
+                            needs_redraw = state.move_piece(-1, 0);
                         }
-                    } else {
-                        match code {
-                            KeyCode::Left => {
-                                state.move_piece(-1, 0);
-                            }
-                            KeyCode::Right => {
-                                state.move_piece(1, 0);
-                            }
-                            KeyCode::Down => {
-                                soft_dropping = true;
-                                state.score += 1; // Small score bonus for soft drop
-                                // Immediately tick down when pressed
-                                state.tick();
-                                last_tick = Instant::now(); // Reset tick timer after manual move
-                            }
-                            KeyCode::Up => {
-                                state.rotate_piece();
-                            }
-                            KeyCode::Char(' ') => { // Spacebar for Hard Drop
-                                state.hard_drop();
-                                last_tick = Instant::now(); // Reset tick timer after hard drop
-                            }
-                            KeyCode::Char('q') | KeyCode::Char('Q') => {
-                                break; // Quit
-                            }
-                            _ => {} // Ignore other keys
+                        KeyCode::Right => {
+                            needs_redraw = state.move_piece(1, 0);
                         }
+                        KeyCode::Down => {
+                            if !soft_dropping { // Start soft drop on first press
+                                 soft_dropping = true;
+                                 needs_redraw = true; // Need to redraw to reflect potential faster speed indicator?
+                             }
+                             state.score += 1; // Small score bonus for each step of soft drop
+                             // Immediately tick down when pressed
+                             state.tick(); // This might lock the piece
+                             last_tick = Instant::now(); // Reset tick timer after manual move
+                             needs_redraw = true; // Redraw after the move/tick
+                         }
+                        KeyCode::Up => {
+                            state.rotate_piece(); // rotate_piece doesn't return bool, assume redraw needed
+                            needs_redraw = true;
+                        }
+                        KeyCode::Char(' ') => { // Spacebar for Hard Drop
+                            state.hard_drop(); // hard_drop locks and spawns, triggering redraw internally maybe?
+                             last_tick = Instant::now(); // Reset tick timer after hard drop
+                             needs_redraw = true; // Ensure redraw after hard drop
+                         }
+                        KeyCode::Char('q') | KeyCode::Char('Q') => {
+                            break; // Quit
+                        }
+                        _ => {} // Ignore other keys
                     }
-                },
+                 },
                  Event::Key(KeyEvent { code: KeyCode::Down, kind: event::KeyEventKind::Release, .. }) => {
                     // Stop soft dropping when Down arrow is released
-                     soft_dropping = false;
+                     if soft_dropping {
+                         soft_dropping = false;
+                         needs_redraw = true; // May need redraw if speed indicator changes
+                     }
                  },
                 Event::Resize(_, _) => {
                     // Redraw immediately on resize
-                    draw(stdout, &state)?;
+                     needs_redraw = true;
                 }
                 _ => {} // Ignore other events
             }
         }
-         // Key release event for soft drop handled above
 
         // --- Rendering ---
-        // Only redraw if the game isn't over yet, or if it just became over in this loop iteration
-        if !state.game_over || last_tick.elapsed() < Duration::from_millis(10) { // Redraw once more right after game over
+        if needs_redraw {
              draw(stdout, &state)?;
-        }
-
-        if state.game_over && (event::poll(Duration::from_millis(10))?) { // Check for quit input during game over screen
-             if let Event::Key(KeyEvent { code, .. }) = event::read()? {
-                  if code == KeyCode::Char('q') || code == KeyCode::Char('Q') {
-                      break;
-                  }
-             }
         }
 
 
@@ -556,17 +701,21 @@ fn run_game(stdout: &mut Stdout) -> Result<()> {
 
 // --- Entry Point ---
 
-fn main() -> Result<()> {
+// Use std::io::Result
+fn main() -> IoResult<()> {
     let mut stdout = stdout();
-    enable_raw_mode()?; // Allow reading key presses directly
-    execute!(stdout, EnterAlternateScreen, Clear(ClearType::All))?; // Use alternate screen buffer
+    // Setup terminal
+    enable_raw_mode()?;
+    // Use try! or ? for error handling during setup
+    execute!(stdout, EnterAlternateScreen, Hide)?;
 
-    // Run the game logic, handle potential errors
+    // Run the game logic in a separate scope or function
+    // This ensures that cleanup happens even if run_game panics (though explicit cleanup is better)
     let game_result = run_game(&mut stdout);
 
     // --- Cleanup ---
-    // Ensure cleanup happens even if run_game returns an error
-    execute!(stdout, Show, LeaveAlternateScreen)?; // Show cursor, leave alternate screen
+    // Ensure cleanup happens regardless of game_result outcome
+    execute!(stdout, Show, LeaveAlternateScreen)?;
     disable_raw_mode()?;
 
     // Return the result from the game loop

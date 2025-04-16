@@ -23,7 +23,7 @@ impl Tetromino {
     fn rotate(&mut self) {
         let mut rotated_cells = vec![];
         for (dx, dy) in &self.cells {
-            rotated_cells.push((-dy, dx));
+            rotated_cells.push((-dy, *dx));
         }
         self.cells = rotated_cells;
     }
@@ -45,8 +45,8 @@ impl Grid {
 
     fn is_collision(&self, tetromino: &Tetromino) -> bool {
         for (dx, dy) in &tetromino.cells {
-            let x = tetromino.x + dx as i32;
-            let y = tetromino.y + dy as i32;
+            let x = tetromino.x + *dx as i32;
+            let y = tetromino.y + *dy as i32;
 
             if x < 0 || x >= GRID_WIDTH as i32 || y < 0 || y >= GRID_HEIGHT as i32 {
                 return true;
@@ -76,8 +76,8 @@ impl Grid {
 
     fn add_tetromino(&mut self, tetromino: &Tetromino) -> usize {
         for (dx, dy) in &tetromino.cells {
-            let x = tetromino.x + dx as i32;
-            let y = tetromino.y + dy as i32;
+            let x = tetromino.x + *dx as i32;
+            let y = tetromino.y + *dy as i32;
 
             if y < 0 || y >= GRID_HEIGHT as i32 {
                 return 0;
@@ -124,7 +124,7 @@ fn main() -> io::Result<()> {
     let mut tetromino = get_random_tetromino(5, 0);
 
     loop {
-        print_grid(&grid, &tetromino);
+        print_grid(&grid, &tetromino)?;
         handle_events(&mut tetromino, &grid);
         if grid.is_collision(&tetromino) {
             break;
@@ -134,7 +134,7 @@ fn main() -> io::Result<()> {
 
     let score = grid.add_tetromino(&tetromino);
 
-    print_grid(&grid, &Tetromino::new(0, 0, vec![]));
+    print_grid(&grid, &Tetromino::new(0, 0, vec![]))?;
 
     println!("Game Over. Your score is: {}", score);
     execute!(stdout, LeaveAlternateScreen)?;
@@ -181,17 +181,17 @@ fn handle_events(tetromino: &mut Tetromino, grid: &Grid) {
     }
 }
 
-fn print_grid(grid: &Grid, tetromino: &Tetromino) {
+fn print_grid(grid: &Grid, tetromino: &Tetromino) -> io::Result<()> {
     let mut stdout = std::io::stdout();
 
-    execute!(stdout, crossterm::cursor::Goto(0, 0))?;
+    execute!(stdout, crossterm::terminal::Goto(0, 0))?;
 
     for y in (0..GRID_HEIGHT).rev() {
         for x in 0..GRID_WIDTH {
             if grid.cells[y][x]
                 || tetromino.cells.iter().any(|&(dx, dy)| {
-                    let cell_x = tetromino.x + dx as i32;
-                    let cell_y = tetromino.y + dy as i32;
+                    let cell_x = tetromino.x + *dx as i32;
+                    let cell_y = tetromino.y + *dy as i32;
 
                     cell_x == x as i32 && cell_y == y as i32
                 })
@@ -205,13 +205,14 @@ fn print_grid(grid: &Grid, tetromino: &Tetromino) {
         println!();
     }
 
-    stdout.flush().unwrap();
+    stdout.flush()?;
+    Ok(())
 }
 
 fn print_tetromino(tetromino: &Tetromino) {
     for (dx, dy) in &tetromino.cells {
-        let x = tetromino.x + dx as i32;
-        let y = tetromino.y + dy as i32;
+        let x = tetromino.x + *dx as i32;
+        let y = tetromino.y + *dy as i32;
 
         println!("({}, {})", x, y);
     }

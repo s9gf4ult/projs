@@ -1,0 +1,9 @@
+[package]
+name = "tetris-deepcoder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+termion = "1.5"
+rusty_cubicle = "0.3"
+rand = "0.8"

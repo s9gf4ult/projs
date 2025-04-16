@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 termion = "1.5"
-rusty_cubicle = "0.3"
 rand = "0.8"

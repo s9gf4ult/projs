@@ -1,7 +1,6 @@
-use rusty_cubicle::{style, Cubicle};
 use std::io;
 use std::time::{Duration, SystemTime};
-use termion::{color, input::MouseEvent, raw::IntoRawMode, screen::Screen};
+use termion::{async_stdin, color, event::Key, raw::IntoRawMode};
 
 const BOARD_WIDTH: usize = 10;
 const BOARD_HEIGHT: usize = 20;
@@ -65,6 +64,7 @@ impl Game {
             4 => create_j(),
             5 => create_s(),
             6 => create_z(),
+            _ => panic!("Unexpected piece index"),
         };
         self.current_piece = Some(piece);
     }
@@ -95,10 +95,10 @@ impl Game {
 
     fn clear_lines(&mut self) -> u32 {
         let mut lines_cleared = 0u32;
-        for y in (BOARD_HEIGHT - 1).checked_sub(1..=BOARD_HEIGHT - 1) {
+        for y in (0..BOARD_HEIGHT).rev() {
             if self.board[y].iter().all(|&cell| cell) {
                 self.board.swap_remove(y);
-                self.board.push(vec![false; BOARD_WIDTH]);
+                self.board.insert(0, vec![false; BOARD_WIDTH]);
                 lines_cleared += 1;
             }
         }
@@ -112,10 +112,9 @@ impl Game {
     }
 
     fn move_down(&mut self) -> bool {
-        if let Some(mut piece) = &mut self.current_piece {
-            let (min_x, max_x, min_y, max_y) = piece.bounding_box();
+        if let Some(piece) = &self.current_piece {
+            let (min_y, max_y) = (piece.y, piece.y + piece.shape.len() as i32 - 1);
             if min_y > 0 && max_y < BOARD_HEIGHT as i32 - 1 {
-                piece.y += 1;
                 return true;
             }
         }
@@ -123,9 +122,9 @@ impl Game {
     }
 
     fn move_left(&mut self) -> bool {
-        if let Some(mut piece) = &mut self.current_piece {
-            let (min_x, _, min_y, max_y) = piece.bounding_box();
-            for y in min_y..=max_y as i32 {
+        if let Some(piece) = &self.current_piece {
+            let (min_x, max_x) = (piece.x, piece.x + piece.shape[0].len() as i32 - 1);
+            for y in 0..=max_y as i32 {
                 for x in 0..=2 {
                     let new_x = piece.x - x;
                     if new_x < 0 || self.board[(y + piece.y) as usize][(new_x) as usize] {
@@ -141,8 +140,12 @@ impl Game {
     }
 
     fn move_right(&mut self) -> bool {
-        if let Some(mut piece) = &mut self.current_piece {
-            let (max_x, _, min_y, max_y) = piece.bounding_box();
+        if let Some(piece) = &self.current_piece {
+            let (max_x, min_y, max_y) = (
+                piece.x + piece.shape[0].len() as i32 - 1,
+                piece.y,
+                piece.y + piece.shape.len() as i32 - 1,
+            );
             for y in min_y..=max_y as i32 {
                 for x in 0..=2 {
                     let new_x = piece.x + x;
@@ -161,7 +164,7 @@ impl Game {
     }
 
     fn rotate(&mut self) -> bool {
-        if let Some(mut piece) = &mut self.current_piece {
+        if let Some(piece) = &mut self.current_piece {
             let backup_shape = piece.shape.clone();
             piece.rotate();
             let (min_x, max_x, min_y, max_y) = piece.bounding_box();
@@ -185,16 +188,27 @@ impl Game {
         }
     }
 
-    fn draw(&self, cubicle: &mut Cubicle) {
+    fn draw(&self, stdout: &mut io::StdoutLock) {
+        // Clear the screen
+        stdout.write_all(termion::clear::All as bytes).unwrap();
+
         // Draw the board
         for y in 0..BOARD_HEIGHT as i32 {
             for x in 0..BOARD_WIDTH as i32 {
                 if self.board[y as usize][x as usize] {
-                    cubicle.set(x + 2, y + 1, style::Block(color::RGB(255, 255, 255)));
+                    write!(
+                        stdout,
+                        "{}#{}",
+                        color::Fg(color::Rgb(0, 255, 255)),
+                        color::Reset
+                    )
+                    .unwrap();
                 } else {
-                    cubicle.set(x + 2, y + 1, style::Empty);
+                    write!(stdout, " ").unwrap();
                 }
+                write!(stdout, " ").unwrap();
             }
+            writeln!(stdout).unwrap();
         }
 
         // Draw the current piece
@@ -202,35 +216,31 @@ impl Game {
             for y in 0..piece.shape.len() as i32 {
                 for x in 0..piece.shape[0].len() as i32 {
                     if piece.shape[y as usize][x as usize] {
-                        cubicle.set(
-                            (x + piece.x) as u16 + 2,
-                            (y + piece.y) as u16 + 1,
-                            style::Block(color::RGB(piece.color.0, piece.color.1, piece.color.2)),
-                        );
+                        write!(
+                            stdout,
+                            "{}#{}",
+                            color::Fg(color::Rgb(piece.color.0, piece.color.1, piece.color.2)),
+                            color::Reset
+                        )
+                        .unwrap();
+                    } else {
+                        write!(stdout, " ").unwrap();
                     }
+                    write!(stdout, " ").unwrap();
                 }
+                writeln!(stdout).unwrap();
             }
         }
 
-        // Draw the grid
-        for x in 0..BOARD_WIDTH as i32 {
-            cubicle.set(x + 2, 0, style::Border);
-            cubicle.set(x + 2, BOARD_HEIGHT as i32 + 1, style::Border);
-        }
-        for y in 0..BOARD_HEIGHT as i32 {
-            cubicle.set(0, y + 1, style::Border);
-            cubicle.set(BOARD_WIDTH as i32 + 2, y + 1, style::Border);
-        }
-
         // Draw the score
-        cubicle.print(BOARD_WIDTH as u16 + 4, 2, &format!("Score: {}", self.score));
+        write!(stdout, "Score: {}\r", self.score).unwrap();
     }
 }
 
 fn create_i() -> Piece {
     let shape = vec![vec![true, true, true, true], vec![false; 4]];
     Piece::new(
-        BOARD_WIDTH as i32 / 2 - 1,
+        (BOARD_WIDTH as i32) / 2 - 1,
         BOARD_HEIGHT as i32 - 4,
         shape,
         (0, 255, 255),
@@ -240,7 +250,7 @@ fn create_i() -> Piece {
 fn create_o() -> Piece {
     let shape = vec![vec![true, true], vec![true, true]];
     Piece::new(
-        BOARD_WIDTH as i32 / 2 - 1,
+        (BOARD_WIDTH as i32) / 2 - 1,
         BOARD_HEIGHT as i32 - 4,
         shape,
         (255, 255, 0),
@@ -288,7 +298,7 @@ fn create_s() -> Piece {
         vec![false; 3],
     ];
     Piece::new(
-        BOARD_WIDTH as i32 / 2 - 1,
+        (BOARD_WIDTH as i32) / 2 - 1,
         BOARD_HEIGHT as i32 - 4,
         shape,
         (0, 255, 0),
@@ -302,7 +312,7 @@ fn create_z() -> Piece {
         vec![false; 3],
     ];
     Piece::new(
-        BOARD_WIDTH as i32 / 2 - 1,
+        (BOARD_WIDTH as i32) / 2 - 1,
         BOARD_HEIGHT as i32 - 4,
         shape,
         (255, 0, 0),
@@ -311,9 +321,9 @@ fn create_z() -> Piece {
 
 fn main() {
     let mut stdout = io::stdout().into_raw_mode().unwrap();
-    let mut cubicle = Cubicle::new(&mut stdout);
-    let mut game = Game::new();
+    let stdin = async_stdin();
 
+    let mut game = Game::new();
     game.spawn_piece();
 
     let mut last_time = SystemTime::now();
@@ -322,7 +332,7 @@ fn main() {
     loop {
         // Update
         let now = SystemTime::now();
-        if (now - last_time).as_secs_f64() > 1.0 {
+        if (now - last_time).as_secs() > 1 {
             game.move_down();
             if !game
                 .current_piece
@@ -340,18 +350,21 @@ fn main() {
         }
 
         // Draw
-        cubicle.clear();
-        game.draw(&mut cubicle);
-        cubicle.present();
+        stdout
+            .lock()
+            .write_all(termion::clear::All as bytes)
+            .unwrap();
+
+        game.draw(&mut stdout.lock());
 
         // Input
-        if let Some(key) = termion::async_stdin().keys().next() {
+        if let Some(key) = stdin.keys().next() {
             match key {
-                'q' => break,
-                'a' => if game.move_left() {},
-                'd' => if game.move_right() {},
-                'w' => if game.rotate() {},
-                's' => while game.move_down() {},
+                Key::Char('q') => break,
+                Key::Left => if game.move_left() {},
+                Key::Right => if game.move_right() {},
+                Key::Up => if game.rotate() {},
+                Key::Down => while game.move_down() {},
                 _ => {}
             }
         }

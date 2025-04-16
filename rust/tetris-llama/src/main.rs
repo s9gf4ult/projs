@@ -184,14 +184,14 @@ fn handle_events(tetromino: &mut Tetromino, grid: &Grid) {
 fn print_grid(grid: &Grid, tetromino: &Tetromino) -> io::Result<()> {
     let mut stdout = std::io::stdout();
 
-    execute!(stdout, crossterm::terminal::Goto(0, 0))?;
+    execute!(stdout, crossterm::terminal::MoveTo(0, 0))?;
 
     for y in (0..GRID_HEIGHT).rev() {
         for x in 0..GRID_WIDTH {
             if grid.cells[y][x]
                 || tetromino.cells.iter().any(|&(dx, dy)| {
-                    let cell_x = tetromino.x + *dx as i32;
-                    let cell_y = tetromino.y + *dy as i32;
+                    let cell_x = tetromino.x + dx as i32;
+                    let cell_y = tetromino.y + dy as i32;
 
                     cell_x == x as i32 && cell_y == y as i32
                 })
@@ -211,8 +211,8 @@ fn print_grid(grid: &Grid, tetromino: &Tetromino) -> io::Result<()> {
 
 fn print_tetromino(tetromino: &Tetromino) {
     for (dx, dy) in &tetromino.cells {
-        let x = tetromino.x + *dx as i32;
-        let y = tetromino.y + *dy as i32;
+        let x = tetromino.x + dx as i32;
+        let y = tetromino.y + dy as i32;
 
         println!("({}, {})", x, y);
     }

@@ -123,8 +123,11 @@ impl Game {
 
     fn move_left(&mut self) -> bool {
         if let Some(piece) = &self.current_piece {
-            let (min_x, max_x) = (piece.x, piece.x + piece.shape[0].len() as i32 - 1);
-            for y in 0..=max_y as i32 {
+            let (min_x, max_x, min_y, max_y) = {
+                let bb = piece.bounding_box();
+                (bb.0, bb.1, bb.2, bb.3)
+            };
+            for y in min_y..=max_y as i32 {
                 for x in 0..=2 {
                     let new_x = piece.x - x;
                     if new_x < 0 || self.board[(y + piece.y) as usize][(new_x) as usize] {
@@ -141,11 +144,10 @@ impl Game {
 
     fn move_right(&mut self) -> bool {
         if let Some(piece) = &self.current_piece {
-            let (max_x, min_y, max_y) = (
-                piece.x + piece.shape[0].len() as i32 - 1,
-                piece.y,
-                piece.y + piece.shape.len() as i32 - 1,
-            );
+            let (max_x, min_y, max_y) = {
+                let bb = piece.bounding_box();
+                (bb.1, bb.2, bb.3)
+            };
             for y in min_y..=max_y as i32 {
                 for x in 0..=2 {
                     let new_x = piece.x + x;
@@ -190,7 +192,7 @@ impl Game {
 
     fn draw(&self, stdout: &mut io::StdoutLock) {
         // Clear the screen
-        stdout.write_all(termion::clear::All as bytes).unwrap();
+        stdout.write(termion::clear::All.as_bytes()).unwrap();
 
         // Draw the board
         for y in 0..BOARD_HEIGHT as i32 {
@@ -332,7 +334,7 @@ fn main() {
     loop {
         // Update
         let now = SystemTime::now();
-        if (now - last_time).as_secs() > 1 {
+        if (now.duration_since(last_time).unwrap()).as_secs() > 1 {
             game.move_down();
             if !game
                 .current_piece
@@ -350,10 +352,7 @@ fn main() {
         }
 
         // Draw
-        stdout
-            .lock()
-            .write_all(termion::clear::All as bytes)
-            .unwrap();
+        stdout.lock().write(termion::clear::All.as_bytes()).unwrap();
 
         game.draw(&mut stdout.lock());
 
@@ -369,4 +368,6 @@ fn main() {
             }
         }
     }
+
+    std::process::exit(0);
 }

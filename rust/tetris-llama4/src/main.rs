@@ -1,5 +1,6 @@
 use rand::Rng;
 use std::io;
+use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
@@ -113,6 +114,17 @@ fn main() {
     let mut piece = Piece::new(PIECES[rng.gen_range(0..7)]);
     let mut score = 0;
 
+    // Create a channel to send user input to the game loop
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || loop {
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+        tx.send(input.trim().to_string()).unwrap();
+    });
+
     loop {
         // Clear the terminal
         print!("\x1B[2J\x1B[1;1H");
@@ -145,29 +157,27 @@ fn main() {
         println!("Score: {}", score);
 
         // Handle user input
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
-        match input.trim() {
-            "a" => {
-                if piece.x > 0 {
-                    piece.x -= 1;
+        if let Ok(input) = rx.try_recv() {
+            match input.as_str() {
+                "a" => {
+                    if piece.x > 0 {
+                        piece.x -= 1;
+                    }
                 }
-            }
-            "d" => {
-                if piece.x + piece.shape.lines().next().unwrap().len() < GRID_SIZE {
-                    piece.x += 1;
+                "d" => {
+                    if piece.x + piece.shape.lines().next().unwrap().len() < GRID_SIZE {
+                        piece.x += 1;
+                    }
                 }
-            }
-            "s" => {
-                if piece.y + piece.shape.lines().count() < GRID_SIZE {
-                    piece.y += 1;
+                "s" => {
+                    if piece.y + piece.shape.lines().count() < GRID_SIZE {
+                        piece.y += 1;
+                    }
                 }
+                "w" => piece.rotate(),
+                "q" => break,
+                _ => (),
             }
-            "w" => piece.rotate(),
-            "q" => break,
-            _ => (),
         }
 
         // Check for collision
